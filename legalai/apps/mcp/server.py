@@ -10,6 +10,8 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
+from legalai.packages.aihm.service import aihm_karar_ara as _aihm_karar_ara
+from legalai.packages.aihm.service import aihm_karar_getir as _aihm_karar_getir
 from legalai.packages.layers.citation_transfer_filter import CitationTransferFilter
 from legalai.packages.layers.dissent_detector import DissentDetector
 from legalai.packages.layers.pipeline import Context, Pipeline
@@ -74,6 +76,47 @@ async def katmanli_analiz(question: str, mode: str = "standard") -> dict:
         "trace": result.trace,
         "note": "Bu bir fixture cevabıdır; gerçek belge getirme Hafta 7'de eklenecek.",
     }
+
+
+@app.tool(
+    description=(
+        "AİHM/HUDOC veritabanında karar arar (bkz. FORK-KAPSAMLI-PLAN.md §4.2). "
+        "Varsayılan olarak Türkiye'ye karşı açılan davalarla sınırlıdır "
+        "(respondent='TUR'); bunu değiştirebilir veya None geçerek kaldırabilirsiniz."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def aihm_karar_ara(
+    query: str = "",
+    respondent: str = "TUR",
+    article: str | None = None,
+    importance: int | None = None,
+    date_from: str | None = None,
+    date_to: str | None = None,
+    limit: int = 20,
+) -> list[dict]:
+    return await _aihm_karar_ara(
+        query=query,
+        respondent=respondent,
+        article=article,
+        importance=importance,
+        date_from=date_from,
+        date_to=date_to,
+        limit=limit,
+    )
+
+
+@app.tool(
+    description=(
+        "Bir AİHM başvuru numarasına (application_no, örn. '47533/99') karşılık "
+        "gelen kararın tam metnini bölümlere ayrılmış olarak getirir (PROCEDURE, "
+        "THE FACTS, THE LAW, operative, varsa ayrı görüş). Türkçe çeviri yoktur; "
+        "EN veya FR döner. Sonuçlar 30 gün önbelleğe alınır."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def aihm_karar_getir(application_no: str, lang: str = "en") -> dict:
+    return await _aihm_karar_getir(application_no=application_no, lang=lang)
 
 
 def main() -> None:
