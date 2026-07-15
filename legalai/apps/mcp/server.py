@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from fastmcp import FastMCP
 
+from legalai.packages.aihm.aym_bridge import aihm_aym_kopru as _aihm_aym_kopru
 from legalai.packages.aihm.service import aihm_karar_ara as _aihm_karar_ara
 from legalai.packages.aihm.service import aihm_karar_getir as _aihm_karar_getir
 from legalai.packages.layers.citation_transfer_filter import CitationTransferFilter
@@ -117,6 +118,21 @@ async def aihm_karar_ara(
 )
 async def aihm_karar_getir(application_no: str, lang: str = "en") -> dict:
     return await _aihm_karar_getir(application_no=application_no, lang=lang)
+
+
+@app.tool(
+    description=(
+        "Bir AYM (Anayasa Mahkemesi) bireysel başvuru numarası için, aynı "
+        "olayda AİHM'e (HUDOC) yapılmış olabilecek paralel başvuruları "
+        "bulmayı dener (bkz. FORK-KAPSAMLI-PLAN.md §4.5). İsim eşleştirme + "
+        "tarih penceresi kullanır; KESİN eşleştirme yapmaz, sadece "
+        "\"muhtemel eşleşme\" adayları döner — kullanıcı her adayı "
+        "`aihm_karar_getir` ile inceleyip kendisi teyit etmelidir."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def aihm_aym_kopru(aym_basvuru_no: str) -> dict:
+    return await _aihm_aym_kopru(aym_basvuru_no=aym_basvuru_no)
 
 
 def main() -> None:

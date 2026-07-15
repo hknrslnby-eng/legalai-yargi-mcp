@@ -1,0 +1,53 @@
+# AYM iki farklı görev yürütür: (1) norm denetimi (iptal/itiraz davaları —
+# kanunların Anayasa'ya uygunluğu), (2) bireysel başvuru (temel hak ihlali
+# şikayeti — AİHM'e benzer bir "ihlal testi" mantığı kullanır, bkz. §4.5
+# AİHM-AYM köprüsü). Bu profil ikisini de kapsar; `basvuru_turu` alanıyla
+# ayırt edilir.
+id: aym
+name: AYM (Anayasa Mahkemesi — Norm Denetimi + Bireysel Başvuru)
+version: 1
+
+axes:
+  - norm_denetimi          # kanunun Anayasa'ya şekil/esas uygunluğu
+  - hak_ihlali              # bireysel başvuruda hangi Anayasa maddesi ihlal edildiği iddiası
+  - meşru_amaç
+  - ölçülülük               # elverişlilik + gereklilik + orantılılık alt testleri
+  - başvuru_yollarının_tüketilmesi   # bireysel başvuru ön şartı
+
+hierarchy:
+  - GENEL_KURUL             # AYM Genel Kurulu (norm denetimi ve önemli bireysel başvurular)
+  - BOLUM                   # AYM Bölümü (1. veya 2. Bölüm — bireysel başvuru)
+  - KOMISYON                # kabul edilebilirlik komisyonu
+
+basvuru_turleri:
+  - norm_denetimi           # iptal davası (m.150) / itiraz yolu (m.152)
+  - bireysel_basvuru        # m.148/4 — kesin ve yürütülebilir kamu gücü işlemleri
+
+ratio_markers:
+  - "sonuç olarak"
+  - "yerleşik içtihat"
+  - "mahkememizce"
+  - "anayasa mahkemesi içtihadına göre"
+dictum_markers:
+  - "belirtmek gerekir ki"
+  - "ayrıca vurgulanmalıdır ki"
+transfer_markers:
+  - "başvurucu"
+  - "kamu gücü"
+  - "iddia etmiştir"
+  - "savunmuştur"
+  - "ilgili idare"
+
+dissent_headers:
+  - "KARŞI OY"
+  - "MUHALEFET ŞERHİ"
+  - "FARKLI GEREKÇE"
+
+procedural_deadlines:
+  bireysel_basvuru_süresi: {days: 30, ref: "AYM İçtüzüğü m.64 — kesin karar/işlemin öğrenilmesinden itibaren"}
+  iptal_davası: {days: 60, ref: "Anayasa m.150 — Resmi Gazete'de yayımdan itibaren"}
+
+evidence_standard: "kamu gücü işleminin/normun Anayasa'ya uygunluğunun ölçülülük testiyle denetimi"
+
+connectors:
+  - {jurisdiction: aihm, kind: paralel_argüman}   # bkz. FORK-KAPSAMLI-PLAN.md §4.5
