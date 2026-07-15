@@ -17,9 +17,17 @@ from legalai.packages.layers.citation_transfer_filter import CitationTransferFil
 from legalai.packages.layers.dissent_detector import DissentDetector
 from legalai.packages.layers.pipeline import Context, Pipeline
 from legalai.packages.layers.ratio_dictum import RatioDictumFilter
+from legalai.packages.pii.gateway import PiiGateway
+from legalai.packages.shared.settings import settings
+from legalai.packages.shared.tenant import TenantContext, set_tenant
 from legalai.packages.shared.types import Document
 
+# Süreç başlarken tenant bağlamı kurulur — bkz. FORK-KAPSAMLI-PLAN.md §2.2.
+# Bugün her zaman "local"; sunucuya taşındığında bu satır middleware'e taşınır.
+set_tenant(TenantContext(tenant_id=settings.tenant_id, tenant_name=settings.tenant_name))
+
 app = FastMCP(name="LegalAI MCP Server", version="0.1.0")
+_pii_gateway = PiiGateway()
 
 _FIXTURE_DOCUMENT = Document(
     id="fixture-1",
@@ -133,6 +141,33 @@ async def aihm_karar_getir(application_no: str, lang: str = "en") -> dict:
 )
 async def aihm_aym_kopru(aym_basvuru_no: str) -> dict:
     return await _aihm_aym_kopru(aym_basvuru_no=aym_basvuru_no)
+
+
+@app.tool(
+    description=(
+        "Bir metindeki yapılandırılmış kişisel verileri (TCKN, telefon, "
+        "e-posta, IBAN, plaka) geri döndürülebilir şekilde maskeler — "
+        "FORK-KAPSAMLI-PLAN.md Hafta 6, aşama 1 (regex tabanlı; isim/kurum "
+        "tanıma NER modeli henüz eklenmedi). Maskelenen değerler bu "
+        "tenant için şifreli olarak SQLite'ta saklanır; `pii_ac` ile geri "
+        "açılabilir."
+    ),
+    annotations={"readOnlyHint": False, "idempotentHint": True},
+)
+async def pii_maskele(metin: str) -> str:
+    return await _pii_gateway.mask(metin)
+
+
+@app.tool(
+    description=(
+        "`pii_maskele` ile maskelenmiş bir metindeki [TCKN_1], [IBAN_1] gibi "
+        "yer tutucuları, bu tenant için saklanan şifreli değerlerden geri "
+        "açar. Aynı oturumda çağrılan `pii_maskele` sonuçları için çalışır."
+    ),
+    annotations={"readOnlyHint": True, "idempotentHint": True},
+)
+async def pii_ac(metin: str) -> str:
+    return await _pii_gateway.unmask(metin)
 
 
 def main() -> None:
