@@ -1,0 +1,40 @@
+---
+description: LegalAI fork proje standartları
+alwaysApply: true
+---
+
+# Proje Standartları — LegalAI Fork
+
+## Tenant zorunluluğu
+- Storage/DB/LLM'e dokunan her async fonksiyon içeride `current_tenant()` çağırmalı.
+- ORM sorgularında `.where(Model.tenant_id == current_tenant().tenant_id)` zorunlu; unutursan kod review'da reddet.
+- Testlerde `set_tenant(TenantContext(tenant_id="test"))` fixture'ı çağır.
+
+## Tip zorunluluğu
+- Yeni yazılan tüm Python kodu tam tip anotasyonlu; `mypy --strict` temiz.
+- `Any` kullanma; gerekirse `TypedDict` veya `Protocol`.
+
+## Test zorunluluğu
+- Her yeni katman için `tests/layers/test_<layer>.py`.
+- Her yeni jurisdiction profile için `tests/jurisdictions/test_<id>_profile.py`.
+- Testsiz PR yok.
+
+## Config
+- `os.environ[...]` kullanma; `settings.xxx` üstünden git.
+- Sırları koda yazma; `.env` üstünden gelmeli.
+
+## LLM
+- Doğrudan `google.genai` / `groq` çağırma; `LLMRouter.route(...)` üstünden git.
+- Model adını hard-code etme; router karar versin.
+
+## KVKK
+- Kullanıcı belgeleri PII gateway'den geçmeden LLM'e gönderilmemeli.
+- Log satırları PII içeremez; `logger.info(...)` çağrısında ham dokümanı basma.
+
+## HTTP
+- Tüm endpoint'ler `/api/v1/...` altında.
+- Response modeli `pydantic.BaseModel`; dict dönme.
+
+## Git
+- Yeni özellik = yeni branch (`feature/<konu>`).
+- Commit mesajı imperatif ("Add ratio detector layer" değil "add ratio detector layer" — küçük harf başlangıç, İngilizce, 72 char).

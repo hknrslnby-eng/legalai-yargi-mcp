@@ -31,6 +31,14 @@ dependencies = [
     "cryptography>=44.0.0",
     "openai>=1.0.0",
     "numpy>=1.24.0",
+    # --- LegalAI katmanı (FORK-KAPSAMLI-PLAN.md §9.1) ---
+    "pydantic-settings>=2.5.0",
+    "sqlalchemy>=2.0.0",
+    "alembic>=1.13.0",
+    "aiosqlite>=0.20.0",
+    "uvicorn>=0.30.0",
+    "pyyaml>=6.0.0",
+    "typer>=0.12.0",
 ]
 
 [project.optional-dependencies]
@@ -49,13 +57,24 @@ production = [
 
 [project.scripts]
 yargi-mcp = "mcp_server_main:main"
+legalai-mcp = "legalai.apps.mcp.server:main"
 
 [tool.setuptools]
 py-modules = ["mcp_server_main", "asgi_app"]
 
 [tool.setuptools.packages.find]
-include = ["*_mcp_module", "semantic_search"]
+include = ["*_mcp_module", "semantic_search", "legalai*"]
 
 [build-system]
 requires = ["setuptools>=65.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["legalai/tests"]
