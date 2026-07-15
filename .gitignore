@@ -226,3 +226,7 @@ _env_dir_backup_mistake/
 # bizim gerçek test paketimizi (legalai/tests/) hariç tutmasın:
 !legalai/tests/**/test_*.py
 
+# Yukarıdaki "*.txt" kuralı upstream'in kendi geçici not dosyaları içindir;
+# bizim gerçek test fixture'larımızı (legalai/tests/fixtures/) hariç tutmasın:
+!legalai/tests/fixtures/**/*.txt
+
