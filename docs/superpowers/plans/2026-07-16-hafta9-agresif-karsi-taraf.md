@@ -19,6 +19,7 @@
 - `source_scope` yalnızca `targeted`, `all`, `selected` değerlerini kabul edecek; seçili kapsam için açık kaynak kimliği listesi kullanılacak.
 - Her üretim kodu değişikliğinden önce o davranışı gösteren başarısız test yazılacak; her görev sonunda hedefli test ve `git diff --check` çalıştırılacak.
 - Sözleşme inceleme ve due diligence bu sprintte yalnızca ileri geliştirme sözleşmesi/backlog olarak kalacak; bu plan onların üretim kodunu uygulamaz.
+- Codex kurulumu `.codex/config.toml` ile, Cursor kurulumu mevcut `.cursor/mcp.json` ile ayrı tutulacak; hiçbir görev mevcut Cursor sunucusunu, kullanıcı ayarlarını, global daemon/port durumunu veya sırları üzerine yazmayacak.
 
 ---
 
@@ -225,6 +226,7 @@
 - Tool description must say: host model can use its existing subscription (Codex/ChatGPT, Claude, Cursor, VS Code, Antigravity); server synthesis and OpenRouter/DeepSeek/Gemini API-key routing are optional; result is nonbinding analysis.
 - Respect `ENABLE_AGGRESSIVE_OPPOSING`; use read-only/idempotent annotations because the tool only searches/analyzes.
 - `.codex/config.toml` must configure project-scoped STDIO server `legalai` with a portable `uv run legalai-mcp` command and repository `cwd`; no absolute user-specific executable path or secret.
+- It must coexist with the existing `.cursor/mcp.json`: do not rewrite or rename its `legalai`/`yargi-mcp-fork` entries, do not introduce a shared TCP port/global daemon, and add a config smoke test that parses both files independently.
 - `docs/mcp-client-setup.md` must document project trust, restarting/new task, and equivalent STDIO snippets for Codex, Claude, Cursor, VS Code and Antigravity; API-key provider variables must be listed by name only.
 - Do not claim a remote server exists; document remote transport as a future extension point.
 
@@ -233,7 +235,7 @@
 1. Test the MCP tool delegates to an injected `run_opposing` fake and returns the full result.
 2. Test disabled flag response and no delegate call.
 3. Test config parses as TOML and contains no secret-like values or machine-specific absolute paths.
-4. Run `uv run pytest legalai/tests/apps/test_mcp_opposing_tool.py -q` and a FastMCP import smoke test; implement red-green.
+4. Run `uv run pytest legalai/tests/apps/test_mcp_opposing_tool.py -q` and config smoke tests that parse `.codex/config.toml` plus the existing `.cursor/mcp.json` without mutation; implement red-green.
 
 **Commit:** `feat: expose legalai opposing tool to codex and ide clients`
 

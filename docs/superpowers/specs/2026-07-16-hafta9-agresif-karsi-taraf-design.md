@@ -129,6 +129,8 @@ Her `CounterArgument` `id`, `title`, `content`, `mode` ve `supporting_query` ala
 
 Repo kapsamlı `.codex/config.toml`, sırları içermeden `uv run legalai-mcp` stdio komutunu `legalai` adıyla kaydeder. Codex desktop, CLI ve IDE aynı Codex yapılandırma katmanını paylaşır; config yenilendikten sonra Codex yeniden başlatılır veya yeni bir task açılır. Antigravity için aynı komut, çalışma dizini ve `legalai` adı, istemcinin standart yerel MCP ayarına uyarlanır. Gemini aboneliği host model olarak kalır; MCP sunucusu Gemini API anahtarını zorunlu kılmaz.
 
+Codex ve Cursor kayıtları birbirinden bağımsızdır: Codex yalnızca `.codex/config.toml` üzerinden, Cursor mevcut `.cursor/mcp.json` üzerinden çalışır. Kurulum sırasında Cursor dosyası, `yargi-mcp-fork` kaydı, kullanıcı ayarları veya sırlar üzerine yazılmaz; ortak TCP portu/global daemon kullanılmaz. Claude, VS Code ve Antigravity örnekleri de aynı çakışmasız yerel STDIO sözleşmesini izler. Doğrulama, iki config'in ayrı ayrı parse edilmesini ve mevcut Cursor içeriğinin değişmediğinin kontrolünü kapsar.
+
 ## Test tasarımı
 
 Tüm yeni testler sahte router ve enjekte edilebilir sahte `DocumentSearchBackend` kullanır:
