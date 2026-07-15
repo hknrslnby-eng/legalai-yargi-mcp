@@ -1,0 +1,43 @@
+id: hukuk
+name: Hukuk (Özel Hukuk — Yargıtay Hukuk Daireleri, HGK, İBK)
+version: 1
+
+axes:
+  - maddi_hukuk           # ilgili maddeler, tarafların hak ve yükümlülükleri
+  - usul                  # HMK'ya uygunluk, yetki, görev, harç
+  - ispat                 # deliller, ispat yükü, kanıt standardı: "kanaat"
+  - zamanaşımı            # TBK 146 vd., özel süreler
+
+hierarchy:                # yüksek → düşük
+  - IBK                   # İçtihadı Birleştirme Kararı (bağlayıcı)
+  - HGK                   # Hukuk Genel Kurulu
+  - DAIRE                 # Hukuk Dairesi (numaralı)
+  - BAM                   # Bölge Adliye Mahkemesi (istinaf)
+  - ILK_DERECE
+
+ratio_markers:            # ratio olma olasılığı yüksek kalıplar
+  - "sonuç olarak"
+  - "kabul edildiğine göre"
+  - "yerleşik içtihat"
+  - "dairemizce"
+dictum_markers:           # dictum işaretleri
+  - "belirtmek gerekirse"
+  - "hemen ifade edelim ki"
+transfer_markers:         # aktarım cümleleri — court_self değil
+  - "ilk derece mahkemesi"
+  - "davacı vekili"
+  - "davalı"
+  - "bilirkişi raporunda"
+  - "iddia edilmiştir"
+  - "savunulmuştur"
+
+dissent_headers:
+  - "KARŞI OY"
+  - "MUHALEFET ŞERHİ"
+
+procedural_deadlines:
+  temyiz: {days: 15, ref: "HMK 361"}
+  istinaf: {days: 14, ref: "HMK 345"}
+  cevap_dilekcesi: {days: 14, ref: "HMK 127"}
+
+evidence_standard: "vicdani kanaat"

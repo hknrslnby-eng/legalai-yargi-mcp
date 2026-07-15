@@ -1,0 +1,48 @@
+# NOT: Bu profil plandaki hazır şablonlardan değil, İYUK'un genel
+# ilkelerinden (idari işlemin unsurları, dava süreleri) yola çıkılarak
+# yazıldı. Bir idare hukuku uzmanının gözden geçirmesi önerilir
+# (bkz. FORK-KAPSAMLI-PLAN.md §3.4 katkı çağrısı).
+id: idare
+name: İdare (Danıştay, Bölge İdare Mahkemeleri, İdare/Vergi Mahkemeleri)
+version: 1
+
+axes:
+  - yetki                 # işlemi tesis eden makamın yetkili olup olmadığı
+  - şekil                 # usul/şekil kurallarına uygunluk
+  - sebep                 # işlemin hukuki/maddi sebebi
+  - konu                  # işlemin doğurduğu hukuki sonuç
+  - maksat                # kamu yararı/amaç unsuru (yetkinin amacına uygun kullanımı)
+
+hierarchy:
+  - DANISTAY_IBK              # Danıştay İçtihatları Birleştirme Kurulu
+  - DAVA_DAIRELERI_KURULU     # Danıştay Dava Daireleri Kurulu
+  - DAIRE                     # Danıştay Dairesi (numaralı)
+  - BIM                       # Bölge İdare Mahkemesi (istinaf)
+  - ILK_DERECE                # İdare/Vergi Mahkemesi
+
+ratio_markers:
+  - "sonuç olarak"
+  - "bu nedenle"
+  - "yerleşik içtihat"
+  - "dairemizce"
+dictum_markers:
+  - "belirtmek gerekirse"
+  - "ayrıca belirtilmelidir ki"
+transfer_markers:
+  - "davacı"
+  - "davalı idare"
+  - "idarece"
+  - "bilirkişi raporunda"
+  - "iddia edilmiştir"
+  - "savunulmuştur"
+
+dissent_headers:
+  - "KARŞI OY"
+  - "MUHALEFET ŞERHİ"
+
+procedural_deadlines:
+  iptal_davası: {days: 60, ref: "İYUK m.7"}
+  itiraz: {days: 30, ref: "İYUK m.45"}
+  temyiz: {days: 30, ref: "İYUK m.46"}
+
+evidence_standard: "idari işlem ve eylemlerin hukuka uygunluğunun re'sen araştırma ilkesiyle denetimi"

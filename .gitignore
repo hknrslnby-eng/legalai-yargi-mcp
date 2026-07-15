@@ -217,3 +217,12 @@ playwright_mcp_overhead.json
 simple_test.py
 analyze_anayasa_html.py
 CLAUDE.md
+
+# Local LegalAI runtime data
+.data/
+_env_dir_backup_mistake/
+
+# Yukarıdaki "test_*" kuralı upstream'in kendi debug dosyaları içindir;
+# bizim gerçek test paketimizi (legalai/tests/) hariç tutmasın:
+!legalai/tests/**/test_*.py
+

@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "legalai": {
+      "command": "uv",
+      "args": ["run", "python", "-m", "legalai.apps.mcp.server"],
+      "cwd": "C:\\Users\\hakan\\Desktop\\Yargi MCP Fork\\legalai-yargi-mcp"
+    }
+  }
+}

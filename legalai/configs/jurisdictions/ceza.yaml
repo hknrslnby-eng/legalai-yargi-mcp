@@ -1,0 +1,29 @@
+id: ceza
+name: Ceza (Yargıtay Ceza Daireleri, CGK, KYB)
+version: 1
+
+axes:
+  - suçun_unsurları       # tipiklik, hukuka aykırılık, kusur
+  - kast_taksir           # kast (doğrudan/olası) veya taksir (basit/bilinçli)
+  - hukuka_uygunluk       # meşru savunma, iznin kullanılması, hakkın icrası
+  - içtima                # gerçek/farazi/zincirleme
+  - yaptırım              # temel ceza, artırım/indirim, seçenek yaptırımlar
+
+hierarchy: [IBK, CGK, DAIRE, BAM, ILK_DERECE]
+
+ratio_markers: ["dairemizin yerleşik uygulaması", "sabit içtihat", "sonuç olarak"]
+dictum_markers: ["ayrıca belirtmek gerekir", "hemen ifade edelim ki"]
+transfer_markers:
+  - "sanık müdafii"
+  - "katılan vekili"
+  - "cumhuriyet savcısı"
+  - "iddianamede"
+  - "ilk derece mahkemesince"
+
+dissent_headers: ["KARŞI OY"]
+
+procedural_deadlines:
+  temyiz: {days: 15, ref: "CMK 291"}
+  itiraz: {days: 7,  ref: "CMK 268"}
+
+evidence_standard: "şüpheden sanık yararlanır (in dubio pro reo)"
