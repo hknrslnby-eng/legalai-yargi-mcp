@@ -145,6 +145,109 @@ Tüm yeni testler sahte router ve enjekte edilebilir sahte `DocumentSearchBacken
 
 Gerçek Bedesten, OpenRouter, DeepSeek veya Gemini çağrısı test paketinin parçası değildir; bunlar ayrıca manuel smoke test olarak dokümante edilir.
 
+## Revizyon: zamansal hukuk bağlamı ve geniş çözüm stratejisi
+
+Hafta 9, yalnızca karşı tarafın argümanlarını üretmez. `TemporalLegalContext` ve `StrategicPathPlanner` ortak domain bileşenleri olarak normal QA, derin araştırma, katmanlı analiz ve agresif karşı taraf yüzeylerinde kullanılabilir.
+
+### TemporalLegalContext
+
+`TemporalLegalContext`, kullanıcı metninden birden fazla tarih gözlemi çıkarır ve her gözlemi kaynağı, kesinlik seviyesi ve kullanıcı tarafından doğrulanıp doğrulanmadığıyla saklar:
+
+- olay, zarar, öğrenme, temerrüt, fesih ve sona erme tarihi;
+- tebliğ, başvuru, ret, dava, icra, karar ve ödeme tarihi;
+- mevzuatın yürürlük, değişiklik, yürürlükten kalkma ve geçiş tarihi;
+- AYM iptal kararının Resmî Gazete tarihi ve varsa ertelenmiş yürürlük tarihi;
+- Danıştay veya idari yargı kararının etkili olduğu kabul edilen tarih.
+
+Tarih kesin değilse sistem kesin sonuç üretmez. `date_observation`, `confidence`, `assumption`, `missing_dates` ve `scenario_id` alanlarıyla algılanan tarihi, kullanıcının doğrulaması gereken tarihi ve bu tarihin sonucu nasıl değiştirdiğini ayrı gösterir. Tarih hiç yoksa modül durmaz; `current_law_baseline` modunda güncel mevzuata göre olası yolları sunar ve tarihsel yürürlük sonucu vermediğini belirtir.
+
+`LimitationAndPreclusionAnalyzer`, zamanaşımı, hak düşürücü süre, dava şartı süresi, idari başvuru süresi, itiraz/istinaf/temyiz süresi ve icra itiraz sürelerini; süreyi başlatan, kesen, durduran veya etkileyen olaylarla birlikte adaylar halinde hesaplar. Her süre `start_event`, `candidate_deadline`, `legal_basis`, `interruptions`, `suspensions`, `confidence` ve `verification_needed` alanlarını taşır.
+
+### StrategicPathPlanner
+
+Strateji, varsayılan olarak “dava aç” sonucuna indirgenmez. Kullanıcının hedefi tahsilat, ihlalin durdurulması, delilin korunması, ikrar/kabul alınması, resmi kayıt oluşturulması, hızlı-gizli çözüm veya pazarlık gücü kazanılması olarak modellenir. Olayın niteliğine göre ihtar, noter tespiti, delil tespiti, Avukatlık Kanunu m.35/A uzlaşması, sulh/feragat/ibra/borç yapılandırması, ihtiyari veya dava şartı arabuluculuk, dava, icra, ihtiyati haciz/tedbir, somut suç şüphesi varsa ceza şikâyeti/ihbarı, idari başvuru/itiraz, düzenleyici kurum/kurul, tüketici hakem heyeti, KİK, Rekabet Kurumu, KVKK, tahkim ve alana özgü diğer yollar taranır.
+
+Ceza yolu yalnızca somut suç ihtimali varsa önerilebilir; süreç delil elde etmek için kötüye kullanılmamalı ve bu risk açıkça gösterilmelidir. Her `StrategyOption` `objective`, `sequence`, `preconditions`, `forum_candidates`, `mandatory_prerequisites`, `deadline_risks`, `limitation_risks`, `evidence_gain`, `opponent_response`, `cost`, `confidentiality`, `irreversibility`, `enforceability`, `risks`, `parallel_paths`, `stop_conditions` ve `verification_needed` alanlarını taşır.
+
+### ForumAndDeadlineAnalyzer
+
+Her strateji yolu için görevli mahkeme, yetkili mahkeme ve alternatif yetki noktaları, görevli icra dairesi ve takip türü, görevli kurum/kurul, zorunlu ön başvuru veya arabuluculuk, dava şartı, zamanaşımı ve hak düşürücü süre riskleri ayrı `ForumCandidate` kayıtlarıyla üretilir. Sistem tek ve kesin bir merci seçmek yerine olayın ticari/tüketici/iş/idari niteliği, taraf sıfatı, yerleşim yeri, ifa yeri, taşınmaz yeri, önceki dava/icra ve başvurulara göre sıralı ihtimalleri gösterir.
+
+Her `ForumCandidate` şu alanları taşır: `path`, `authority`, `legal_basis`, `jurisdiction_reason`, `alternative_forums`, `mandatory_prerequisites`, `limitation_risk`, `preclusion_risk`, `procedural_deadline_risk`, `supporting_evidence`, `confidence` ve `verification_needed`.
+
+### Kaynak ve IDE çıktı kuralı
+
+Projenin tüm yüzeylerinde `EvidenceBlock` varsayılan olarak üretilir:
+
+```text
+EvidenceBlock
+  claim
+  source_type: mevzuat | içtihat | doktrin | resmi açıklama
+  citation_key
+  full_citation
+  short_quote
+  source_url_or_document_id
+  temporal_status
+  relevance_to_fact
+  confidence
+```
+
+Her normatif öneri, süre görüşü, görev/yetki görüşü, strateji seçimi ve karşı argüman ilgili `EvidenceBlock` ile aynı bölümde gösterilir. IDE/host çıktısında kaynaklar yalnızca sonda listelenmez; ilgili cümlenin yanında kaynak türü ve künye ile görünür. Arayüz varsayılan olarak kısa ilgili pasajı ve künyeyi açık gösterir; tam belge bağlantısı/kimliği genişletilebilir kaynak kartında bulunur. Kaynak bulunamazsa çıkarım `kaynaklandırılmamış çıkarım` diye etiketlenir ve hukuki dayanak gibi sunulmaz.
+
+### Bağlayıcılık ve kesinlik kuralı
+
+Alternatif kaynaklar, birden fazla içtihat veya doktrin görüşü bulunsa bile LegalAI çıktısı yalnızca araştırma ve değerlendirme taslağıdır; bağlayıcı hukuki görüş, kesin süre hesabı, resmi merci kararı veya hukuki sonuç garantisi değildir. Çelişen kaynaklar saklanmaz; görüş ayrılığı, kaynak hiyerarşisi, tarihsel geçerlilik ve doğrulanması gereken noktalar ayrı gösterilir. `confidence` alanı kaynak sayısının yerine geçmez ve yüksek güven bile bağlayıcılık anlamına gelmez.
+
+### Kaynak kapsamı
+
+İstek `source_scope=targeted|all|selected` alır. `targeted` ilgili yargı türü ve kurumları önceliklendirir; `all` yapılandırılmış tüm veri tabanı modüllerini tarar; `selected` kullanıcı tarafından seçilen kurum/kurul/veri tabanlarıyla sınırlar. Her modül arama maliyeti ve kapsanmayan kaynakları `trace` içine yazar.
+
+## Revizyon test ve kabul kriterleri
+
+Yeni testler sahte belge, mevzuat, karar ve doktrin sağlayıcılarıyla dış ağ olmadan çalışır:
+
+1. Tarih gözlemleri; kesin, yaklaşık, çelişkili ve tamamen eksik girişlerde doğru güven/varsayım alanlarını üretir.
+2. Tarih eksikken `current_law_baseline` çalışır; tarihsel yürürlük veya kesin süre iddiası üretmez.
+3. AYM iptalinin Resmî Gazete tarihinde etkili olması ve ertelenmiş yürürlük senaryosu ayrı sonuç verir.
+4. Zamanaşımı ve hak düşürücü süre adayları, başlangıç/kesilme/durma olayları ve doğrulama notuyla döner.
+5. Aynı olay için dava, icra, 35/A, sulh/ibra, ihtiyari/dava şartı arabuluculuk, idari/kurul ve delil yollarından en az üç uygulanabilir seçenek sahte kaynaklarla üretilir.
+6. Görevli/yetkili mahkeme, icra dairesi veya kurum/kurul için tek kesin cevap yerine sıralı `ForumCandidate` kayıtları ve sonucu değiştiren olgular döner.
+7. Her strateji seçeneği en az bir `EvidenceBlock` taşır; kaynak yoksa `kaynaklandırılmamış çıkarım` etiketi kullanılır.
+8. Çelişen içtihat veya doktrin görüşleri gizlenmez; kaynak hiyerarşisi ve görüş ayrılığı çıktıda görünür.
+9. Host ve server modlarında bağlayıcı/kesin görüş uyarısı bulunur; `confidence=high` bile bağlayıcılık olarak yorumlanmaz.
+10. `source_scope=targeted|all|selected` seçimleri doğru sağlayıcıları çağırır ve kapsamı trace'e yazar.
+
+## Gelecek özellikler: sözleşme inceleme ve due diligence
+
+Bu özellikler Hafta 9 kabul işinin parçası değildir; mevcut ortak altyapının sonraki kullanıcıları olarak planlanmıştır.
+
+### Sözleşme inceleme
+
+`ContractReview` modülü; sözleşme maddelerini taraf, yükümlülük, süre, yenileme, fesih, bedel, teminat, cezai şart, sorumluluk, mücbir sebep, veri işleme, yetki/uyuşmazlık çözümü ve risk başlıklarına ayırır. Her bulgu ilgili yürürlükteki mevzuat, içtihat ve veri tabanında varsa doktrinle kanıtlanır; değişiklik önerisi, risk seviyesi ve gerekçe birlikte gösterilir. Sözleşmenin imza, ifa, fesih ve uyuşmazlık tarihleri `TemporalLegalContext` ile değerlendirilir.
+
+### Due diligence
+
+`DueDiligence` modülü; hedef şirket/varlık/işlem hakkında yüklenen belgeler, seçili veri tabanları ve gerektiğinde tüm kaynaklar üzerinden hukuki risk envanteri çıkarır. İnceleme mülkiyet ve takyidat, dava/icra, sözleşmeler, izin/lisans, çalışanlar, vergi ve kamu borçları, KVKK, fikri mülkiyet, düzenleyici kurumlar, teminatlar, ilişkili taraflar, uyuşmazlık çözüm hükümleri ve kapanış önkoşullarını kapsar. Her risk `severity`, `likelihood`, `financial_or_operational_impact`, `missing_document`, `remediation`, `transaction_condition` ve kanıt bloklarıyla raporlanır.
+
+## Tasarım girdileri ve rakip ürün gözlemleri
+
+Kamuya açık ürün anlatımları yalnızca tasarım girdisi olarak kullanılmıştır; hiçbir ürün iddiası LegalAI için doğruluk veya kalite garantisi değildir. Argüman AI mevzuat, süre hesaplama ve kronolojik içtihat modüllerini; De Jure kaynaklı derin araştırma ve belgeye dayalı raporlamayı; Judis AI Resmî Gazete takibi, yasal süreler ve dava operasyonlarını; Apilex risk analizi ve çalışma alanlarını; Hammurabi ise mevzuat–içtihat bağlamı ve izlenebilir gerekçelendirmeyi öne çıkarmaktadır. Bu gözlemler LegalAI'nin ayrıştırıcı eksenini “zaman + merci + çözüm yolu + kanıt” birleşimi olarak belirler.
+
+## Tasarım kaynakları
+
+- [Argüman AI fiyatlandırma ve modül listesi](https://www.arguman.ai/pricing)
+- [De Jure AI derin araştırma](https://www.dejure.ai/derin-arastirma) ve [dilekçe modülü](https://www.dejure.ai/dilekce)
+- [Judis AI özellikleri](https://judis.ai/)
+- [Apilex platformu](https://www.apilex.ai/)
+- [Hammurabi araştırma ve doğrulama yaklaşımı](https://hammurabi.tr/)
+- [AYM resmi norm kararları veri tabanı](https://normkararlarbilgibankasi.anayasa.gov.tr/ND/2026/13)
+- [Danıştay resmi karar arama](https://karararama.danistay.gov.tr/)
+- [Türkiye Barolar Birliği Avukatlık Kanunu m.35/A açıklaması](https://sertifikaliegitimler.barobirlik.org.tr/OtuzBesA/)
+- [Adalet Bakanlığı Arabuluculuk Kanunu metni](https://adb.adalet.gov.tr/Resimler/SayfaDokuman/11120231556551.5.6325.pdf)
+- [Adalet Bakanlığı İcra İşleri Dairesi arabuluculuk belgesi açıklaması](https://iidb.adalet.gov.tr/Resimler/SayfaDokuman/16092024094034Arabuluculuk%20Belgesinin%20%C4%B0cra%20Takibine%20Konu%20Edilmesi.pdf)
+
+Defendiora için doğrulanabilir resmi ürün sayfası bulunamadığından, tasarım gereksinimi olarak bu ürünün doğrulanmamış kamuya açık iddiaları kullanılmamıştır.
+
 ## Kabul kriterleri
 
 - Codex repo açıldığında `legalai` MCP sunucusunu proje config'inden görebilir ve araçları çağırabilir.
