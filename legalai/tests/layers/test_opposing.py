@@ -21,7 +21,6 @@ async def test_plaintiff_position_returns_counterarguments_and_rebutting_evidenc
     assert result.analysis_only is True
     assert result.non_binding is True
 
-
 @pytest.mark.asyncio
 async def test_host_mode_does_not_require_llm_and_preserves_missing_facts() -> None:
     result = await run_opposing(
@@ -46,4 +45,3 @@ async def test_feature_flag_disabled_returns_stable_disabled_result(monkeypatch)
     assert result.mode == "disabled"
     assert result.counter_arguments == []
     assert result.non_binding is True
-
