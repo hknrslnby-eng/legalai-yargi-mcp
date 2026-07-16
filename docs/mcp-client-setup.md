@@ -58,3 +58,9 @@ Gerçek anahtarlar ve kullanıcıya özel mutlak yollar repoya yazılmamalıdır
 `.codex/config.toml`, `.cursor/mcp.json` ve diğer istemci kayıtları ayrı dosyalardır. Aynı anda çalışmaları için global port, ortak daemon veya zorunlu global geçici dosya yoktur. İstemci ayarları değiştirilmeden önce mevcut dosya yedeklenmeli; bu repo kurulumu hiçbir kullanıcı ayarını üzerine yazmaz.
 
 Bu sprint remote MCP/HTTP hosting kurmaz. Gelecekte remote transport eklenirse domain katmanı ve istemci sözleşmesi korunacaktır.
+
+## Tek `legalai` kurulumu ile kapsam
+
+Yalnızca `legalai` MCP kaydı kurulduğunda `katmanli_analiz`, soru için Bedesten karar backend’inden Yargıtay/Danıştay belgelerini getirir ve katmanlı analizden geçirir. `derin_arastirma` alt soruları aynı akışa yönlendirir. `agresif_karsi_taraf` ise soru belgelerini aldıktan sonra ürettiği karşı argümanları da aynı backend’de ayrıca arar; dönen karşıt içtihatları künye, belge kimliği ve kısa alıntıyla bağlar.
+
+Bu akış için ayrı `yargi-mcp` server süreci veya hosting gerekmez. `yargi-mcp` yalnızca upstream’de bulunup henüz LegalAI araçlarına taşınmamış bağımsız araçları ayrıca kullanmak isteyenler için opsiyoneldir. Sözleşme inceleme ve due diligence ise yol haritasındaki ileri geliştirme özellikleridir; mevcut kurulumda uygulanmış gibi sunulmaz.
