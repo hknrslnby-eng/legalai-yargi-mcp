@@ -1,0 +1,6 @@
+# Proje-scoped Codex MCP kaydı. Cursor ayarları .cursor/mcp.json'da ayrı tutulur.
+# `cwd = "."`, bu proje config'inin bulunduğu repo checkout'ını hedefler.
+[mcp_servers.legalai]
+command = "uv"
+args = ["run", "legalai-mcp"]
+cwd = "."
