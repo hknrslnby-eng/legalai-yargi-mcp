@@ -5,6 +5,20 @@ from legalai.packages.layers.opposing import run_opposing
 from legalai.packages.shared.types import Document
 
 
+class FakeSourceBackend:
+    async def search(self, query, limit):
+        return [Document("d2", "Karşıt içtihat alıntısı.", "danistay", "D. E. 3 K. 4")]
+
+    async def search_norms(self, query, on_date, scope):
+        return []
+
+    async def search_invalidation_events(self, query, date_from, date_to, scope):
+        return []
+
+    async def search_procedural_rules(self, query, scope):
+        return []
+
+
 @pytest.mark.asyncio
 async def test_week9_flow_preserves_structured_fields_without_server_llm():
     result = await run_opposing(
@@ -13,6 +27,8 @@ async def test_week9_flow_preserves_structured_fields_without_server_llm():
         role="davacı",
         documents=[Document("d1", "Muacceliyet ve temerrüt alıntısı.", "yargitay", "E. 1 K. 2")],
         synthesize=False,
+        document_backend=FakeSourceBackend(),
+        temporal_backend=FakeSourceBackend(),
     )
     payload = result.to_dict()
 

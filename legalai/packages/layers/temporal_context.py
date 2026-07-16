@@ -28,7 +28,7 @@ class NormRecord:
 class InvalEvent:
     id: str
     authority: str
-    decision_date: date
+    decision_date: date | None
     publication_date: date | None
     effective_date: date | None
     effect: str

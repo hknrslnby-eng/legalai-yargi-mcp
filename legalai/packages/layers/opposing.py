@@ -6,6 +6,7 @@ from typing import Any, Protocol
 
 from legalai.packages.jurisdictions.base import JurisdictionProfile
 from legalai.packages.layers.forum_analyzer import ForumAndDeadlineAnalyzer
+from legalai.packages.layers.legal_source_backend import IntegratedLegalSourceBackend
 from legalai.packages.layers.strategy_planner import StrategicPath, StrategicPathPlanner
 from legalai.packages.layers.temporal_context import (
     DeadlineRisk,
@@ -95,6 +96,53 @@ class OpposingResult:
 
 class LLMClient(Protocol):
     async def generate(self, system: str, user: str) -> str: ...
+
+
+class RebuttingCaseSearch:
+    """Karşı argümanları aynı karar backend'inde otomatik arar."""
+
+    def __init__(self, backend: Any) -> None:
+        self.backend = backend
+        self.errors: list[str] = []
+
+    async def search(
+        self,
+        counter_args: list[CounterArgument],
+        source_scope: SourceScope,
+        selected_source_ids: list[str] | None = None,
+        limit: int = 3,
+    ) -> list[EvidenceBlock]:
+        del source_scope, selected_source_ids
+        evidence: list[EvidenceBlock] = []
+        for counter in counter_args:
+            if len(evidence) >= limit:
+                break
+            try:
+                documents = await self.backend.search(counter.argument, 1)
+            except Exception as exc:
+                self.errors.append(f"rebutting search failed: {type(exc).__name__}")
+                continue
+            for document in documents:
+                body = str(getattr(document, "body", "")).strip()
+                if not body:
+                    continue
+                evidence.append(
+                    EvidenceBlock(
+                        claim=f"Karşı argüman için aranan karşıt kaynak: {counter.title}",
+                        source_type=str(getattr(document, "source", "document")),
+                        citation_key=str(getattr(document, "id", "")),
+                        full_citation=str(getattr(document, "citation", "")),
+                        short_quote=body[:240],
+                        source_url="",
+                        document_id=str(getattr(document, "id", "")),
+                        temporal_status="document-date-not-resolved",
+                        relevance="medium",
+                        confidence=0.35,
+                    )
+                )
+                if len(evidence) >= limit:
+                    break
+        return evidence
 
 
 def _dataclass_dict(value: Any) -> Any:
@@ -188,15 +236,39 @@ async def run_opposing(
     documents: list[Any] | None = None,
     synthesize: bool = False,
     llm_client: LLMClient | None = None,
+    document_backend: Any | None = None,
+    temporal_backend: Any | None = None,
 ) -> OpposingResult:
     validate_source_scope(source_scope)
     if not settings.enable_aggressive_opposing:
         return OpposingResult(question, "disabled", role, position, source_scope=source_scope)
 
     mapping = _role_mapping(position, role)
-    documents = documents or []
+    source_backend = document_backend or IntegratedLegalSourceBackend()
+    retrieval_errors: list[str] = []
+    documents_were_provided = documents is not None
+    if documents is None:
+        try:
+            if hasattr(source_backend, "search_documents"):
+                documents = await source_backend.search_documents(question, 50)
+            else:
+                documents = await source_backend.search(question, 50)
+        except Exception as exc:
+            documents = []
+            retrieval_errors.append(f"decision retrieval failed: {type(exc).__name__}")
+    documents = list(documents or [])
+    resolved_temporal_backend = temporal_backend
+    if resolved_temporal_backend is None and all(
+        hasattr(source_backend, name)
+        for name in ("search_norms", "search_invalidation_events", "search_procedural_rules")
+    ):
+        resolved_temporal_backend = source_backend
     temporal = await TemporalLegalContextBuilder().build(
-        question, jurisdiction_hint, source_scope, selected_source_ids
+        question,
+        jurisdiction_hint,
+        source_scope,
+        selected_source_ids,
+        backend=resolved_temporal_backend,
     )
     profile = JurisdictionProfile(id=jurisdiction_hint or "hukuk", name=jurisdiction_hint or "Hukuk")
     deadlines = LimitationAndPreclusionAnalyzer().analyze(question, temporal, profile)
@@ -207,9 +279,18 @@ async def run_opposing(
         question, position, temporal, forums, documents, source_scope, selected_source_ids
     )
     counters = _counter_arguments(position, mapping)
-    rebutting = _rebutting_evidence(counters, documents)
-    evidence = list(rebutting)
+    rebutting_search = RebuttingCaseSearch(source_backend)
+    if documents_were_provided and document_backend is None:
+        rebutting = _rebutting_evidence(counters, documents)
+    else:
+        rebutting = await rebutting_search.search(
+            counters, source_scope, selected_source_ids, limit=3
+        )
+    evidence = _rebutting_evidence(counters, documents) + list(rebutting)
     missing_facts = list(temporal.missing_facts)
+    assumptions = list(temporal.assumptions)
+    assumptions.extend(retrieval_errors)
+    assumptions.extend(rebutting_search.errors)
     result = OpposingResult(
         question=question,
         mode="server-synthesized" if synthesize and llm_client else "host-orchestrated",
@@ -224,7 +305,7 @@ async def run_opposing(
         evidence=evidence,
         assistant_instructions=_assistant_instructions(),
         confidence=min(temporal.confidence, 0.7),
-        assumptions=list(temporal.assumptions),
+        assumptions=assumptions,
         missing_facts=missing_facts,
         source_scope=source_scope,
     )

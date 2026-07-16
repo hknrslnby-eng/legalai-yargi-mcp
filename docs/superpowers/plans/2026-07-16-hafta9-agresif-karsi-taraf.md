@@ -285,3 +285,48 @@
 - Every surface states that output is analysis/research assistance, not binding legal opinion, certainty, official decision, or guarantee.
 - Existing Week 7–8 tests remain green and no unrelated dirty changes are overwritten.
 - Contract review and due diligence are recorded as future development items, not falsely presented as implemented.
+
+## Task 11 — LegalAI tek server veri/backend köprüsü
+
+**Files:**
+
+- Create `legalai/packages/layers/legal_source_backend.py`
+- Modify `legalai/packages/layers/opposing.py`
+- Modify `legalai/packages/layers/temporal_context.py`
+- Create `legalai/tests/layers/test_legal_source_backend.py`
+- Extend `legalai/tests/layers/test_opposing.py` and `test_temporal_context.py` with injected fake backend cases
+
+**Interfaces:**
+
+- `IntegratedLegalSourceBackend` implements both decision retrieval and `TemporalSourceBackend`; its decision path uses existing `BedestenSearchBackend` and its norm/invalidation path uses the existing Anayasa norm-denetimi client plus Bedesten/Danıştay decision search.
+- `RebuttingCaseSearch.search(counter_args, source_scope, selected_source_ids, limit=3) -> list[EvidenceBlock]` searches the connected decision backend automatically for the generated counterarguments.
+- `run_opposing(..., document_backend=None, temporal_backend=None)` uses the integrated backend by default, while tests and future tenant-specific backends can inject fakes.
+- Source/HTTP/MCP responses preserve backend failures as trace/assumption/missing-fact records and never turn a search failure into a legal conclusion.
+- The original `yargi-mcp` process is not started by LegalAI and is not required for LegalAI’s base retrieval path.
+
+**TDD:**
+
+1. Test integrated decision search normalizes source, citation, body and document ID into `Document`/`EvidenceBlock`.
+2. Test AYM norm decision records become temporal events with decision/publication/effect fields and unknown effective date when the source does not establish it.
+3. Test opposing mode automatically calls the injected backend for the question and each counterargument and caps rebutting evidence at three.
+4. Test backend failure returns counterarguments/strategy with explicit source uncertainty and no fabricated citation.
+5. Run focused backend/opposing/temporal tests; if the local Python runtime is unavailable, record the exact environment error and run static import/config checks.
+
+**Commit:** `feat: connect legalai strategy layers to legal source backends`
+
+## Task 12 — Single-server acceptance and client smoke checks
+
+**Files:**
+
+- Modify `legalai/tests/integration/test_week9_opposing_flow.py`
+- Modify `legalai/tests/apps/test_mcp_opposing_tool.py`
+- Modify `docs/mcp-client-setup.md`
+
+**Acceptance:**
+
+- A user with only the `legalai` MCP registration receives basic Yargıtay/Danıştay-backed layered analysis and automatic opposing-case evidence.
+- No test starts a remote server or requires a second MCP process.
+- Cursor’s existing `.cursor/mcp.json` remains unchanged while Codex uses `.codex/config.toml`.
+- Full test suite, static checks and an import smoke test are run before any push proposal.
+
+**Commit:** `test: verify legalai single-server acceptance flow`

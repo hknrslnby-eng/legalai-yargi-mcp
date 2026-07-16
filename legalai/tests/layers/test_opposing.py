@@ -5,6 +5,20 @@ from legalai.packages.shared.settings import settings
 from legalai.packages.shared.types import Document
 
 
+class FakeSourceBackend:
+    async def search(self, query, limit):
+        return []
+
+    async def search_norms(self, query, on_date, scope):
+        return []
+
+    async def search_invalidation_events(self, query, date_from, date_to, scope):
+        return []
+
+    async def search_procedural_rules(self, query, scope):
+        return []
+
+
 @pytest.mark.asyncio
 async def test_plaintiff_position_returns_counterarguments_and_rebutting_evidence() -> None:
     result = await run_opposing(
@@ -12,6 +26,7 @@ async def test_plaintiff_position_returns_counterarguments_and_rebutting_evidenc
         position="Alacağım muaccel ve ödenmedi.",
         role="davacı",
         documents=[Document("d1", "Muacceliyet ve temerrüt değerlendirmesi.", "yargitay", "E. 1 K. 2")],
+        temporal_backend=FakeSourceBackend(),
     )
 
     assert len(result.counter_arguments) == 5
@@ -28,6 +43,8 @@ async def test_host_mode_does_not_require_llm_and_preserves_missing_facts() -> N
         position="Haklı olduğumu düşünüyorum.",
         role="davacı",
         synthesize=False,
+        document_backend=FakeSourceBackend(),
+        temporal_backend=FakeSourceBackend(),
     )
 
     assert result.answer is None

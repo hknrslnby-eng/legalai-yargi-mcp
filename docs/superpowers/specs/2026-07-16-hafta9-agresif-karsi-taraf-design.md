@@ -231,6 +231,12 @@ Bu özellikler Hafta 9 kabul işinin parçası değildir; mevcut ortak altyapın
 
 `DueDiligence` modülü; hedef şirket/varlık/işlem hakkında yüklenen belgeler, seçili veri tabanları ve gerektiğinde tüm kaynaklar üzerinden hukuki risk envanteri çıkarır. İnceleme mülkiyet ve takyidat, dava/icra, sözleşmeler, izin/lisans, çalışanlar, vergi ve kamu borçları, KVKK, fikri mülkiyet, düzenleyici kurumlar, teminatlar, ilişkili taraflar, uyuşmazlık çözüm hükümleri ve kapanış önkoşullarını kapsar. Her risk `severity`, `likelihood`, `financial_or_operational_impact`, `missing_document`, `remediation`, `transaction_condition` ve kanıt bloklarıyla raporlanır.
 
+## Entegrasyon kararı: legalai tek başına tam server
+
+Kullanıcı yalnızca `legalai-mcp` kaydını kurduğunda upstream temel işlevlerini de kullanabilmelidir. Bu nedenle `RetrieveDocuments` ve `BedestenSearchBackend`, `agresif_karsi_taraf` içindeki `RebuttingCaseSearch` için varsayılan backend olur; modül soru ve üretilen karşı argümanlarla otomatik karar arar. `TemporalLegalContext` için aynı source-scope'u taşıyan birleşik backend, Bedesten/Yargıtay-Danıştay kararlarını ve Anayasa Mahkemesi norm denetimi sonuçlarını bağlar. Bir backend başarısız olursa sonuç belgesiz devam eder, `trace`, `missing_facts` ve güven seviyesi düşürülür; mevzuat veya iptal etkisi uydurulmaz.
+
+Bu bağlantı ayrı hosting veya ikinci bir MCP server gerektirmez. `yargi-mcp` girişi, yalnızca fork içinde henüz LegalAI araçlarına taşınmamış upstream araçlarını ayrıca kullanmak isteyenler için opsiyonel kalır. ContractReview ve DueDiligence bu sprintte yine backlog'dur.
+
 ## Tasarım girdileri ve rakip ürün gözlemleri
 
 Kamuya açık ürün anlatımları yalnızca tasarım girdisi olarak kullanılmıştır; hiçbir ürün iddiası LegalAI için doğruluk veya kalite garantisi değildir. Argüman AI mevzuat, süre hesaplama ve kronolojik içtihat modüllerini; De Jure kaynaklı derin araştırma ve belgeye dayalı raporlamayı; Judis AI Resmî Gazete takibi, yasal süreler ve dava operasyonlarını; Apilex risk analizi ve çalışma alanlarını; Hammurabi ise mevzuat–içtihat bağlamı ve izlenebilir gerekçelendirmeyi öne çıkarmaktadır. Bu gözlemler LegalAI'nin ayrıştırıcı eksenini “zaman + merci + çözüm yolu + kanıt” birleşimi olarak belirler.
