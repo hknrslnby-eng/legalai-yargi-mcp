@@ -81,4 +81,3 @@ def test_envelope_always_serializes_nonbinding_flags() -> None:
     assert payload["analysis_only"] is True
     assert payload["non_binding"] is True
     assert payload["source_scope"] == "targeted"
-
