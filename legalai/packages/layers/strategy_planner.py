@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+import unicodedata
 
 from legalai.packages.layers.forum_analyzer import ForumCandidate
 from legalai.packages.shared.evidence import EvidenceBlock, SourceScope, validate_source_scope
@@ -53,7 +54,7 @@ class StrategicPathPlanner:
         selected_source_ids: list[str] | None = None,
     ) -> list[StrategicPath]:
         validate_source_scope(source_scope)
-        lower = question.lower()
+        lower = _normalize_text(question)
         evidence = _document_evidence(documents or [])
         assumptions = [f"Pozisyon rolü: {position}; karşı taraf ve olay vakıaları ayrıca doğrulanmalı."]
         if temporal_context and temporal_context.missing_facts:
@@ -62,8 +63,8 @@ class StrategicPathPlanner:
             assumptions.append("Seçili kaynak listesi verilmedi.")
 
         paths = [_negotiation(evidence, assumptions)]
-        debt_signal = any(token in lower for token in ("alacak", "borç", "fatura", "tahsil"))
-        admin_signal = any(token in lower for token in ("idare", "idari işlem", "ruhsat", "vergi"))
+        debt_signal = any(token in lower for token in ("alacak", "alaca", "borc", "fatura", "tahsil"))
+        admin_signal = any(token in lower for token in ("idare", "idari islem", "ruhsat", "vergi"))
 
         if debt_signal:
             paths.extend(
@@ -169,7 +170,7 @@ def _criminal_complaint(evidence, assumptions):
 
 
 def _concrete_offence_signal(lower: str) -> bool:
-    return any(token in lower for token in ("sahte belge", "dolandırıcılık", "tehdit", "zimmet", "rüşvet"))
+    return any(token in lower for token in ("sahte belge", "dolandiricilik", "tehdit", "zimmet", "rusvet"))
 
 
 def _document_evidence(documents: list[Any]) -> list[EvidenceBlock]:
@@ -191,3 +192,20 @@ def _document_evidence(documents: list[Any]) -> list[EvidenceBlock]:
                 )
             )
     return result
+
+
+def _normalize_text(value: str) -> str:
+    """Normalize proper Turkish and legacy mojibake client input alike."""
+    text = value
+    for _ in range(2):
+        try:
+            repaired = text.encode("latin1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            break
+        if repaired == text:
+            break
+        text = repaired
+    return "".join(
+        char for char in unicodedata.normalize("NFKD", text.casefold())
+        if not unicodedata.combining(char)
+    )

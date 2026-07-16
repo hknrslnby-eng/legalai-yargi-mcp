@@ -1,10 +1,20 @@
-"""LegalAI MCP sunucusu — Hafta 2 iskeleti.
+"""LegalAI MCP sunucusu.
 
-`katmanli_analiz` aracı bu aşamada gerçek belge getirme (retrieve) YAPMAZ;
-FORK-KAPSAMLI-PLAN.md §10 Hafta 2 kabul kriterine göre sabit bir test
-fixture'ı üzerinden Pipeline'ı çalıştırıp sonucu döner. Gerçek RAG
-entegrasyonu Hafta 7'de (§5.3, VerifiedCitationCheck ile birlikte)
-eklenecek.
+`katmanli_analiz` aracı, gerçek belge getirme (RetrieveDocuments →
+Bedesten API) + rerank + tüm jurisdiction-aware katmanları çalıştırır
+(bkz. FORK-KAPSAMLI-PLAN.md §5.3). ÖNEMLİ MİMARİ KARAR: bu araç kendi
+başına bir LLM'e API çağrısı YAPMAZ (`synthesize=False`) — MCP sunucusu
+bir LLM değildir, sadece veri/analiz sağlar; nihai kaynaklı cevabı bu
+aracı çağıran HOST MODEL (Cursor/Claude Desktop/ChatGPT-Codex/
+Antigravity içindeki, kullanıcının zaten sahip olduğu abonelikle çalışan
+model) `assistant_instructions` talimatına göre yazar. Böylece hiçbir
+ek API anahtarı gerekmez — sadece `legalai` MCP sunucusunun kurulu
+olması yeterlidir (bkz. §13 Çoklu İstemci Uyumluluğu).
+
+`POST /api/v1/analyze` HTTP endpoint'i ise (host model olmayan
+senaryolar için, örn. gelecekteki web UI) aynı `run_pipeline`
+fonksiyonunu `synthesize=True` ile çağırır — bu durumda `LLMRouter`
+üzerinden gerçek bir LLM API anahtarı gerekir (bkz. §2.6).
 """
 from __future__ import annotations
 
@@ -13,14 +23,13 @@ from fastmcp import FastMCP
 from legalai.packages.aihm.aym_bridge import aihm_aym_kopru as _aihm_aym_kopru
 from legalai.packages.aihm.service import aihm_karar_ara as _aihm_karar_ara
 from legalai.packages.aihm.service import aihm_karar_getir as _aihm_karar_getir
-from legalai.packages.layers.citation_transfer_filter import CitationTransferFilter
-from legalai.packages.layers.dissent_detector import DissentDetector
-from legalai.packages.layers.pipeline import Context, Pipeline
-from legalai.packages.layers.ratio_dictum import RatioDictumFilter
+from legalai.packages.layers.analysis_pipeline import run_pipeline
+from legalai.packages.layers.citation_validator import validate_citations
+from legalai.packages.layers.deep_research import run_deep_research
+from legalai.packages.layers.opposing import run_opposing
 from legalai.packages.pii.gateway import PiiGateway
 from legalai.packages.shared.settings import settings
 from legalai.packages.shared.tenant import TenantContext, set_tenant
-from legalai.packages.shared.types import Document
 
 # Süreç başlarken tenant bağlamı kurulur — bkz. FORK-KAPSAMLI-PLAN.md §2.2.
 # Bugün her zaman "local"; sunucuya taşındığında bu satır middleware'e taşınır.
@@ -29,62 +38,130 @@ set_tenant(TenantContext(tenant_id=settings.tenant_id, tenant_name=settings.tena
 app = FastMCP(name="LegalAI MCP Server", version="0.1.0")
 _pii_gateway = PiiGateway()
 
-_FIXTURE_DOCUMENT = Document(
-    id="fixture-1",
-    source="yargitay",
-    citation="Yargıtay 3. HD, 2023/1234 E., 2023/5678 K. (test fixture)",
-    body=(
-        "Davacı vekili, müvekkilinin zararının tazminini talep etmiştir. "
-        "Davalı, zararın oluşmadığını savunmuştur. "
-        "İlk derece mahkemesi davayı kısmen kabul etmiştir. "
-        "Bilirkişi raporunda zarar miktarı hesaplanmıştır. "
-        "Dairemizce yapılan incelemede, yerleşik içtihat gereği zarar "
-        "ile kusur arasında illiyet bağı bulunduğu görülmüştür. "
-        "Sonuç olarak, ilk derece mahkemesi kararının onanmasına karar verilmiştir. "
-        "Hemen ifade edelim ki, bu tür davalarda ispat yükü davacıdadır.\n\n"
-        "KARŞI OY\n"
-        "Sayın çoğunluğun görüşüne katılmıyorum; zarar miktarının yeniden "
-        "hesaplanması için dosyanın bozulması gerektiği düşüncesindeyim."
-    ),
-)
 
-_pipeline = Pipeline(layers=[RatioDictumFilter(), DissentDetector(), CitationTransferFilter()])
+@app.tool(
+    description=(
+        "Bir hukuki soruyla ilgili GERÇEK Yargıtay/Danıştay kararlarını "
+        "getirir (Bedesten API) ve katmanlı hukuki analizden geçirir: "
+        "sözcük örtüşmesine göre rerank, yargı türü tespiti, ratio/dictum "
+        "ayrımı, karşı oy tespiti, taraf aktarım cümlesi filtreleme, "
+        "argüman gücü puanlama. BU ARAÇ NİHAİ CEVABI YAZMAZ — sen (bu "
+        "aracı çağıran asistan), dönen `documents`/`ratios`/`dictums`/"
+        "`dissents`/`argument_scores` alanlarını ve `assistant_instructions` "
+        "talimatını kullanarak kullanıcıya [#belge_id] ile kaynaklı, "
+        "kaynaksız iddia içermeyen bir cevap yaz. API anahtarı GEREKMEZ. "
+        "Sonuçlar gerçek hukuki tavsiye değildir; kullanıcıya bunu belirt."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def katmanli_analiz(
+    question: str, mode: str = "layered", jurisdiction_hint: str | None = None
+) -> dict:
+    result = await run_pipeline(
+        question=question, mode=mode, jurisdiction_hint=jurisdiction_hint, synthesize=False
+    )
+    return result.to_dict()
+
+
+@app.tool(
+    name="agresif_karsi_taraf",
+    description=(
+        "Agresif karşı taraf ve geniş hukuki çözüm stratejisi analizi yapar: "
+        "karşı argümanlar, karşıt kaynaklar, olay/dava tarihi ve yürürlük bağlamı, "
+        "zamanaşımı/hak düşürücü süre riskleri, görev-yetki/kurum adayları ve "
+        "dava dışı çözüm yollarını birlikte döndürür. Avukatlık Kanunu m.35/A, "
+        "sulh/feragat/ibra, arabuluculuk, icra, idari başvuru ve somut suç sinyali "
+        "varsa ceza yolu koşullu değerlendirilir. Bu araç nihai veya bağlayıcı "
+        "hukuki görüş değildir; host model evidence künye ve kısa alıntıları "
+        "kullanarak nonbinding bir araştırma taslağı yazmalıdır. API anahtarı "
+        "olmayan Codex/ChatGPT, Claude, Cursor, VS Code ve Antigravity hostlarıyla "
+        "çalışır; sunucu sentezi isteğe bağlıdır."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def _agresif_karsi_taraf_tool(
+    question: str,
+    position: str,
+    role: str = "davacı",
+    jurisdiction_hint: str | None = None,
+    source_scope: str = "targeted",
+    selected_source_ids: list[str] | None = None,
+) -> dict:
+    result = await run_opposing(
+        question=question,
+        position=position,
+        role=role,
+        jurisdiction_hint=jurisdiction_hint,
+        source_scope=source_scope,
+        selected_source_ids=selected_source_ids,
+        synthesize=False,
+    )
+    return result.to_dict()
+
+
+async def agresif_karsi_taraf(
+    question: str,
+    position: str,
+    role: str = "davacı",
+    jurisdiction_hint: str | None = None,
+    source_scope: str = "targeted",
+    selected_source_ids: list[str] | None = None,
+) -> dict:
+    """Keep the Python API directly awaitable while FastMCP registers the tool."""
+    return await _agresif_karsi_taraf_tool.fn(
+        question=question,
+        position=position,
+        role=role,
+        jurisdiction_hint=jurisdiction_hint,
+        source_scope=source_scope,
+        selected_source_ids=selected_source_ids,
+    )
 
 
 @app.tool(
     description=(
-        "Bir hukuki soruyu, yargı türüne özgü katmanlardan (ratio/dictum "
-        "ayrımı, karşı oy tespiti, taraf aktarım cümlesi filtreleme) "
-        "geçirerek analiz eder. Hafta 2 iskeletinde gerçek belge getirme "
-        "yerine sabit bir test fixture'ı kullanılır; sonuçlar gerçek "
-        "hukuki tavsiye değildir."
+        "Karmaşık bir hukuki soruyu ALT SORULARA bölerek araştırır (bkz. "
+        "FORK-KAPSAMLI-PLAN.md §5.2, Hafta 8). `.env`'de bir LLM anahtarı "
+        "(GEMINI_API_KEY/GROQ_API_KEY/DEEPSEEK_API_KEY) YOKSA (varsayılan "
+        "durum): sunucu kendi planlama yapmaz; `subquestions` (aday alt "
+        "sorular) + `instructions` alanını döner — SEN (bu aracı çağıran "
+        "asistan) bu alt soruların her biri için `katmanli_analiz`'i çağırıp "
+        "kendi sentezini yaparsın (host-orkestrasyonlu mod, API anahtarı "
+        "GEREKMEZ). Bir LLM anahtarı VARSA: sunucu Planner→Researcher→"
+        "Critic→Editor döngüsünü kendi içinde tam otomatik yürütür ve "
+        "`answer` alanında kaynaklı, hazır bir sentez döner. `depth` (1-5) "
+        "en fazla kaç alt soruya bölüneceğini sınırlar."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def derin_arastirma(question: str, depth: int = 3) -> dict:
+    if not settings.enable_deep_research:
+        return {
+            "question": question,
+            "mode": "disabled",
+            "answer": None,
+            "citations": [],
+            "note": "Derin araştırma özelliği .env'de ENABLE_DEEP_RESEARCH=false ile kapatılmış.",
+        }
+    result = await run_deep_research(question=question, depth=depth)
+    return result.to_dict()
+
+
+@app.tool(
+    description=(
+        "Saf doğrulama aracı — LLM ÇAĞIRMAZ, API anahtarı GEREKMEZ. Bir "
+        "taslak cevap metnindeki `[#belge_id]` referanslarının, verdiğin "
+        "gerçek belge kimlikleri listesinde (known_doc_ids — `katmanli_analiz` "
+        "veya `derin_arastirma` çağrılarından topladığın id'ler) GERÇEKTEN "
+        "bulunup bulunmadığını kontrol eder. Host-orkestrasyonlu (API "
+        "anahtarsız) akışlarda, kendi yazdığın cevabı kullanıcıya sunmadan "
+        "ÖNCE bu araçla kontrol et; `invalid_citations` boş değilse cevabını "
+        "düzelt."
     ),
     annotations={"readOnlyHint": True, "idempotentHint": True},
 )
-async def katmanli_analiz(question: str, mode: str = "standard") -> dict:
-    ctx = Context(
-        tenant_id="local",
-        question=question,
-        mode=mode,
-        documents=[
-            Document(
-                id=_FIXTURE_DOCUMENT.id,
-                source=_FIXTURE_DOCUMENT.source,
-                citation=_FIXTURE_DOCUMENT.citation,
-                body=_FIXTURE_DOCUMENT.body,
-            )
-        ],
-    )
-    result = await _pipeline.run(ctx)
-    return {
-        "question": result.question,
-        "mode": result.mode,
-        "ratios": result.ratios,
-        "dictums": result.dictums,
-        "dissents": result.dissents,
-        "trace": result.trace,
-        "note": "Bu bir fixture cevabıdır; gerçek belge getirme Hafta 7'de eklenecek.",
-    }
+async def alinti_dogrula(answer: str, known_doc_ids: list[str]) -> dict:
+    return validate_citations(answer, known_doc_ids).to_dict()
 
 
 @app.tool(

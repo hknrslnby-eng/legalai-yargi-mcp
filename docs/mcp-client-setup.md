@@ -15,6 +15,24 @@ cwd = "."
 
 Projeyi güvenilir olarak açtıktan sonra Codex’i yeniden başlatın veya yeni bir task açın. Aynı yapılandırma Codex desktop, CLI ve IDE yüzeylerinde kullanılabilir.
 
+### uv bulunamazsa: dogrudan Python fallback'i
+
+Bir istemci `uv` komutunu baslatamiyorsa ayni sunucuyu proje ortamindaki Python ile calistirin. Windows ornegi:
+
+```json
+{
+  "mcpServers": {
+    "legalai": {
+      "command": "C:\\\\Users\\\\hakan\\\\Desktop\\\\Yargi MCP Fork\\\\legalai-yargi-mcp\\\\.venv\\\\Scripts\\\\python.exe",
+      "args": ["-m", "legalai.apps.mcp.server"],
+      "cwd": "C:\\\\Users\\\\hakan\\\\Desktop\\\\Yargi MCP Fork\\\\legalai-yargi-mcp"
+    }
+  }
+}
+```
+
+Baska Windows kullanicilari kendi mutlak yolunu yazmali. macOS/Linux karsiligi `.venv/bin/python -m legalai.apps.mcp.server` olur. Bu fallback ayni `pyproject.toml` ve `uv.lock` bagimliliklarini kullanir; ortak port veya ayri global Python kurulumu gerektirmez. Ilk kurulum proje kokunde `uv venv --python 3.12` ve `uv sync --frozen --dev` komutlariyla yapilir.
+
 ## Cursor
 
 Mevcut `.cursor/mcp.json` korunur. Yeni Codex kaydı bu dosyayı değiştirmez ve mevcut `yargi-mcp-fork` kaydını yeniden adlandırmaz. Cursor’da proje MCP ayarlarını yeniden yüklemek yeterlidir.

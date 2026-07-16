@@ -128,6 +128,12 @@ class LLMRouter:
             api_key = getattr(settings, key_attr, "")
             if api_key:
                 model = getattr(settings, model_attr, "") or default_model
+                if (
+                    task == "reasoning"
+                    and provider_name == "gemini"
+                    and model == "gemini-2.0-flash"
+                ):
+                    model = default_model
                 spec = _ProviderSpec(
                     provider=provider_name,
                     base_url=base_url,

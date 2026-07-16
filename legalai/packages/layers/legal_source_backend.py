@@ -116,28 +116,29 @@ class IntegratedLegalSourceBackend(TemporalSourceBackend):
                 )
             )
 
-        for document in await self.decision_backend.search(
-            f"{query} iptal yürütmenin durdurulması", 3
-        ):
-            source = str(getattr(document, "source", "")).lower()
-            if "danistay" not in source:
-                continue
-            body = str(getattr(document, "body", ""))
-            events.append(
-                InvalEvent(
-                    id=str(getattr(document, "id", "")),
-                    authority="Danıştay",
-                    decision_date=_parse_date(body) or _parse_date(getattr(document, "citation", "")),
-                    publication_date=None,
-                    effective_date=None,
-                    effect="annulment-or-stay-reference",
-                    affected_norm="",
-                    citation=str(getattr(document, "citation", "")),
-                    source_url="",
-                    quote=body[:500],
-                    confidence=0.3,
+        if any(term in query.casefold() for term in ("iptal", "yürütmenin durdurulması", "yürütme durdurma")):
+            for document in await self.decision_backend.search(
+                f"{query} iptal yürütmenin durdurulması", 3
+            ):
+                source = str(getattr(document, "source", "")).lower()
+                if "danistay" not in source:
+                    continue
+                body = str(getattr(document, "body", ""))
+                events.append(
+                    InvalEvent(
+                        id=str(getattr(document, "id", "")),
+                        authority="Danıştay",
+                        decision_date=_parse_date(body) or _parse_date(getattr(document, "citation", "")),
+                        publication_date=None,
+                        effective_date=None,
+                        effect="annulment-or-stay-reference",
+                        affected_norm="",
+                        citation=str(getattr(document, "citation", "")),
+                        source_url="",
+                        quote=body[:500],
+                        confidence=0.3,
+                    )
                 )
-            )
         return events
 
     async def search_procedural_rules(self, query: str, scope: SourceScope) -> list[NormRecord]:

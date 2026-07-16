@@ -134,7 +134,10 @@ class TemporalLegalContextBuilder:
             context.superseded_norms = [
                 norm
                 for norm in norms
-                if norm.status in {"superseded", "repealed", "yürürlükten kalkmış"}
+                if (
+                    norm.status in {"superseded", "repealed", "yürürlükten kalkmış"}
+                    or (norm.effective_from is not None and event_date < norm.effective_from)
+                )
                 and not _active_on(norm, event_date)
             ]
             context.unresolved_norms = [

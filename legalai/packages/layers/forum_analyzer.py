@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+import unicodedata
 
 from legalai.packages.jurisdictions.base import JurisdictionProfile
 from legalai.packages.shared.evidence import EvidenceBlock, SourceScope, validate_source_scope
@@ -51,7 +52,7 @@ class ForumAndDeadlineAnalyzer:
         else:
             selection_assumption = ""
 
-        lower = question.lower()
+        lower = _normalize_text(question)
         candidates: list[ForumCandidate] = []
         profile_forums = profile.raw.get("competent_forums", []) if profile.raw else []
         for raw in profile_forums:
@@ -69,7 +70,7 @@ class ForumAndDeadlineAnalyzer:
                 )
             )
 
-        if any(token in lower for token in ("alacak", "borç", "fatura", "sözleşme")):
+        if any(token in lower for token in ("alacak", "alaca", "borc", "fatura", "sozlesme")):
             candidates.extend(
                 [
                     ForumCandidate(
@@ -92,7 +93,7 @@ class ForumAndDeadlineAnalyzer:
                 ]
             )
 
-        if any(token in lower for token in ("idare", "idari işlem", "ruhsat", "vergi")):
+        if any(token in lower for token in ("idare", "idari islem", "ruhsat", "vergi")):
             candidates.extend(
                 [
                     ForumCandidate(
@@ -157,3 +158,20 @@ def _document_evidence(documents: list[Any]) -> list[EvidenceBlock]:
             )
         )
     return evidence
+
+
+def _normalize_text(value: str) -> str:
+    """Normalize proper Turkish and legacy mojibake client input alike."""
+    text = value
+    for _ in range(2):
+        try:
+            repaired = text.encode("latin1").decode("utf-8")
+        except (UnicodeEncodeError, UnicodeDecodeError):
+            break
+        if repaired == text:
+            break
+        text = repaired
+    return "".join(
+        char for char in unicodedata.normalize("NFKD", text.casefold())
+        if not unicodedata.combining(char)
+    )
