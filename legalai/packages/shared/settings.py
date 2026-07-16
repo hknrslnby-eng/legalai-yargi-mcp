@@ -22,6 +22,14 @@ class Settings(BaseSettings):
     openrouter_api_key: str = ""
     huggingface_token: str = ""
 
+    # LLMRouter sağlayıcı seçimi: auto, anahtarı bulunan sağlayıcılar içinde
+    # görev türüne göre varsayılan sırayı kullanır; diğer değerler açık seçimdir.
+    legalai_llm_provider: str = "auto"
+    gemini_model: str = "gemini-2.0-flash"
+    groq_model: str = "llama-3.3-70b-versatile"
+    openrouter_model: str = "openai/gpt-4o-mini"
+    deepseek_model: str = "deepseek-reasoner"
+
     enable_aggressive_opposing: bool = True
     enable_deep_research: bool = True
     enable_auth: bool = False

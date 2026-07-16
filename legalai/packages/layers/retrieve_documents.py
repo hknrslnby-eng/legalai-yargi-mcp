@@ -1,0 +1,97 @@
+"""RetrieveDocuments — soruyla ilgili gerçek karar metinlerini getirir.
+Bkz. FORK-KAPSAMLI-PLAN.md §5.3 ("RetrieveDocuments 50"), Hafta 7.
+
+Varsayılan backend, upstream yargi-mcp'nin zaten sahip olduğu
+`bedesten_mcp_module` istemcisini kullanır (Bedesten API: Yargıtay +
+Danıştay birleşik tam metin arama) — ayrı bir vektör veritabanı (pgvector/
+qdrant, bkz. §8.2) henüz kurulmadığı için bu, "gerçek DB'de bulunan"
+belgeleri getirmenin en basit yoludur.
+
+`ctx.documents` çağırıdan önce zaten doldurulmuşsa (örn. test fixture'ı
+veya `decision_id` ile doğrudan belge akışı) bu katman HİÇBİR ŞEY YAPMAZ —
+var olan belgeleri ezmez.
+"""
+from __future__ import annotations
+
+import logging
+from typing import Protocol
+
+from legalai.packages.layers.pipeline import Context
+from legalai.packages.shared.types import Document
+
+logger = logging.getLogger(__name__)
+
+
+class DocumentSearchBackend(Protocol):
+    async def search(self, query: str, limit: int) -> list[Document]: ...
+
+
+class BedestenSearchBackend:
+    """Varsayılan backend: Bedesten API (Yargıtay + Danıştay) tam metin arama.
+
+    Ağ hatalarını kasıtlı olarak yutmaz — çağıran katman (`RetrieveDocuments`)
+    hatayı yakalayıp `ctx.trace`'e not düşer, böylece pipeline tamamen
+    çökmez ama neden belgesiz kaldığı izlenebilir kalır.
+    """
+
+    def __init__(self, item_types: list[str] | None = None) -> None:
+        self._item_types = item_types or ["YARGITAYKARARI", "DANISTAYKARAR"]
+        self._client = None  # lazy — testlerde ağ bağımlılığı tetiklenmesin
+
+    def _get_client(self):
+        if self._client is None:
+            from bedesten_mcp_module.client import BedestenApiClient
+
+            self._client = BedestenApiClient()
+        return self._client
+
+    async def search(self, query: str, limit: int) -> list[Document]:
+        from bedesten_mcp_module.models import BedestenSearchData, BedestenSearchRequest
+
+        client = self._get_client()
+        page_size = max(1, min(limit, 10))
+        request = BedestenSearchRequest(
+            data=BedestenSearchData(
+                pageSize=page_size,
+                pageNumber=1,
+                itemTypeList=self._item_types,
+                phrase=query,
+            )
+        )
+        response = await client.search_documents(request)
+        entries = response.data.emsalKararList if response.data else []
+
+        documents: list[Document] = []
+        for entry in entries[:limit]:
+            markdown = await client.get_document_as_markdown(entry.documentId)
+            esas = f"{entry.esasNoYil}/{entry.esasNoSira} E." if entry.esasNoYil else ""
+            karar = f"{entry.kararNoYil}/{entry.kararNoSira} K." if entry.kararNoYil else ""
+            citation = " ".join(p for p in [entry.birimAdi or "", esas, karar] if p)
+            documents.append(
+                Document(
+                    id=entry.documentId,
+                    body=markdown.markdown_content or "",
+                    source=entry.itemType.name.lower(),
+                    citation=citation,
+                )
+            )
+        return documents
+
+
+class RetrieveDocuments:
+    name = "retrieve_documents"
+
+    def __init__(self, backend: DocumentSearchBackend | None = None, limit: int = 50) -> None:
+        self._backend = backend or BedestenSearchBackend()
+        self._limit = limit
+
+    async def run(self, ctx: Context) -> Context:
+        if ctx.documents:
+            return ctx
+
+        try:
+            ctx.documents = await self._backend.search(ctx.question, self._limit)
+        except Exception as exc:  # ağ/parse hatası — belgesiz devam, üst katman not düşer
+            logger.warning("RetrieveDocuments: arama başarısız: %s", exc)
+            ctx.trace.append({"layer": self.name, "error": str(exc)})
+        return ctx

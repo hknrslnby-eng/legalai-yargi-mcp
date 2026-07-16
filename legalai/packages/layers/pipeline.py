@@ -21,9 +21,15 @@ class Context:
     dictums: list[Any] = field(default_factory=list)
     dissents: list[Any] = field(default_factory=list)
     counter_args: list[Any] = field(default_factory=list)
+    argument_scores: list[Any] = field(default_factory=list)   # ArgumentStrengthScorer çıktısı
     answer: str | None = None
     citations: list[Any] = field(default_factory=list)
+    citation_retry_hint: str | None = None   # VerifiedCitationCheck'in yeniden deneme talimatı
     trace: list[dict[str, Any]] = field(default_factory=list)   # her katman ne yaptı
+    temporal_context: Any | None = None
+    evidence: list[Any] = field(default_factory=list)
+    strategy_options: list[Any] = field(default_factory=list)
+    forum_candidates: list[Any] = field(default_factory=list)
 
 
 class Layer(Protocol):
