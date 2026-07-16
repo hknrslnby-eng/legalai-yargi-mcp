@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from typing import Any, Protocol
 
 from legalai.packages.jurisdictions.base import JurisdictionProfile
@@ -146,12 +147,16 @@ class RebuttingCaseSearch:
 
 
 def _dataclass_dict(value: Any) -> Any:
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
     if hasattr(value, "to_dict"):
         return value.to_dict()
     if hasattr(value, "__dict__"):
         return {key: _dataclass_dict(item) for key, item in value.__dict__.items()}
     if isinstance(value, list):
         return [_dataclass_dict(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _dataclass_dict(item) for key, item in value.items()}
     return value
 
 

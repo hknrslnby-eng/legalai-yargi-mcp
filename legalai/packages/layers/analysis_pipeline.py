@@ -21,6 +21,7 @@ içindeki, kullanıcının ZATEN sahip olduğu abonelikle çalışan model)
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from typing import Any
 
 from legalai.packages.layers.argument_strength_scorer import ArgumentStrengthScorer
@@ -103,6 +104,8 @@ class AnalysisResult:
 def _jsonish(value: Any) -> Any:
     if value is None:
         return None
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
     if hasattr(value, "to_dict"):
         return value.to_dict()
     if hasattr(value, "__dict__"):
