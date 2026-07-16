@@ -13,6 +13,7 @@ class Settings(BaseSettings):
     tenant_name: str = "Local"
     database_url: str = "sqlite+aiosqlite:///./.data/legalai.db"
     storage_root: str = "./.data"
+    usage_db_path: str = "./.data/usage.db"
 
     gemini_api_key: str = ""
     anthropic_api_key: str = ""

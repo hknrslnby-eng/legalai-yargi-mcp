@@ -59,6 +59,7 @@ production = [
 [project.scripts]
 yargi-mcp = "mcp_server_main:main"
 legalai-mcp = "legalai.apps.mcp.server:main"
+legalai = "legalai.apps.cli.main:main"
 
 [tool.setuptools]
 py-modules = ["mcp_server_main", "asgi_app"]

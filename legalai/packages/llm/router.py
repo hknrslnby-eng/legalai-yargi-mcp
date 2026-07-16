@@ -11,9 +11,11 @@ seçilir.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
 from legalai.packages.shared.settings import settings
+from legalai.packages.shared.tenant import current_tenant
+from legalai.packages.usage.store import UsageStore
 
 Task = Literal["simple", "reasoning"]
 
@@ -57,7 +59,52 @@ class _OpenAICompatibleClient:
                 {"role": "user", "content": user},
             ],
         )
+        await self._record_usage(response)
         return response.choices[0].message.content or ""
+
+    async def _record_usage(self, response: Any) -> None:
+        usage = getattr(response, "usage", None)
+        if usage is None:
+            return
+        input_tokens = _usage_value(usage, "prompt_tokens", "input_tokens")
+        output_tokens = _usage_value(usage, "completion_tokens", "output_tokens")
+        if input_tokens is None or output_tokens is None:
+            return
+        try:
+            tenant_id = current_tenant().tenant_id
+            await UsageStore().record(
+                tenant_id=tenant_id,
+                model=self.model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                cost_usd_estimate=estimate_usage_cost(self.model, input_tokens, output_tokens),
+            )
+        except Exception:
+            # Usage accounting must not turn an otherwise valid legal answer into
+            # a failed request. The report remains an estimate, not billing truth.
+            return
+
+
+_MODEL_RATES_USD_PER_MILLION: dict[str, tuple[float, float]] = {
+    "gemini-2.0-flash": (0.10, 0.40),
+    "gemini-2.5-pro": (1.25, 5.00),
+    "deepseek-reasoner": (0.55, 2.19),
+    "llama-3.3-70b-versatile": (0.59, 0.79),
+    "openai/gpt-4o-mini": (0.15, 0.60),
+}
+
+
+def _usage_value(usage: Any, *names: str) -> int | None:
+    for name in names:
+        value = usage.get(name) if isinstance(usage, dict) else getattr(usage, name, None)
+        if value is not None:
+            return int(value)
+    return None
+
+
+def estimate_usage_cost(model: str, input_tokens: int, output_tokens: int) -> float:
+    input_rate, output_rate = _MODEL_RATES_USD_PER_MILLION.get(model, (0.0, 0.0))
+    return (input_tokens * input_rate + output_tokens * output_rate) / 1_000_000
 
 
 # (provider, base_url, model, settings alan adı) — sırayla denenir, ilk

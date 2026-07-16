@@ -3,7 +3,9 @@ Bkz. FORK-KAPSAMLI-PLAN.md §2.2."""
 from __future__ import annotations
 
 from contextvars import ContextVar
+from contextlib import contextmanager
 from dataclasses import dataclass, field
+from typing import Iterator
 
 
 @dataclass(frozen=True)
@@ -26,3 +28,13 @@ def current_tenant() -> TenantContext:
 
 def set_tenant(ctx: TenantContext) -> None:
     _current.set(ctx)
+
+
+@contextmanager
+def tenant_scope(ctx: TenantContext) -> Iterator[None]:
+    """Temporarily bind a tenant and restore the parent async context."""
+    token = _current.set(ctx)
+    try:
+        yield
+    finally:
+        _current.reset(token)
