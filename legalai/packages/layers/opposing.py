@@ -6,6 +6,7 @@ from datetime import date, datetime
 from typing import Any, Protocol
 
 from legalai.packages.jurisdictions.base import JurisdictionProfile
+from legalai.packages.jurisdictions.loader import JurisdictionNotFoundError, load_profile
 from legalai.packages.layers.forum_analyzer import ForumAndDeadlineAnalyzer
 from legalai.packages.layers.legal_source_backend import IntegratedLegalSourceBackend
 from legalai.packages.layers.strategy_planner import StrategicPath, StrategicPathPlanner
@@ -275,7 +276,10 @@ async def run_opposing(
         selected_source_ids,
         backend=resolved_temporal_backend,
     )
-    profile = JurisdictionProfile(id=jurisdiction_hint or "hukuk", name=jurisdiction_hint or "Hukuk")
+    try:
+        profile = load_profile(jurisdiction_hint or "hukuk")
+    except JurisdictionNotFoundError:
+        profile = JurisdictionProfile(id=jurisdiction_hint or "hukuk", name=jurisdiction_hint or "Hukuk")
     deadlines = LimitationAndPreclusionAnalyzer().analyze(question, temporal, profile)
     forums = ForumAndDeadlineAnalyzer().analyze(
         question, temporal, profile, documents, source_scope, selected_source_ids

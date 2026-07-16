@@ -132,11 +132,21 @@ class TemporalLegalContextBuilder:
                 norm for norm in norms if _active_on(norm, event_date)
             ]
             context.superseded_norms = [
-                norm for norm in norms if not _active_on(norm, event_date)
+                norm
+                for norm in norms
+                if norm.status in {"superseded", "repealed", "yürürlükten kalkmış"}
+                and not _active_on(norm, event_date)
+            ]
+            context.unresolved_norms = [
+                norm
+                for norm in norms
+                if norm not in context.applicable_norms and norm not in context.superseded_norms
             ]
             context.invalidation_events = await backend.search_invalidation_events(
                 question, event_date, filing_dates[0].value if filing_dates else None, source_scope
             )
+            procedural = await backend.search_procedural_rules(question, source_scope)
+            context.unresolved_norms.extend(procedural)
         except Exception as exc:
             context.missing_facts.append("temporal_source_results")
             context.assumptions.append(f"temporal backend unavailable: {type(exc).__name__}")

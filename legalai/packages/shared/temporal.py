@@ -26,6 +26,7 @@ class TemporalLegalContext:
     active_law_baseline: str = "current-law-assumption"
     applicable_norms: list[Any] = field(default_factory=list)
     superseded_norms: list[Any] = field(default_factory=list)
+    unresolved_norms: list[Any] = field(default_factory=list)
     invalidation_events: list[Any] = field(default_factory=list)
     deadline_risks: list[Any] = field(default_factory=list)
     assumptions: list[str] = field(default_factory=list)
