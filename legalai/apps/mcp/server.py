@@ -60,6 +60,20 @@ async def legalai_yardim() -> dict:
     return await _legalai_yardim_tool.fn()
 
 
+@app.tool(
+    name="legalai_saglik_kontrolu",
+    description="LegalAI MCP bağlantısını dış API çağırmadan kontrol eder.",
+    annotations={"readOnlyHint": True, "idempotentHint": True},
+)
+async def _legalai_saglik_kontrolu_tool() -> dict[str, object]:
+    return {"status": "ok", "version": app.version, "external_calls": False}
+
+
+async def legalai_saglik_kontrolu() -> dict[str, object]:
+    """Directly awaitable local health-check facade."""
+    return await _legalai_saglik_kontrolu_tool.fn()
+
+
 @app.resource(
     "legalai://capabilities",
     name="legalai_capabilities",
