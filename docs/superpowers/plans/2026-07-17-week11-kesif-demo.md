@@ -257,7 +257,7 @@ Update this plan's execution status with exact test counts. Do not stage `.curso
 
 ## Execution status
 
-- [ ] Task 1: health-check
-- [ ] Task 2: `legalai qa`
-- [ ] Task 3: IDE-first docs/demo/contributing
-- [ ] Task 4: verification and checkpoint
+- [x] Task 1: health-check — commit `aafb386`; focused test `1 passed`.
+- [x] Task 2: `legalai qa` — commit `89169db`; focused tests `2 passed`.
+- [x] Task 3: IDE-first docs/demo/contributing — commit `1087016`; focused test `1 passed`.
+- [x] Task 4: verification and checkpoint — targeted tests `4 passed`; `.venv` full suite `169 passed`; `uv run` full suite `169 passed`; MCP smoke test successful.
