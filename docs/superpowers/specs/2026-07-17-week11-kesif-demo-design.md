@@ -8,11 +8,11 @@ Bu sprint yeni bir hosting veya ortak sunucu kurmaz. Mevcut yerel STDIO MCP çal
 
 ## Kullanıcı deneyimi
 
-Kullanıcı üç farklı giriş yoluna sahip olur:
+Kullanıcı iki ana ve bir yardımcı giriş yoluna sahip olur:
 
-1. **MCP istemcisi:** Kullanıcı önce `legalai_saglik_kontrolu`, sonra gerekirse `legalai_yardim` aracını seçer.
-2. **Doğal dil:** Kullanıcı araç adlarını bilmeden doğrudan hukuki talebini yazar; host model MCP açıklamalarından uygun aracı seçer.
-3. **Yerel CLI:** Kullanıcı `legalai qa "..."` komutuyla temel katmanlı analizi başlatabilir.
+1. **Yerel IDE/MCP istemcisi:** Codex, Cursor, Claude, Antigravity ve VS Code gibi istemcilerde kullanıcı önce `legalai_saglik_kontrolu`, sonra gerekirse `legalai_yardim` aracını seçer. Bu sprintin ana kullanıcı akışı IDE'dir.
+2. **IDE içinde doğal dil:** Kullanıcı araç adlarını bilmeden doğrudan hukuki talebini yazar; host model MCP açıklamalarından uygun aracı seçer. Kullanıcı isterse yalın, yönlendirilmiş veya rafine seviyeyi açıkça belirtir.
+3. **Yerel CLI yardımcı kanalı:** Kullanıcı `legalai qa "..."` komutuyla temel katmanlı analizi başlatabilir. CLI, yerel IDE deneyiminin yerine geçmez; aynı domain pipeline'ını hızlı kontrol ve otomasyon için kullanır.
 
 Yetenek seviyesi üç basamaklıdır:
 
@@ -53,10 +53,22 @@ Kullanıcı
 - Demo metinleri gerçek kişi, dosya, TCKN, adres veya API anahtarı içermez.
 - Kullanıcıya “kesin”, “garantili” veya bağlayıcı sonuç dili vaat edilmez.
 
+## Yerel IDE kabul akışı
+
+Her desteklenen istemci için dokümantasyon aynı beş adımı gösterir:
+
+1. Proje klasörünü aç ve mevcut istemci ayarlarını bozmadan `legalai` STDIO kaydını doğrula.
+2. MCP araçları listesinde `legalai_saglik_kontrolu` aracını çalıştır.
+3. `legalai_yardim` aracından yetenek kataloğunu aç.
+4. İstemcinin chat alanına yalın, yönlendirilmiş veya rafine örnek promptlardan birini yapıştır.
+5. Dönen kaynaklı ve ihtimalli analizi; kaynaklar, tarihler, süreler, karşıt görüşler ve strateji seçenekleri başlıklarıyla incele.
+
+İstemci araç/menü görünümü bakımından farklı olabilir; ancak MCP tool adı, resource URI'si, prompt içeriği ve beklenen çıktı sözleşmesi aynıdır. Demo belgesi her istemcinin olası menü adını ayrı not eder ve gerçek bir ekran görüntüsü varmış gibi davranmaz.
+
 ## Dokümantasyon kapsamı
 
 - README: beş dakikalık kurulum, desteklenen istemciler, Mermaid mimari şeması, dört ana modül ve katkı bağlantısı.
-- `docs/week11-demo.md`: yeni kullanıcının kopyalayabileceği üç kullanım senaryosu, beklenen çıktı başlıkları, MCP menüsü ve CLI örneği.
+- `docs/week11-demo.md`: yeni kullanıcının kopyalayabileceği üç kullanım senaryosu, beklenen çıktı başlıkları, IDE/MCP menüsü ve yardımcı CLI örneği.
 - `CONTRIBUTING.md`: Python/uv kurulumu, test komutları, PII/secret kuralları, commit kapsamı ve PR kontrol listesi.
 
 Gerçek demo videosu bu sprintte zorunlu artefakt değildir. Dokümantasyon, ekran videosu çekilmeden de takip edilebilir olmalıdır; kullanıcı isterse sonradan bu akıştan video kaydı alabilir.
