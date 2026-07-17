@@ -35,6 +35,26 @@ Baska Windows kullanicilari kendi mutlak yolunu yazmali. macOS/Linux karsiligi `
 
 ## Cursor
 
+## Kullanici ozel modulleri nasil secer?
+
+Kullanicinin arac adlarini ezberlemesi gerekmez. Host model, MCP baglantisinda arac aciklamalarini ve parametre semalarini gorur; kullanicinin dogal dildeki talebini uygun araca yonlendirir. Kullanici isterse istemcinin Tools/Prompts panelinden `legalai_yardim` aracini veya `legalai://capabilities` kaynagini acarak yalin, yonlendirilmis ve rafine ornekleri secebilir.
+
+Ornek dogal dil talepleri:
+
+```text
+Bu soruyu olay ve dava tarihlerini ayirarak, ictihat ve sure riskleriyle katmanli analiz et.
+
+Benim pozisyonumu karsi taraf avukati gibi test et; en guclu karsi argumanlari ve karsit ictihatlari getir.
+
+Bu olay icin dava, icra, arabuluculuk, idareye basvuru ve Avukatlik Kanunu 35/A dahil genis cozum stratejisi cikar.
+```
+
+Prompt menusu bulunan istemcilerde `agresif_karsi_taraf_promptu`, `cozum_stratejisi_promptu` ve planlanan `bilir_kisi_raporu_itirazi_promptu` gorulebilir. Sonuncusu henuz uretim modulu degildir; yalnizca ileride istenecek girdileri yonlendirir.
+
+## Privacy-first kurali
+
+LegalAI'nin baslattigi Bedesten, AYM, HUDOC ve server-side LLM cagrilarinda PII, dis cagridan once yerel tenant store uzerinden maskelenir. Host modelin ilk kullanici mesajini almadan once MCP'yi cagirip cagiramayacagi istemcinin davranisina baglidir; bu nedenle host/IDE tarafinda privacy-first talimati kullanilmasi onerilir.
+
 Mevcut `.cursor/mcp.json` korunur. Yeni Codex kaydı bu dosyayı değiştirmez ve mevcut `yargi-mcp-fork` kaydını yeniden adlandırmaz. Cursor’da proje MCP ayarlarını yeniden yüklemek yeterlidir.
 
 ## Claude, VS Code ve Antigravity

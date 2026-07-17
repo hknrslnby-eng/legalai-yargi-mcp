@@ -18,6 +18,8 @@ fonksiyonunu `synthesize=True` ile çağırır — bu durumda `LLMRouter`
 """
 from __future__ import annotations
 
+import json
+
 from fastmcp import FastMCP
 
 from legalai.packages.aihm.aym_bridge import aihm_aym_kopru as _aihm_aym_kopru
@@ -27,6 +29,7 @@ from legalai.packages.layers.analysis_pipeline import run_pipeline
 from legalai.packages.layers.citation_validator import validate_citations
 from legalai.packages.layers.deep_research import run_deep_research
 from legalai.packages.layers.opposing import run_opposing
+from legalai.packages.discovery.catalog import capability_catalog
 from legalai.packages.pii.gateway import PiiGateway
 from legalai.packages.shared.settings import settings
 from legalai.packages.shared.tenant import TenantContext, set_tenant
@@ -37,6 +40,77 @@ set_tenant(TenantContext(tenant_id=settings.tenant_id, tenant_name=settings.tena
 
 app = FastMCP(name="LegalAI MCP Server", version="0.1.0")
 _pii_gateway = PiiGateway()
+
+
+@app.tool(
+    name="legalai_yardim",
+    description=(
+        "LegalAI'nin yalın kullanımdan rafine analize kadar tüm mevcut yeteneklerini, "
+        "hangi talepte hangisinin seçileceğini ve kopyalanabilir örnek promptları listeler. "
+        "Kullanıcı araç adlarını bilmiyorsa önce bu aracı çağır. PII ve non-binding sınırlarını da gösterir."
+    ),
+    annotations={"readOnlyHint": True, "idempotentHint": True},
+)
+async def _legalai_yardim_tool() -> dict:
+    return capability_catalog()
+
+
+async def legalai_yardim() -> dict:
+    """Directly awaitable Python facade; FastMCP registers the same tool."""
+    return await _legalai_yardim_tool.fn()
+
+
+@app.resource(
+    "legalai://capabilities",
+    name="legalai_capabilities",
+    description="LegalAI capability catalog, routing guidance and privacy policy.",
+    mime_type="application/json",
+)
+def _legalai_capabilities_resource() -> str:
+    return json.dumps(capability_catalog(), ensure_ascii=False, indent=2)
+
+
+def legalai_capabilities_resource() -> str:
+    """Directly callable facade for local tests and non-MCP integrations."""
+    return _legalai_capabilities_resource.fn()
+
+
+@app.prompt(
+    name="agresif_karsi_taraf_promptu",
+    description="Karşı taraf argümanları, karşıt içtihatlar ve geniş çözüm stratejisi için yönlendirilmiş prompt.",
+)
+def agresif_karsi_taraf_promptu() -> str:
+    return (
+        "Kullanıcının olayını ve pozisyonunu karşı taraf avukatı gibi test et. "
+        "En güçlü karşı argümanları, zayıf noktaları, karşıt içtihatları ve dava dışı çözüm yollarını "
+        "ayrı başlıklarda ver. Olay/dava tarihlerini, süreleri, görev-yetki ihtimallerini ve belirsizlikleri "
+        "göster. Her kaynak için künye ve kısa ilgili alıntı kullan; sonuç analysis-only ve non-binding'dir."
+    )
+
+
+@app.prompt(
+    name="cozum_stratejisi_promptu",
+    description="Dava dışı ve dava içi tüm hukuki çözüm yollarını karşılaştırmak için yönlendirilmiş prompt.",
+)
+def cozum_stratejisi_promptu() -> str:
+    return (
+        "Sorunun çözümü için dava, icra, idare/kurul başvurusu, ceza süreci, arabuluculuk, "
+        "Avukatlık Kanunu 35/A, sulh, feragat ve ibra ihtimallerini koşullu biçimde karşılaştır. "
+        "Yetkili merci, süre, ön şart, delil etkisi, geri döndürülebilirlik ve riskleri kaynaklarla göster."
+    )
+
+
+@app.prompt(
+    name="bilir_kisi_raporu_itirazi_promptu",
+    description="Planlanan teknik bilirkişi raporu itiraz modülü için kullanıcıdan doğru girdileri toplar.",
+)
+def bilir_kisi_raporu_itirazi_promptu() -> str:
+    return (
+        "Bilirkişi raporunu yükle veya ilgili bölümleri belirt; rapor tarihi, olay/ölçüm tarihi, dava tarihi, "
+        "uzmanlık alanı ve itiraz edilmek istenen sonuçları ekle. Bu prompt planlanan özelliktir; üretim modülü "
+        "henüz etkin değil. Gelecekte teknik bulgu, teknik karşı-argüman, hukukî bağlantı ve temporal context "
+        "ayrı katmanlarda üretilecek; insan uzman ve avukat incelemesi zorunlu olacaktır."
+    )
 
 
 @app.tool(

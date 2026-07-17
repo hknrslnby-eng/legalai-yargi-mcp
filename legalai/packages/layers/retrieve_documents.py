@@ -17,6 +17,7 @@ import logging
 from typing import Protocol
 
 from legalai.packages.layers.pipeline import Context
+from legalai.packages.pii.outbound import mask_for_external
 from legalai.packages.shared.types import Document
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ class BedestenSearchBackend:
         from bedesten_mcp_module.models import BedestenSearchData, BedestenSearchRequest
 
         client = self._get_client()
+        query = await mask_for_external(query)
         page_size = max(1, min(limit, 10))
         request = BedestenSearchRequest(
             data=BedestenSearchData(

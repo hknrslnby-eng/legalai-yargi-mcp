@@ -19,6 +19,29 @@ PHONE_RE = re.compile(r"(?<!\d)(?:0)?5\d{2}[\s.\-]?\d{3}[\s.\-]?\d{2}[\s.\-]?\d{
 EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
 IBAN_RE = re.compile(r"\bTR\d{2}[\s]?(?:\d{4}[\s]?){5}\d{2}\b", re.IGNORECASE)
 PLAKA_RE = re.compile(r"\b\d{2}\s?[A-PR-VYZ]{1,3}\s?\d{2,4}\b")
+_NAME_WORD = r"[A-ZÇĞİÖŞÜ][a-zçğıöşü]+"
+CONTEXT_NAME_RE = re.compile(
+    rf"\b(?:ad\s*soyad|isim|müvekkil|davacı|davalı|sanık|mağdur|başvurucu)\s*[:\-]\s*"
+    rf"(?P<value>{_NAME_WORD}(?:\s+{_NAME_WORD}){{1,3}})",
+    re.IGNORECASE,
+)
+ADDRESS_RE = re.compile(r"(?i)\b(?:adres|ikamet adresi)\s*[:\-]\s*(?P<value>[^\n.;]+)")
+BIRTH_DATE_RE = re.compile(
+    r"(?i)\bdoğum\s+tarihi\s*[:\-]\s*(?P<value>\d{1,2}[./]\d{1,2}[./]\d{4})"
+)
+PERSON_NAME_RE = re.compile(
+    rf"(?<![\w])(?P<value>{_NAME_WORD}(?:\s+{_NAME_WORD}){{1,2}})(?![\w])"
+)
+_COMMON_CAPITALIZED_PHRASES = {
+    "Ad Soyad",
+    "Anayasa Mahkemesi",
+    "Türk Borçlar",
+    "Avukatlık Kanunu",
+    "Tüketici Mahkemesi",
+    "İdare Mahkemesi",
+    "Yargıtay Hukuk",
+    "Yargıtay Ceza",
+}
 
 
 @dataclass(frozen=True)
@@ -85,13 +108,42 @@ def find_plaka(text: str) -> list[Match]:
     return [Match("PLAKA", m.start(), m.end(), m.group()) for m in PLAKA_RE.finditer(text)]
 
 
+def find_contextual(text: str) -> list[Match]:
+    matches: list[Match] = []
+    for pattern, label in (
+        (CONTEXT_NAME_RE, "KISI"),
+        (ADDRESS_RE, "ADRES"),
+        (BIRTH_DATE_RE, "DOGUM_TARIHI"),
+    ):
+        for match in pattern.finditer(text):
+            value = match.group("value")
+            start = match.start("value")
+            matches.append(Match(label, start, match.end("value"), value))
+    return matches
+
+
+def find_probable_person_names(text: str) -> list[Match]:
+    matches: list[Match] = []
+    for match in PERSON_NAME_RE.finditer(text):
+        value = match.group("value")
+        if value in _COMMON_CAPITALIZED_PHRASES:
+            continue
+        prefix = text[max(0, match.start() - 24) : match.start()].casefold()
+        if any(label in prefix for label in ("ad soyad", "isim", "müvekkil", "davacı", "davalı", "sanık", "mağdur", "başvurucu", "adres")):
+            continue
+        matches.append(Match("KISI", match.start("value"), match.end("value"), value))
+    return matches
+
+
 def find_all(text: str) -> list[Match]:
     """Tüm regex dedektörlerini çalıştırır; sonuçlar örtüşebilir, sıralama
     yapılmaz — `merger.merge_matches()` bunu çakışmasız hale getirir."""
     return [
+        *find_contextual(text),
         *find_tckn(text),
         *find_phone(text),
         *find_email(text),
         *find_iban(text),
         *find_plaka(text),
+        *find_probable_person_names(text),
     ]

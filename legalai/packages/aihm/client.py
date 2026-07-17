@@ -24,6 +24,7 @@ import httpx
 
 from legalai.packages.aihm.parser import html_to_text
 from legalai.packages.aihm.rate_limiter import RateLimiter
+from legalai.packages.pii.outbound import mask_for_external
 
 BASE_URL = "https://hudoc.echr.coe.int"
 USER_AGENT = "LegalAI-Fork/0.1 (+github.com/hknrslnby-eng/legalai-yargi-mcp)"
@@ -92,6 +93,7 @@ class HudocClient:
         appno: str | None = None,
         limit: int = 20,
     ) -> list[dict[str, Any]]:
+        query = await mask_for_external(query)
         params = {
             "query": self._build_query(query, respondent, article, importance, date_from, date_to, appno),
             "select": SEARCH_SELECT_FIELDS,

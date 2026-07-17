@@ -16,6 +16,7 @@ from typing import Any, Literal, Protocol
 from legalai.packages.shared.settings import settings
 from legalai.packages.shared.tenant import current_tenant
 from legalai.packages.usage.store import UsageStore
+from legalai.packages.pii.outbound import mask_for_external
 
 Task = Literal["simple", "reasoning"]
 
@@ -51,6 +52,8 @@ class _OpenAICompatibleClient:
     async def generate(self, system: str, user: str) -> str:
         from openai import AsyncOpenAI
 
+        system = await mask_for_external(system)
+        user = await mask_for_external(user)
         client = AsyncOpenAI(api_key=self._spec.api_key, base_url=self._spec.base_url)
         response = await client.chat.completions.create(
             model=self._spec.model,

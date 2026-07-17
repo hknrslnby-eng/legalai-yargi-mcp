@@ -9,6 +9,7 @@ from anayasa_mcp_module.client import AnayasaMahkemesiApiClient
 from anayasa_mcp_module.models import AnayasaNormDenetimiSearchRequest
 
 from legalai.packages.layers.retrieve_documents import BedestenSearchBackend
+from legalai.packages.pii.outbound import mask_for_external
 from legalai.packages.layers.temporal_context import InvalEvent, NormRecord, TemporalSourceBackend
 from legalai.packages.shared.evidence import SourceScope
 from legalai.packages.shared.types import Document
@@ -53,6 +54,7 @@ class IntegratedLegalSourceBackend(TemporalSourceBackend):
         return await self.decision_backend.search(query, limit)
 
     async def _search_aym_norms(self, query: str, limit: int = 10) -> list[Any]:
+        query = await mask_for_external(query)
         params = AnayasaNormDenetimiSearchRequest(
             keywords_all=[query],
             results_per_page=max(1, min(limit, 10)),
