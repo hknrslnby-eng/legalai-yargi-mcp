@@ -1,0 +1,31 @@
+sources:
+  - source_id: dergipark_and_open_doctrine
+    label: "DergiPark ve açık erişimli üniversite hukuk dergileri"
+    source_kind: doctrine
+    authority_level: non_binding_doctrine
+    allowed_contexts: [legal_analysis, doctrine_research]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: baro_and_tbb_journals
+    label: "Baro ve Türkiye Barolar Birliği dergileri"
+    source_kind: doctrine
+    authority_level: non_binding_doctrine
+    allowed_contexts: [legal_analysis, doctrine_research]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: yok_public_law_theses
+    label: "YÖK veritabanındaki kamuya açık hukuk tezleri"
+    source_kind: thesis
+    authority_level: non_binding_doctrine
+    allowed_contexts: [legal_analysis, doctrine_research]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: rekabet_authority_expert_theses
+    label: "Rekabet Kurumu uzmanlık tezleri"
+    source_kind: thesis
+    authority_level: non_binding_doctrine
+    allowed_contexts: [legal_analysis, doctrine_research, competition_research]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: rekabet_journal
+    label: "Rekabet Dergisi makaleleri"
+    source_kind: doctrine
+    authority_level: non_binding_doctrine
+    allowed_contexts: [legal_analysis, doctrine_research, competition_research]
+    full_text_storage: metadata_or_excerpt_only
