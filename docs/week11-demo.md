@@ -2,6 +2,8 @@
 
 Bu rehber yazılım bilmeyen kullanıcı için hazırlanmıştır. Ekranların adı Codex, Cursor, Claude, Antigravity veya VS Code'da değişebilir; aradığımız işlem aynıdır: yerel LegalAI MCP sunucusunu açmak ve sohbet alanından soru sormak.
 
+İstemci ayarlarının karşılaştırmalı tablosu için [MCP istemci matrisi](mcp-client-matrix.md) belgesine bakın.
+
 Bu sayfadaki ekranlar varsayımsaldır. Gerçek istemci ekranı gibi değerlendirilmemelidir.
 
 ## Başlamadan önce
