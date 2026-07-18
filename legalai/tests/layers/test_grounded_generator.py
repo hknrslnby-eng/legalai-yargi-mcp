@@ -5,6 +5,7 @@ import pytest
 from legalai.packages.layers.grounded_generator import (
     GroundedGenerator,
     build_user_prompt,
+    build_system_prompt,
 )
 from legalai.packages.layers.pipeline import Context
 from legalai.packages.llm.router import LLMNotConfiguredError
@@ -50,6 +51,19 @@ def test_build_user_prompt_includes_retry_hint_when_present():
     prompt = build_user_prompt("soru", [], retry_hint="sadece gerçek id kullan")
 
     assert "DÜZELTME: sadece gerçek id kullan" in prompt
+
+
+
+def test_build_system_prompt_composes_multiple_personas_and_reasoning_rules():
+    prompt = build_system_prompt(
+        "hukuk", jurisdiction_ids=["hukuk", "ceza"], expert_lenses=["sozlesmeler"]
+    )
+
+    assert "hukuk" in prompt.lower()
+    assert "ceza" in prompt.lower()
+    assert "1. Hukuki sorun nedir?" in prompt
+    assert "Temporal Legal Context" in prompt
+    assert "non-binding" in prompt
 
 
 @pytest.mark.asyncio

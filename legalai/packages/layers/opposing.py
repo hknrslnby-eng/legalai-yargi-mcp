@@ -7,7 +7,10 @@ from typing import Any, Protocol
 
 from legalai.packages.jurisdictions.base import JurisdictionProfile
 from legalai.packages.jurisdictions.loader import JurisdictionNotFoundError, load_profile
+from legalai.packages.jurisdictions.selection import guess_jurisdictions
 from legalai.packages.layers.forum_analyzer import ForumAndDeadlineAnalyzer
+from legalai.packages.jurisdictions.persona import compose_persona_instructions
+from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
 from legalai.packages.layers.legal_source_backend import IntegratedLegalSourceBackend
 from legalai.packages.layers.strategy_planner import StrategicPath, StrategicPathPlanner
 from legalai.packages.layers.temporal_context import (
@@ -224,12 +227,19 @@ def _weak_points(result_data: dict[str, Any]) -> list[WeakPoint]:
     return points
 
 
-def _assistant_instructions() -> str:
-    return (
+def _assistant_instructions(
+    jurisdiction_ids: list[str] | None = None,
+    expert_lenses: list[str] | None = None,
+) -> str:
+    base = (
         "Bu sonuç nihai hukuki görüş değildir; nonbinding=true, yalnızca bağlayıcı olmayan araştırma/analiz taslağıdır. "
         "Her iddiayı ilgili kaynak türü, künye, belge kimliği ve kısa alıntıyla göster; tarih ve yürürlük "
         "varsayımlarını ayır; çelişen kaynakları koru; kesin süre, kesin görev/yetki veya garanti dili kullanma."
     )
+    ids = jurisdiction_ids or []
+    persona = compose_persona_instructions(ids, expert_lenses or [])
+    reasoning = build_reasoning_instructions(ids, source_context="legal_analysis")
+    return "\n\n".join(item for item in (base, persona, reasoning) if item)
 
 
 async def run_opposing(
@@ -276,6 +286,13 @@ async def run_opposing(
         selected_source_ids,
         backend=resolved_temporal_backend,
     )
+    selection = guess_jurisdictions(question)
+    jurisdiction_ids = list(dict.fromkeys(
+        ([jurisdiction_hint] if jurisdiction_hint else [])
+        + [selection.primary, *selection.supporting]
+    ))
+    if not jurisdiction_ids:
+        jurisdiction_ids = ["hukuk"]
     try:
         profile = load_profile(jurisdiction_hint or "hukuk")
     except JurisdictionNotFoundError:
@@ -312,7 +329,10 @@ async def run_opposing(
         forum_candidates=forums,
         strategy_options=strategies,
         evidence=evidence,
-        assistant_instructions=_assistant_instructions(),
+        assistant_instructions=_assistant_instructions(
+            jurisdiction_ids=jurisdiction_ids,
+            expert_lenses=selection.expert_lenses,
+        ),
         confidence=min(temporal.confidence, 0.7),
         assumptions=assumptions,
         missing_facts=missing_facts,

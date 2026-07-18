@@ -25,8 +25,10 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from legalai.packages.jurisdictions.loader import JurisdictionNotFoundError, load_profile
+from legalai.packages.jurisdictions.persona import compose_persona_instructions
+from legalai.packages.jurisdictions.selection import guess_jurisdictions
 from legalai.packages.layers.analysis_pipeline import run_pipeline
-from legalai.packages.layers.qualify_issue import guess_jurisdiction
+from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
 from legalai.packages.layers.verified_citation_check import extract_citations
 from legalai.packages.llm.router import LLMNotConfiguredError, llm_router
 
@@ -142,9 +144,13 @@ def suggest_subquestions_from_axes(question: str, jurisdiction_id: str | None, d
     return [f"'{question}' sorusunun '{axis}' boyutuyla ilgili durum nedir?" for axis in readable]
 
 
-def _build_host_orchestrated_instructions(subquestions: list[str]) -> str:
+def _build_host_orchestrated_instructions(
+    subquestions: list[str],
+    jurisdiction_ids: list[str] | None = None,
+    expert_lenses: list[str] | None = None,
+) -> str:
     numbered = "\n".join(f"{i + 1}. {q}" for i, q in enumerate(subquestions))
-    return (
+    base = (
         "Bu araç kendi başına derin araştırma YAPMAZ (API anahtarı "
         "yapılandırılmamış); SEN (bu aracı çağıran asistan) Planner + "
         "Researcher + Critic + Editor rolünü üstlen: "
@@ -161,11 +167,19 @@ def _build_host_orchestrated_instructions(subquestions: list[str]) -> str:
         "(5) Cevabın sonuna 'bu bir taslak/araştırma yardımıdır, hukuki "
         "tavsiye değildir' notunu ekle."
     )
+    ids = jurisdiction_ids or []
+    persona = compose_persona_instructions(ids, expert_lenses or [])
+    reasoning = build_reasoning_instructions(
+        ids,
+        source_context="competition_research" if "rekabet" in ids else "legal_analysis",
+    )
+    return "\n\n".join(item for item in (base, persona, reasoning) if item)
 
 
 async def _run_host_orchestrated(question: str, depth: int) -> DeepResearchResult:
-    jurisdiction_id, _ = guess_jurisdiction(question)
-    subquestions = suggest_subquestions_from_axes(question, jurisdiction_id, depth)
+    selection = guess_jurisdictions(question)
+    jurisdiction_ids = [selection.primary, *selection.supporting]
+    subquestions = suggest_subquestions_from_axes(question, selection.primary, depth)
     return DeepResearchResult(
         question=question,
         mode="host_orchestrated",
@@ -173,7 +187,11 @@ async def _run_host_orchestrated(question: str, depth: int) -> DeepResearchResul
         sub_results=[],
         answer=None,
         citations=[],
-        instructions=_build_host_orchestrated_instructions(subquestions),
+        instructions=_build_host_orchestrated_instructions(
+            subquestions,
+            jurisdiction_ids=jurisdiction_ids,
+            expert_lenses=selection.expert_lenses,
+        ),
     )
 
 
@@ -191,6 +209,17 @@ def _parse_json_list(raw: str | None) -> list[str]:
     return [str(item).strip() for item in parsed if str(item).strip()]
 
 
+def _research_contract(question: str) -> str:
+    selection = guess_jurisdictions(question)
+    jurisdiction_ids = [selection.primary, *selection.supporting]
+    persona = compose_persona_instructions(jurisdiction_ids, selection.expert_lenses)
+    reasoning = build_reasoning_instructions(
+        jurisdiction_ids,
+        source_context="competition_research" if "rekabet" in jurisdiction_ids else "legal_analysis",
+    )
+    return f"{persona}\n\n{reasoning}"
+
+
 async def _research_subquestion(subquestion: str) -> SubResearch:
     result = await run_pipeline(question=subquestion, synthesize=True)
     return SubResearch(
@@ -206,8 +235,10 @@ async def _research_subquestion(subquestion: str) -> SubResearch:
 
 async def _run_server_synthesized(question: str, depth: int) -> DeepResearchResult:
     planner = llm_router.route("reasoning")
+    contract = _research_contract(question)
     plan_raw = await planner.generate(
-        system=_PLANNER_SYSTEM_TEMPLATE.format(depth=depth), user=f"Soru: {question}"
+        system=f"{_PLANNER_SYSTEM_TEMPLATE.format(depth=depth)}\n\n{contract}",
+        user=f"Soru: {question}",
     )
     subquestions = _parse_json_list(plan_raw)[:depth] or [question]
 
@@ -219,7 +250,8 @@ async def _run_server_synthesized(question: str, depth: int) -> DeepResearchResu
             f"- {r.subquestion}: {(r.answer or '(cevap yok)')[:300]}" for r in sub_results
         )
         critic_raw = await critic.generate(
-            system=_CRITIC_SYSTEM, user=f"Orijinal soru: {question}\n\nAlt cevaplar:\n{summary}"
+            system=f"{_CRITIC_SYSTEM}\n\n{contract}",
+            user=f"Orijinal soru: {question}\n\nAlt cevaplar:\n{summary}",
         )
         extra_questions = _parse_json_list(critic_raw)[:_MAX_EXTRA_QUESTIONS_PER_ROUND]
         if not extra_questions:
@@ -233,7 +265,8 @@ async def _run_server_synthesized(question: str, depth: int) -> DeepResearchResu
         f"Alt soru: {r.subquestion}\nAlt cevap: {r.answer or '(bulunamadı)'}" for r in sub_results
     )
     final_answer = await editor.generate(
-        system=_EDITOR_SYSTEM, user=f"Orijinal soru: {question}\n\n{sub_answers_block}"
+        system=f"{_EDITOR_SYSTEM}\n\n{contract}",
+        user=f"Orijinal soru: {question}\n\n{sub_answers_block}",
     )
 
     valid_ids = {c for r in sub_results for c in r.citations}
@@ -244,7 +277,7 @@ async def _run_server_synthesized(question: str, depth: int) -> DeepResearchResu
             f"Şu referanslar geçersiz: {invalid}. SADECE şu id'leri kullan: {sorted(valid_ids)}."
         )
         final_answer = await editor.generate(
-            system=_EDITOR_SYSTEM,
+            system=f"{_EDITOR_SYSTEM}\n\n{contract}",
             user=f"Orijinal soru: {question}\n\n{sub_answers_block}\n\nDÜZELTME: {fix_hint}",
         )
         citations = [c for c in extract_citations(final_answer) if c in valid_ids]

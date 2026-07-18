@@ -55,6 +55,8 @@ async def test_run_deep_research_host_orchestrated_when_no_key(monkeypatch):
     assert result.instructions is not None
     assert "katmanli_analiz" in result.instructions
     assert result.subquestions
+    assert "1. Hukuki sorun nedir?" in result.instructions
+    assert "Temporal Legal Context" in result.instructions
 
 
 @pytest.mark.asyncio

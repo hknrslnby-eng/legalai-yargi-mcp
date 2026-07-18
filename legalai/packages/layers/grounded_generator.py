@@ -11,7 +11,11 @@ göstermesi zorunlu bir cevap ürettirir. Bkz. FORK-KAPSAMLI-PLAN.md §5.1/§5.3
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
+
 from legalai.packages.jurisdictions.loader import JurisdictionNotFoundError, load_profile
+from legalai.packages.jurisdictions.persona import compose_persona_instructions
+from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
 from legalai.packages.layers.pipeline import Context
 from legalai.packages.llm.router import LLMNotConfiguredError, llm_router
 from legalai.packages.shared.types import Document
@@ -37,8 +41,19 @@ def _persona_suffix(jurisdiction_id: str | None) -> str:
     return f" {persona}" if persona else ""
 
 
-def build_system_prompt(jurisdiction_id: str | None) -> str:
-    return _SYSTEM_TEMPLATE + _persona_suffix(jurisdiction_id)
+def build_system_prompt(
+    jurisdiction_id: str | None = None,
+    jurisdiction_ids: Sequence[str] = (),
+    expert_lenses: Sequence[str] = (),
+) -> str:
+    ids = list(dict.fromkeys([*jurisdiction_ids, *( [jurisdiction_id] if jurisdiction_id else [])]))
+    persona = compose_persona_instructions(ids, expert_lenses)
+    reasoning = build_reasoning_instructions(ids, source_context="legal_analysis")
+    sections = [_SYSTEM_TEMPLATE]
+    if persona:
+        sections.append(persona)
+    sections.append(reasoning)
+    return "\n\n".join(sections)
 
 
 def build_user_prompt(question: str, documents: list[Document], retry_hint: str | None = None) -> str:
@@ -60,7 +75,11 @@ class GroundedGenerator:
         self._task = task
 
     async def run(self, ctx: Context) -> Context:
-        system = build_system_prompt(ctx.jurisdiction_id)
+        system = build_system_prompt(
+            ctx.jurisdiction_id,
+            jurisdiction_ids=ctx.jurisdiction_ids,
+            expert_lenses=ctx.expert_lenses,
+        )
         user = build_user_prompt(ctx.question, ctx.documents, ctx.citation_retry_hint)
 
         try:
