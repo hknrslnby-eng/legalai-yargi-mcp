@@ -64,6 +64,21 @@ Codex/ChatGPT, Claude veya Antigravity/Gemini aboneliği host modelin cevabı ya
 
 OpenRouter, DeepSeek veya başka server-side LLM sağlayıcıları yalnızca ilgili API key `.env` içinde yapılandırılırsa ve server-side synthesis seçilirse devreye girer. API key'leri config dosyasına yazmayın.
 
+## Hafta 14 persona ve kaynak kullanımı
+
+LegalAI, soruyu tek bir hukuk dalına zorlamaz. Olay birden fazla alanı ilgilendiriyorsa destekleyici personalar birlikte kullanılır; hukuk personası ilgili özel alan lenslerini de açar.
+
+Kullanıcı doğal dille şu örnekleri yazabilir:
+
+```text
+Bu olayı hukuk ve ceza personalarıyla birlikte analiz et.
+Haksız rekabet ile rekabet hukuku ihtimallerini birbirinden ayır.
+OECD kaynaklarını yalnızca rekabet politikası ve ekonomik analiz için kullan.
+Karşı tarafın itirazlarını, zamanaşımı/hak düşürücü süreyi, görev-yetkiyi ve dava dışı çözüm yollarını ayrıca göster.
+```
+
+Kaynak katmanı; mevzuat ve içtihadı bağlayıcı kaynak olarak ayırır. Doktrin, yabancı kararlar ve OECD çalışmaları tam künye/atıfla, bağlayıcı olmayan yardımcı kaynak etiketiyle gösterilir. OECD, varsayılan hukuki analiz kaynağı değil; rekabet araştırması ve ilgili düzenleyici/ekonomik analiz bağlamında kullanılabilecek bir policy reference'tır.
+
 ## Sorun giderme
 
 - **`legalai` görünmüyor:** Proje klasörünün doğru açıldığını, `uv sync --frozen --dev` çalıştığını ve istemcinin MCP ayarını yeniden yüklediğinizi kontrol edin.
