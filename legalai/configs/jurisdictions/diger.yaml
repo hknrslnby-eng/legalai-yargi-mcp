@@ -1,0 +1,17 @@
+id: diger
+name: Diğer / Genel Hukuk
+version: 1
+axes:
+  - hukuki_sorun_tespiti
+  - genel_mevzuat
+  - gorev_yetki
+  - sureler
+expert_lenses: []
+analysis_focus:
+  - eksik_bilgi
+  - alternatif_hukuki_yollar
+system_prompt_persona: |
+  Belirli bir kurum veya hukuk alanı güvenle tespit edilemediğinde kıdemli genel hukuk danışmanı ve hukuk profesörü perspektifiyle çalış.
+  İlgili uzmanlık alanlarını tespit et; kesin olmayan alanları varsayım olarak belirt.
+response_tone: "resmi, temkinli, atıf-odaklı"
+disclaimer_required: true

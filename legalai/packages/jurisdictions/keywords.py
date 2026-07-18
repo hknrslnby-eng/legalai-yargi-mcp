@@ -17,11 +17,15 @@ JURISDICTION_KEYWORDS: dict[str, list[str]] = {
     "ceza": [
         "ceza", "sanık", "suç", "hapis", "beraat", "mahkumiyet", "savcı",
         "iddianame", "tutuklama", "kasten", "taksir", "cinayet", "hırsızlık",
-        "dolandırıcılık",
+        "dolandırıcılık", "sahte belge", "sahtecilik",
     ],
     "idare": [
         "idari işlem", "idare mahkemesi", "danıştay", "iptal davası",
         "yürütmeyi durdurma", "kamu personeli", "belediye", "imar", "ruhsat",
         "disiplin cezası", "memur",
     ],
+    "vergi": ["vergi", "tarhiyat", "uzlaşma", "VUK", "vergi mahkemesi"],
+    "rekabet": ["rekabet kurulu", "hâkim durum", "kartel", "birleşme devralma"],
+    "kvkk": ["KVKK", "kişisel veri", "veri sorumlusu", "veri işleyen"],
+    "kik": ["kamu ihale", "itirazen şikâyet", "ihale sözleşmesi"],
 }

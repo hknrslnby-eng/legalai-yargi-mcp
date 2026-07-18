@@ -9,6 +9,7 @@ yazılır, böylece hangi kelimelerin karar verdiği izlenebilir.
 from __future__ import annotations
 
 from legalai.packages.jurisdictions.keywords import JURISDICTION_KEYWORDS
+from legalai.packages.jurisdictions.selection import guess_jurisdictions
 from legalai.packages.layers.pipeline import Context
 
 
@@ -18,7 +19,7 @@ def guess_jurisdiction(question: str) -> tuple[str | None, dict[str, int]]:
     lowered = question.lower()
     scores: dict[str, int] = {}
     for jid, keywords in JURISDICTION_KEYWORDS.items():
-        hits = sum(1 for kw in keywords if kw in lowered)
+        hits = sum(1 for kw in keywords if kw.lower() in lowered)
         if hits:
             scores[jid] = hits
 
@@ -34,9 +35,14 @@ class QualifyIssue:
 
     async def run(self, ctx: Context) -> Context:
         if ctx.jurisdiction_id:
+            if not ctx.jurisdiction_ids:
+                ctx.jurisdiction_ids = [ctx.jurisdiction_id]
             return ctx
 
-        guess, scores = guess_jurisdiction(ctx.question)
-        ctx.jurisdiction_id = guess
-        ctx.jurisdiction_scores = scores
+        selection = guess_jurisdictions(ctx.question)
+        ctx.jurisdiction_id = selection.primary
+        ctx.jurisdiction_ids = [selection.primary, *selection.supporting]
+        ctx.expert_lenses = selection.expert_lenses
+        ctx.jurisdiction_confidence = selection.confidence
+        ctx.jurisdiction_scores = selection.scores
         return ctx
