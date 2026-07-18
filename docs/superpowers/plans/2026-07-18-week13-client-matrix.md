@@ -51,6 +51,6 @@
 
 ## Execution status
 
-- [ ] Task 1: config smoke tests
-- [ ] Task 2: client matrix documentation
-- [ ] Task 3: final verification
+- [x] Task 1: config smoke tests — focused suite `3 passed`; Codex TOML and Cursor JSON remained unchanged.
+- [x] Task 2: client matrix documentation — commit `396bae3`; five-client matrix and first-run flow added.
+- [x] Task 3: final verification — targeted MCP/config suite `9 passed`; `.venv` full suite `172 passed`; `uv run` full suite `172 passed`; health/discovery/resource smoke successful.
