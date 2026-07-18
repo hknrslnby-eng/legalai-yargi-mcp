@@ -151,6 +151,16 @@ def test_build_assistant_instructions_handles_no_documents():
     assert "hiçbir belge bulunamadı" in instructions
 
 
+def test_build_assistant_instructions_includes_structured_reasoning_when_requested():
+    instructions = build_assistant_instructions(
+        ["d1"], jurisdiction_ids=["hukuk", "ceza"], source_context="legal_analysis"
+    )
+
+    assert "1. Hukuki sorun nedir?" in instructions
+    assert "Temporal Legal Context" in instructions
+    assert "non-binding" in instructions
+
+
 @pytest.mark.asyncio
 async def test_run_pipeline_synthesize_false_skips_llm_and_returns_instructions():
     fixed_doc = Document(id="d1", body="belge metni")

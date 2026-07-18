@@ -28,6 +28,7 @@ from legalai.packages.layers.argument_strength_scorer import ArgumentStrengthSco
 from legalai.packages.layers.citation_transfer_filter import CitationTransferFilter
 from legalai.packages.layers.dissent_detector import DissentDetector
 from legalai.packages.layers.grounded_generator import GroundedGenerator
+from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
 from legalai.packages.layers.pipeline import Context, Layer, Pipeline
 from legalai.packages.layers.qualify_issue import QualifyIssue
 from legalai.packages.layers.ratio_dictum import RatioDictumFilter
@@ -117,12 +118,16 @@ def _jsonish(value: Any) -> Any:
     return value
 
 
-def build_assistant_instructions(valid_doc_ids: list[str]) -> str:
+def build_assistant_instructions(
+    valid_doc_ids: list[str],
+    jurisdiction_ids: list[str] | None = None,
+    source_context: str = "legal_analysis",
+) -> str:
     """`synthesize=False` modunda, host modele (bu aracı çağıran Cursor/
     Claude/ChatGPT/Antigravity vb. asistana) nihai cevabı NASIL yazması
     gerektiğini anlatan talimat. Bkz. modül docstring'i."""
     ids_repr = ", ".join(f"#{doc_id}" for doc_id in valid_doc_ids) or "(hiçbir belge bulunamadı)"
-    return (
+    base = (
         "Bu araç bir LLM DEĞİLDİR; sadece belge + analiz getirir. Kullanıcının "
         "sorusunu SEN (bu aracı çağıran asistan) cevapla. Kurallar: "
         "(1) SADECE 'documents', 'ratios', 'dictums', 'dissents', "
@@ -134,6 +139,10 @@ def build_assistant_instructions(valid_doc_ids: list[str]) -> str:
         "(5) Bu bir taslak/araştırma yardımıdır, hukuki tavsiye değildir — "
         "cevabının sonuna bunu ekle."
     )
+    reasoning = build_reasoning_instructions(
+        jurisdiction_ids or (), source_context=source_context
+    )
+    return f"{base}\n\n{reasoning}"
 
 
 def build_layered_pipeline(
@@ -196,7 +205,19 @@ async def run_pipeline(
 
     assistant_instructions = None
     if not synthesize and pipeline is None:
-        assistant_instructions = build_assistant_instructions([doc.id for doc in result_ctx.documents])
+        jurisdiction_ids = list(result_ctx.jurisdiction_ids)
+        if not jurisdiction_ids and result_ctx.jurisdiction_id:
+            jurisdiction_ids = [result_ctx.jurisdiction_id]
+        source_context = (
+            "competition_research"
+            if "rekabet" in jurisdiction_ids
+            else "legal_analysis"
+        )
+        assistant_instructions = build_assistant_instructions(
+            [doc.id for doc in result_ctx.documents],
+            jurisdiction_ids=jurisdiction_ids,
+            source_context=source_context,
+        )
         assistant_instructions += (
             " Ayrıca evidence alanındaki kaynak türü, tam künye ve kısa ilgili alıntıyı "
             "ilgili iddianın yanında göster; temporal_context, deadline_risks, "
