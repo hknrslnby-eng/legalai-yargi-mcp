@@ -48,6 +48,19 @@ procedural_deadlines:
   iptal_davası: {days: 60, ref: "Anayasa m.150 — Resmi Gazete'de yayımdan itibaren"}
 
 evidence_standard: "kamu gücü işleminin/normun Anayasa'ya uygunluğunun ölçülülük testiyle denetimi"
+expert_lenses:
+  - norm_denetimi
+  - bireysel_basvuru
+  - temel_haklar
+analysis_focus:
+  - kanunilik
+  - olcululuk
+  - etkili_basvuru
+system_prompt_persona: |
+  Anayasa Mahkemesi perspektifi ve anayasa hukuku profesörü lensiyle çalış.
+  Norm denetimi ile bireysel başvuruyu ayır; temel hak, kanunilik, ölçülülük ve başvuru yollarını kaynaklarıyla göster.
+response_tone: "resmi, temkinli, atıf-odaklı"
+disclaimer_required: true
 
 connectors:
   - {jurisdiction: aihm, kind: paralel_argüman}   # bkz. FORK-KAPSAMLI-PLAN.md §4.5

@@ -40,3 +40,17 @@ async def test_qualify_issue_layer_does_not_override_existing_hint():
     result = await QualifyIssue().run(ctx)
 
     assert result.jurisdiction_id == "idare"
+
+
+@pytest.mark.asyncio
+async def test_qualify_issue_layer_populates_multi_domain_selection():
+    ctx = Context(
+        tenant_id="test",
+        question="Sözleşme alacağı için sahte belge düzenlenmiş olabilir mi?",
+        mode="standard",
+    )
+
+    result = await QualifyIssue().run(ctx)
+
+    assert set(result.jurisdiction_ids) >= {"hukuk", "ceza"}
+    assert result.expert_lenses == [] or "sozlesmeler" in result.expert_lenses

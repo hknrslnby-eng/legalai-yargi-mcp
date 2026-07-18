@@ -15,6 +15,9 @@ class Context:
     mode: str                                  # standard | deep | opposing | layered
     jurisdiction_id: str | None = None
     jurisdiction_scores: dict[str, int] = field(default_factory=dict)   # QualifyIssue teşhis çıktısı
+    jurisdiction_ids: list[str] = field(default_factory=list)
+    expert_lenses: list[str] = field(default_factory=list)
+    jurisdiction_confidence: float = 0.0
     documents: list[Document] = field(default_factory=list)
     scored: list[Any] = field(default_factory=list)
     ratios: list[Any] = field(default_factory=list)

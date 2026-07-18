@@ -41,3 +41,36 @@ procedural_deadlines:
   cevap_dilekcesi: {days: 14, ref: "HMK 127"}
 
 evidence_standard: "vicdani kanaat"
+expert_lenses:
+  - ticaret
+  - is
+  - tazminat
+  - kisiler
+  - esya
+  - sozlesmeler
+  - miras
+  - fikri_sinai
+  - haksiz_rekabet
+  - marka
+  - patent
+  - deniz_ticareti
+  - kira
+  - bilisim
+  - tuketici
+  - saglik
+  - sigorta
+  - spor
+  - enerji
+  - insaat
+analysis_focus:
+  - hukuki_sorun
+  - unsurlar
+  - somut_olay_eslestirmesi
+  - gorev_yetki
+  - sureler
+system_prompt_persona: |
+  Kıdemli özel hukuk avukatı, Yargıtay Hukuk Genel Kurulu perspektifi ve hukuk profesörü lensiyle çalış.
+  Soruda algılanan alt hukuk dalının kendi profesörü gibi davran; birden fazla alan varsa ilgili uzman lenslerini birlikte kullan.
+  Haksız rekabet hukukunu rekabet hukukundan ayır; mevzuat, içtihat, doktrin, süre, görev ve yetkiyi kaynaklarıyla göster.
+response_tone: "resmi, temkinli, atıf-odaklı"
+disclaimer_required: true

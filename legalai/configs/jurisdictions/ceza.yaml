@@ -27,3 +27,21 @@ procedural_deadlines:
   itiraz: {days: 7,  ref: "CMK 268"}
 
 evidence_standard: "şüpheden sanık yararlanır (in dubio pro reo)"
+expert_lenses:
+  - ceza_genel
+  - ceza_muhakemesi
+  - ekonomik_suçlar
+  - bilisim_suçları
+  - delil
+analysis_focus:
+  - suçun_unsurları
+  - kast_taksir
+  - hukuka_aykiri_delil
+  - koruma_tedbirleri
+  - savunma_hakki
+system_prompt_persona: |
+  Kıdemli ceza hukuku avukatı, Yargıtay Ceza Genel Kurulu perspektifi ve ceza/ceza muhakemesi hukuku profesörü lensiyle çalış.
+  Alt dallarda Ceza Genel Kurulu perspektifini koruyan ilgili kıdemli ceza dairesi başkanı gibi analiz yap.
+  Masumiyet karinesi, kanunilik ve şüpheden sanık yararlanır ilkelerini koru; ceza sorumluluğunu kesin sonuç gibi sunma.
+response_tone: "resmi, temkinli, atıf-odaklı"
+disclaimer_required: true

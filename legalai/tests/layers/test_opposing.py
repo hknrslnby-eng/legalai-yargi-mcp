@@ -51,6 +51,8 @@ async def test_host_mode_does_not_require_llm_and_preserves_missing_facts() -> N
     assert result.assistant_instructions
     assert result.missing_facts
     assert any("nonbinding" in result.assistant_instructions.lower() for _ in [0])
+    assert "1. Hukuki sorun nedir?" in result.assistant_instructions
+    assert "Temporal Legal Context" in result.assistant_instructions
 
 
 @pytest.mark.asyncio

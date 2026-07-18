@@ -19,6 +19,11 @@ class JurisdictionProfile:
     dissent_headers: list[str] = field(default_factory=list)
     procedural_deadlines: dict[str, Any] = field(default_factory=dict)
     evidence_standard: str = ""
+    system_prompt_persona: str = ""
+    response_tone: str = ""
+    disclaimer_required: bool = False
+    expert_lenses: list[str] = field(default_factory=list)
+    analysis_focus: list[str] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict)   # ham YAML — override sınıfları için
 
     @classmethod
@@ -35,5 +40,10 @@ class JurisdictionProfile:
             dissent_headers=list(data.get("dissent_headers", [])),
             procedural_deadlines=dict(data.get("procedural_deadlines", {})),
             evidence_standard=data.get("evidence_standard", ""),
+            system_prompt_persona=data.get("system_prompt_persona", ""),
+            response_tone=data.get("response_tone", ""),
+            disclaimer_required=bool(data.get("disclaimer_required", False)),
+            expert_lenses=list(data.get("expert_lenses", [])),
+            analysis_focus=list(data.get("analysis_focus", [])),
             raw=data,
         )

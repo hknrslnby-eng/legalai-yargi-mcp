@@ -1,0 +1,31 @@
+sources:
+  - source_id: rekabet_kurumu
+    label: "Rekabet Kurulu kararları ve mevzuatı"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, competition_research]
+    full_text_storage: allowed
+  - source_id: eu_commission_competition
+    label: "Avrupa Komisyonu / DG COMP"
+    source_kind: foreign_institution_decision
+    authority_level: comparative_institution_reference
+    allowed_contexts: [competition_research, legal_analysis]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: eu_court_competition
+    label: "ABAD ve Genel Mahkeme rekabet kararları"
+    source_kind: foreign_judicial_decision
+    authority_level: comparative_judicial_reference
+    allowed_contexts: [competition_research, legal_analysis]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: eur_lex_competition
+    label: "EUR-Lex rekabet mevzuatı ve resmi yayınları"
+    source_kind: foreign_legislation
+    authority_level: comparative_legislation
+    allowed_contexts: [competition_research, legal_analysis]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: oecd_competition
+    label: "OECD rekabet tavsiyeleri, raporları ve yuvarlak masa çalışmaları"
+    source_kind: policy_reference
+    authority_level: non_binding_policy_reference
+    allowed_contexts: [competition_research, public_procurement_research, regulatory_analysis]
+    full_text_storage: metadata_or_excerpt_only
