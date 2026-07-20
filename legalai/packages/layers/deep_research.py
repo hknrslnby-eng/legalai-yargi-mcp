@@ -30,10 +30,17 @@ from legalai.packages.jurisdictions.selection import guess_jurisdictions
 from legalai.packages.layers.analysis_pipeline import run_pipeline
 from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
 from legalai.packages.layers.verified_citation_check import extract_citations
+from legalai.packages.layers.memorandum import MemorandumProfile, build_memorandum_instructions
 from legalai.packages.llm.router import LLMNotConfiguredError, llm_router
 
 _MAX_CRITIC_ROUNDS = 1  # ek ne kadar eleştiri/ek-alt-soru turu yapılabilir (maliyet sınırı)
 _MAX_EXTRA_QUESTIONS_PER_ROUND = 2
+_DETAIL_LIMITS = {
+    "brief": (2, 0),
+    "standard": (4, 1),
+    "deep": (5, 1),
+    "exhaustive": (8, 3),
+}
 
 _PLANNER_SYSTEM_TEMPLATE = (
     "Sen bir Türk hukuku araştırma planlayıcısısın. Kullanıcının sorusunu, "
@@ -85,6 +92,7 @@ class DeepResearchResult:
     assumptions: list[str] = field(default_factory=list)
     missing_facts: list[str] = field(default_factory=list)
     source_scope: str = "targeted"
+    detail_level: str = "deep"
 
     def to_dict(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
@@ -113,6 +121,7 @@ class DeepResearchResult:
             "assumptions": self.assumptions,
             "missing_facts": self.missing_facts,
             "source_scope": self.source_scope,
+            "detail_level": self.detail_level,
         }
         if self.instructions is not None:
             payload["instructions"] = self.instructions
@@ -148,6 +157,7 @@ def _build_host_orchestrated_instructions(
     subquestions: list[str],
     jurisdiction_ids: list[str] | None = None,
     expert_lenses: list[str] | None = None,
+    detail_level: str = "deep",
 ) -> str:
     numbered = "\n".join(f"{i + 1}. {q}" for i, q in enumerate(subquestions))
     base = (
@@ -173,10 +183,13 @@ def _build_host_orchestrated_instructions(
         ids,
         source_context="competition_research" if "rekabet" in ids else "legal_analysis",
     )
-    return "\n\n".join(item for item in (base, persona, reasoning) if item)
+    output_contract = build_memorandum_instructions(
+        MemorandumProfile(detail_level=detail_level, include_strategy=True, max_source_quotes=5)
+    )
+    return "\n\n".join(item for item in (base, persona, reasoning, output_contract) if item)
 
 
-async def _run_host_orchestrated(question: str, depth: int) -> DeepResearchResult:
+async def _run_host_orchestrated(question: str, depth: int, detail_level: str) -> DeepResearchResult:
     selection = guess_jurisdictions(question)
     jurisdiction_ids = [selection.primary, *selection.supporting]
     subquestions = suggest_subquestions_from_axes(question, selection.primary, depth)
@@ -191,7 +204,9 @@ async def _run_host_orchestrated(question: str, depth: int) -> DeepResearchResul
             subquestions,
             jurisdiction_ids=jurisdiction_ids,
             expert_lenses=selection.expert_lenses,
+            detail_level=detail_level,
         ),
+        detail_level=detail_level,
     )
 
 
@@ -209,7 +224,7 @@ def _parse_json_list(raw: str | None) -> list[str]:
     return [str(item).strip() for item in parsed if str(item).strip()]
 
 
-def _research_contract(question: str) -> str:
+def _research_contract(question: str, detail_level: str) -> str:
     selection = guess_jurisdictions(question)
     jurisdiction_ids = [selection.primary, *selection.supporting]
     persona = compose_persona_instructions(jurisdiction_ids, selection.expert_lenses)
@@ -217,7 +232,10 @@ def _research_contract(question: str) -> str:
         jurisdiction_ids,
         source_context="competition_research" if "rekabet" in jurisdiction_ids else "legal_analysis",
     )
-    return f"{persona}\n\n{reasoning}"
+    output_contract = build_memorandum_instructions(
+        MemorandumProfile(detail_level=detail_level, include_strategy=True, max_source_quotes=5)
+    )
+    return f"{persona}\n\n{reasoning}\n\n{output_contract}"
 
 
 async def _research_subquestion(subquestion: str) -> SubResearch:
@@ -233,9 +251,9 @@ async def _research_subquestion(subquestion: str) -> SubResearch:
     )
 
 
-async def _run_server_synthesized(question: str, depth: int) -> DeepResearchResult:
+async def _run_server_synthesized(question: str, depth: int, detail_level: str) -> DeepResearchResult:
     planner = llm_router.route("reasoning")
-    contract = _research_contract(question)
+    contract = _research_contract(question, detail_level)
     plan_raw = await planner.generate(
         system=f"{_PLANNER_SYSTEM_TEMPLATE.format(depth=depth)}\n\n{contract}",
         user=f"Soru: {question}",
@@ -244,7 +262,8 @@ async def _run_server_synthesized(question: str, depth: int) -> DeepResearchResu
 
     sub_results = [await _research_subquestion(q) for q in subquestions]
 
-    for _ in range(_MAX_CRITIC_ROUNDS):
+    critic_rounds = _DETAIL_LIMITS[detail_level][1]
+    for _ in range(critic_rounds):
         critic = llm_router.route("reasoning")
         summary = "\n".join(
             f"- {r.subquestion}: {(r.answer or '(cevap yok)')[:300]}" for r in sub_results
@@ -289,17 +308,24 @@ async def _run_server_synthesized(question: str, depth: int) -> DeepResearchResu
         sub_results=sub_results,
         answer=final_answer,
         citations=citations,
+        detail_level=detail_level,
     )
 
 
 async def run_deep_research(
-    question: str, depth: int = 3, synthesize: bool | None = None
+    question: str,
+    depth: int = 3,
+    synthesize: bool | None = None,
+    detail_level: str = "deep",
 ) -> DeepResearchResult:
     """`synthesize=None` (varsayılan) → `.env`'de bir LLM anahtarı VARSA
     otomatik olarak `True`, yoksa `False` davranır (bkz. modül docstring'i)."""
-    depth = max(1, min(depth, 5))
+    if detail_level not in _DETAIL_LIMITS:
+        raise ValueError("detail_level brief, standard, deep veya exhaustive olmalıdır.")
+    depth_cap = _DETAIL_LIMITS[detail_level][0]
+    depth = max(1, min(depth, depth_cap))
     resolved_synthesize = _llm_available() if synthesize is None else synthesize
 
     if not resolved_synthesize:
-        return await _run_host_orchestrated(question, depth)
-    return await _run_server_synthesized(question, depth)
+        return await _run_host_orchestrated(question, depth, detail_level)
+    return await _run_server_synthesized(question, depth, detail_level)

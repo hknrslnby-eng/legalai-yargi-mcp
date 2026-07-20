@@ -60,6 +60,25 @@ async def test_run_deep_research_host_orchestrated_when_no_key(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_exhaustive_detail_level_expands_host_output_contract(monkeypatch):
+    monkeypatch.setattr(
+        deep_research, "llm_router", _FakeRouter(scripted_answers=[], configured=False)
+    )
+
+    result = await run_deep_research(
+        "karmaşık sözleşme uyuşmazlığı",
+        depth=5,
+        synthesize=False,
+        detail_level="exhaustive",
+    )
+
+    assert result.detail_level == "exhaustive"
+    assert result.instructions is not None
+    assert "11. Bütünleştirici Ayrıntılı Değerlendirme" in result.instructions
+    assert len(result.subquestions) <= 8
+
+
+@pytest.mark.asyncio
 async def test_run_deep_research_auto_detects_host_orchestrated_without_key(monkeypatch):
     monkeypatch.setattr(
         deep_research, "llm_router", _FakeRouter(scripted_answers=[], configured=False)

@@ -136,7 +136,8 @@ veya yerel `file_path`, amaç/pozisyon, tercih edilen çıktı ayrıntısı, var
 olay-tarih bağlamı ve isteğe bağlı `jurisdiction_hint` içerir.
 
 `file_path`, yerel `.txt`, `.md`, `.pdf` ve `.docx` belgelerini kabul eder.
-Taranmış veya görüntü tabanlı PDF'de yerel OCR henüz etkin değilse sonuç açıkça
+Taranmış veya görüntü tabanlı PDF'de yerel OCR eklentisi veya işletim sistemi OCR
+motoru kullanılamıyorsa sonuç açıkça
 `ocr_required` uyarısı verir; belge kalıcı olarak saklanmaz.
 
 Araç, API anahtarı olmadan yapılandırılmış bulgular, kaynak paketleri, persona

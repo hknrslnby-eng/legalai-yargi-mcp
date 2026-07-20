@@ -45,6 +45,7 @@ def build_system_prompt(
     jurisdiction_id: str | None = None,
     jurisdiction_ids: Sequence[str] = (),
     expert_lenses: Sequence[str] = (),
+    output_contract: str | None = None,
 ) -> str:
     ids = list(dict.fromkeys([*jurisdiction_ids, *( [jurisdiction_id] if jurisdiction_id else [])]))
     persona = compose_persona_instructions(ids, expert_lenses)
@@ -53,6 +54,8 @@ def build_system_prompt(
     if persona:
         sections.append(persona)
     sections.append(reasoning)
+    if output_contract:
+        sections.append(output_contract)
     return "\n\n".join(sections)
 
 
@@ -79,6 +82,7 @@ class GroundedGenerator:
             ctx.jurisdiction_id,
             jurisdiction_ids=ctx.jurisdiction_ids,
             expert_lenses=ctx.expert_lenses,
+            output_contract=ctx.output_contract,
         )
         user = build_user_prompt(ctx.question, ctx.documents, ctx.citation_retry_hint)
 
