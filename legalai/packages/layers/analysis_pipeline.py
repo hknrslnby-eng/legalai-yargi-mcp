@@ -29,6 +29,7 @@ from legalai.packages.layers.citation_transfer_filter import CitationTransferFil
 from legalai.packages.layers.dissent_detector import DissentDetector
 from legalai.packages.layers.grounded_generator import GroundedGenerator
 from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
+from legalai.packages.layers.operational_context import OperationalContextBuilder
 from legalai.packages.layers.pipeline import Context, Layer, Pipeline
 from legalai.packages.layers.qualify_issue import QualifyIssue
 from legalai.packages.layers.ratio_dictum import RatioDictumFilter
@@ -68,6 +69,7 @@ class AnalysisResult:
     assumptions: list[str] = field(default_factory=list)
     missing_facts: list[str] = field(default_factory=list)
     source_scope: str = "targeted"
+    operational_context: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -96,6 +98,7 @@ class AnalysisResult:
             "assumptions": list(self.assumptions or []),
             "missing_facts": list(self.missing_facts or []),
             "source_scope": self.source_scope,
+            "operational_context": _jsonish(self.operational_context),
         }
         if self.assistant_instructions is not None:
             payload["assistant_instructions"] = self.assistant_instructions
@@ -122,6 +125,7 @@ def build_assistant_instructions(
     valid_doc_ids: list[str],
     jurisdiction_ids: list[str] | None = None,
     source_context: str = "legal_analysis",
+    operational_context: Any | None = None,
 ) -> str:
     """`synthesize=False` modunda, host modele (bu aracı çağıran Cursor/
     Claude/ChatGPT/Antigravity vb. asistana) nihai cevabı NASIL yazması
@@ -140,7 +144,9 @@ def build_assistant_instructions(
         "cevabının sonuna bunu ekle."
     )
     reasoning = build_reasoning_instructions(
-        jurisdiction_ids or (), source_context=source_context
+        jurisdiction_ids or (),
+        source_context=source_context,
+        operational_context=operational_context,
     )
     return f"{base}\n\n{reasoning}"
 
@@ -203,11 +209,13 @@ async def run_pipeline(
     active_pipeline = pipeline or build_layered_pipeline(synthesize=synthesize)
     result_ctx = await active_pipeline.run(ctx)
 
+    jurisdiction_ids = list(result_ctx.jurisdiction_ids)
+    if not jurisdiction_ids and result_ctx.jurisdiction_id:
+        jurisdiction_ids = [result_ctx.jurisdiction_id]
+    operational_context = OperationalContextBuilder().build(question, jurisdiction_ids)
+
     assistant_instructions = None
     if not synthesize and pipeline is None:
-        jurisdiction_ids = list(result_ctx.jurisdiction_ids)
-        if not jurisdiction_ids and result_ctx.jurisdiction_id:
-            jurisdiction_ids = [result_ctx.jurisdiction_id]
         source_context = (
             "competition_research"
             if "rekabet" in jurisdiction_ids
@@ -217,6 +225,7 @@ async def run_pipeline(
             [doc.id for doc in result_ctx.documents],
             jurisdiction_ids=jurisdiction_ids,
             source_context=source_context,
+            operational_context=operational_context,
         )
         assistant_instructions += (
             " Ayrıca evidence alanındaki kaynak türü, tam künye ve kısa ilgili alıntıyı "
@@ -245,4 +254,5 @@ async def run_pipeline(
         strategy_options=list(result_ctx.strategy_options),
         assumptions=[],
         missing_facts=[],
+        operational_context=operational_context.to_dict(),
     )

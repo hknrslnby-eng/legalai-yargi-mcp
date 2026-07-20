@@ -1,4 +1,6 @@
 from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
+from legalai.packages.layers.operational_context import OperationalContextBuilder
+from legalai.packages.layers.reasoning_playbook import REASONING_PLAYBOOK
 
 
 def test_reasoning_instructions_contain_four_ordered_steps():
@@ -23,4 +25,27 @@ def test_reasoning_instructions_cover_procedural_and_source_boundaries():
     assert "non-binding" in text
     assert "OECD" in text
     assert "analysis-only" in text
+
+
+def test_operational_context_labels_crypto_as_hypothesis():
+    context = OperationalContextBuilder().build("Kripto cüzdanına yönlendirildim", ["ceza"])
+
+    assert context.domain == "crypto_asset_operations"
+    assert "kesin olgu değildir" in context.safety_note
+
+
+def test_reasoning_requires_summary_and_detailed_findings():
+    text = build_reasoning_instructions(["hukuk"])
+
+    assert "Yönetici özeti" in text
+    assert "operasyonel bağlam" in text.lower()
+    assert "hipotez" in text.lower()
+
+
+def test_reasoning_playbook_contains_no_private_source_material():
+    text = REASONING_PLAYBOOK.render()
+
+    assert "private sample" not in text
+    assert "party name" not in text
+    assert "TCKN" not in text
 
