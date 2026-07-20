@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import json
 from pathlib import Path
+from datetime import timedelta
 
 import typer
 
@@ -15,6 +16,7 @@ from legalai.packages.usage.store import UsageStore
 from legalai.packages.installer.ides import detect_ide_configs
 from legalai.packages.installer.models import InstallRequest
 from legalai.packages.installer.service import install_socratlegal
+from legalai.packages.installer.update import apply_update, check_for_update, load_release_manifest, rollback_update
 
 
 app = typer.Typer(help="LegalAI yerel yönetim araçları.", no_args_is_help=True)
@@ -23,6 +25,50 @@ app.add_typer(usage_app, name="usage")
 _QA_MODES = {"layered", "simple"}
 corpus_app = typer.Typer(help="SocratLegal local corpus tools", no_args_is_help=True)
 app.add_typer(corpus_app, name="corpus")
+update_app = typer.Typer(help="SocratLegal sürüm güncelleme araçları", no_args_is_help=True)
+app.add_typer(update_app, name="update")
+
+
+@update_app.command("check")
+def update_check(
+    manifest_file: Path = typer.Option(..., "--manifest-file", help="Release manifest JSON dosyası veya indirilen metadata"),
+    state_path: Path = typer.Option(Path.home() / ".socratlegal" / "update-check.json", "--state-path"),
+    current_version: str = typer.Option("0.2.2", "--current-version"),
+) -> None:
+    """Yalnızca sürüm metadata'sını kontrol eder; belge içeriği göndermez."""
+    payload = json.loads(manifest_file.read_text(encoding="utf-8"))
+    result = check_for_update(
+        current_version,
+        lambda: payload,
+        state_path=state_path,
+        interval=timedelta(hours=24),
+    )
+    typer.echo(json.dumps({
+        "available": result.available,
+        "version": result.manifest.version if result.manifest else None,
+        "channel": result.manifest.channel if result.manifest else None,
+        "from_cache": result.from_cache,
+        "checked_at": result.checked_at.isoformat(),
+    }, ensure_ascii=False, indent=2))
+
+
+@update_app.command("apply")
+def update_apply(
+    archive: Path = typer.Option(..., "--archive"),
+    manifest_file: Path = typer.Option(..., "--manifest-file"),
+    active_app: Path = typer.Option(Path.cwd() / "app", "--active-app"),
+) -> None:
+    """Açıkça istenen, checksum doğrulamalı uygulama güncellemesini yapar."""
+    manifest = load_release_manifest(json.loads(manifest_file.read_text(encoding="utf-8")))
+    apply_update(archive, active_app, manifest)
+    typer.echo(f"Güncelleme uygulandı: {manifest.version}")
+
+
+@update_app.command("rollback")
+def update_rollback(active_app: Path = typer.Option(Path.cwd() / "app", "--active-app")) -> None:
+    """Son çalışan uygulama sürümüne geri döner."""
+    rollback_update(active_app)
+    typer.echo("Önceki SocratLegal sürümüne geri dönüldü.")
 
 
 @app.command("install")
