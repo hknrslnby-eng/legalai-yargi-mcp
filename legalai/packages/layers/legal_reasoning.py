@@ -4,6 +4,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from legalai.packages.layers.operational_context import OperationalContext
+from legalai.packages.layers.quality_contract import build_quality_contract
 from legalai.packages.layers.reasoning_playbook import (
     REASONING_PLAYBOOK,
     ReasoningPlaybook,
@@ -30,6 +31,8 @@ def build_reasoning_instructions(
     expert_lenses: Sequence[str] = (),
     operational_context: OperationalContext | None = None,
     playbook: ReasoningPlaybook = REASONING_PLAYBOOK,
+    quality_profile: str = "auto",
+    model_hint: str = "",
 ) -> str:
     """Build shared instructions without making a legal conclusion.
 
@@ -82,6 +85,8 @@ def build_reasoning_instructions(
             "Çıktı analysis-only ve non-binding bir değerlendirmedir; kesin görüş, garanti veya hukuki danışmanlık iddiası değildir.",
             "",
             playbook.render(),
+            "",
+            build_quality_contract(quality_profile, model_hint=model_hint),
         ]
     )
     return "\n".join(lines)

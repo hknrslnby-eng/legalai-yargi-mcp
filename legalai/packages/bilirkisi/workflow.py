@@ -9,15 +9,17 @@ from __future__ import annotations
 import html
 import re
 import zipfile
+from io import BytesIO
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Iterable
 from xml.etree import ElementTree
 
 from legalai.packages.pii.outbound import mask_for_external
+from legalai.packages.layers.quality_contract import build_quality_contract
 
 _MAX_REPORT_BYTES = 20 * 1024 * 1024
-_SUPPORTED = {".txt", ".md", ".html", ".htm", ".pdf", ".docx", ".xlsx", ".xls", ".png", ".jpg", ".jpeg"}
+_SUPPORTED = {".txt", ".md", ".html", ".htm", ".pdf", ".docx", ".xlsx", ".xls", ".png", ".jpg", ".jpeg", ".tif", ".tiff"}
 _PII_PATTERNS = (
     (re.compile(r"\b\d{11}\b"), "[TCKN_MASKELENDI]"),
     (re.compile(r"\bTR\d{24}\b", re.IGNORECASE), "[IBAN_MASKELENDI]"),
@@ -115,6 +117,18 @@ def _default_ocr_provider() -> OcrProvider | None:
         return None
 
     def _extract(path: Path) -> str | None:
+        if path.suffix.lower() == ".pdf":
+            try:
+                import fitz
+            except ImportError:
+                return None
+            pages: list[str] = []
+            with fitz.open(path) as document:
+                for page in document:
+                    png = page.get_pixmap(dpi=200, alpha=False).tobytes("png")
+                    with Image.open(BytesIO(png)) as image:
+                        pages.append(pytesseract.image_to_string(image, lang="tur+eng"))
+            return "\n".join(pages)
         with Image.open(path) as image:
             return pytesseract.image_to_string(image, lang="tur+eng")
 
@@ -150,7 +164,18 @@ def _read_file(path: Path, ocr_provider: OcrProvider | None = None) -> tuple[str
         from pypdf import PdfReader
 
         reader = PdfReader(str(path))
-        return "\n".join(page.extract_text() or "" for page in reader.pages), False, []
+        extracted = "\n".join(page.extract_text() or "" for page in reader.pages)
+        if extracted.strip():
+            return extracted, False, []
+        provider = ocr_provider or _default_ocr_provider()
+        if provider is not None:
+            try:
+                ocr_text = provider(path) or ""
+                if ocr_text.strip():
+                    return ocr_text, False, []
+            except Exception as exc:
+                return "", True, [f"PDF OCR sağlayıcısı çalışmadı: {type(exc).__name__}"]
+        return "", True, ["PDF metin çıkarmadı; yerel OCR motoru bulunamadı veya çalıştırılamadı."]
     provider = ocr_provider or _default_ocr_provider()
     if provider is not None:
         try:
@@ -294,11 +319,22 @@ async def analyze_report(
     temporal = {"event_dates": event_dates or [], "case_date": case_date, "status": "date-specific-pending-source-resolution"}
     instructions = (
         f"Teknik alan çıkarımı: {inference.domain} (güven {inference.confidence:.2f}). "
-        "Her RAPOR-* iddiasını önce aynı teknik bilim dalında kapsamlı bir araştırma/tez hazırlığı gibi test et; "
-        "standartları, yöntemleri, ham veriyi, hata/ölçüm belirsizliğini ve alternatif teknik hipotezleri araştır. "
-        "Sonra her teknik karşı argümanı ilgili maddi hukuk unsuru, usul kuralı, mevzuat ve erişilmiş içtihatlarla bağla. "
-        "Kaynak yoksa kesin görüş yazma; teknik uzman görüşü değildir, non-binding analiz ve araştırma brifidir."
+        "Teknik alan düşük güvenliyse bu alanı kesinleştirme; en az iki makul teknik alan/hipotez öner ve "
+        "hangi bulgunun hangisine bağlı olduğunu göster. Her RAPOR-* iddiasını aynı teknik bilim dalında "
+        "kapsamlı bir araştırma/tez hazırlığı gibi test et: bulgunun veri kökenini, ölçüm modelini, "
+        "standart sürümünü, kalibrasyonunu, hata payını, örneklemesini, yeniden üretilebilirliğini, "
+        "alternatif teknik açıklamalarını ve karşı deney/hesaplamaları ayrı ayrı değerlendir. "
+        "Teknik eleştiriyi yalnızca 'eksik inceleme' demekle bırakma; rapor sonucunun hangi varsayım "
+        "değişince ne ölçüde değişeceğini ve bilirkişiye yöneltilecek somut soruları yaz. "
+        "Sonra her teknik karşı argümanı, konunun esasını düzenleyen tüm ilgili maddi hukuk unsurları, "
+        "usul kuralları, teknik mevzuat/standartlar ve erişilmiş içtihatlarla bağla; HMK m.266 ve "
+        "m.279-281 yalnızca usul çapasıdır. Her bağlantıda hukuk kuralı → teknik bulgu → itiraz sonucu "
+        "zincirini kur. Kaynak yoksa kesin görüş yazma; teknik uzman görüşü değildir, non-binding analiz "
+        "ve araştırma brifidir."
     )
+    instructions += "\n\n" + build_quality_contract("auto")
+    if report.ocr_required:
+        instructions += " OCR gerekli veya başarısız: teknik sonuç üretmeden önce belge metni yerel OCR ya da kullanıcı doğrulamasıyla tamamlanmalıdır."
     return BilirKisiAnalysis(report, question, inference.domain, tuple(claims), temporal, tuple(legal_sources or ()), True, True, instructions)
 
 

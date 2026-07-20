@@ -230,6 +230,8 @@ def _weak_points(result_data: dict[str, Any]) -> list[WeakPoint]:
 def _assistant_instructions(
     jurisdiction_ids: list[str] | None = None,
     expert_lenses: list[str] | None = None,
+    quality_profile: str = "auto",
+    model_hint: str = "",
 ) -> str:
     base = (
         "Bu sonuç nihai hukuki görüş değildir; nonbinding=true, yalnızca bağlayıcı olmayan araştırma/analiz taslağıdır. "
@@ -238,7 +240,12 @@ def _assistant_instructions(
     )
     ids = jurisdiction_ids or []
     persona = compose_persona_instructions(ids, expert_lenses or [])
-    reasoning = build_reasoning_instructions(ids, source_context="legal_analysis")
+    reasoning = build_reasoning_instructions(
+        ids,
+        source_context="legal_analysis",
+        quality_profile=quality_profile,
+        model_hint=model_hint,
+    )
     return "\n\n".join(item for item in (base, persona, reasoning) if item)
 
 
@@ -254,6 +261,8 @@ async def run_opposing(
     llm_client: LLMClient | None = None,
     document_backend: Any | None = None,
     temporal_backend: Any | None = None,
+    quality_profile: str = "auto",
+    model_hint: str = "",
 ) -> OpposingResult:
     validate_source_scope(source_scope)
     if not settings.enable_aggressive_opposing:
@@ -332,6 +341,8 @@ async def run_opposing(
         assistant_instructions=_assistant_instructions(
             jurisdiction_ids=jurisdiction_ids,
             expert_lenses=selection.expert_lenses,
+            quality_profile=quality_profile,
+            model_hint=model_hint,
         ),
         confidence=min(temporal.confidence, 0.7),
         assumptions=assumptions,

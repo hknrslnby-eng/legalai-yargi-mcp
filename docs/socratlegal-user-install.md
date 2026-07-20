@@ -67,9 +67,16 @@ Araç adlarını ezberlemek gerekmez. Sohbete doğal dille isteğinizi yazabilir
 - “Karşı tarafın en güçlü karşı argümanlarını ve karşıt içtihatları getir.”
 - “Dava, icra, arabuluculuk, idareye başvuru, 35/A ve sulh seçeneklerini birlikte değerlendir.”
 - “Yüklediğim bilirkişi raporunu teknik ve hukuki yönden incele; itiraz dilekçesi taslağı hazırla.”
+- “Bu uyuşmazlık hakkında deep seviyede hukukî mütalaa hazırla; bütünleştirici değerlendirme, sonuç ve kaynakça/alıntılar ekle.”
 
 `socratlegal_yardim` aracı veya `legalai://capabilities` kaynağı, istemcinin desteklediği araçları ve örnek istemleri gösterir. Bilirkişi raporu akışı üretim modülüdür; teknik alan kullanıcı tarafından verilmezse sistem rapordan alanı çıkarmaya çalışır, belirsiz sonuçları varsayım olarak etiketler ve teknik karşı argümanları hukuk kaynaklarıyla bağlamaya çalışır.
 
 Sözleşme incelemesi için `socratlegal_sozlesme_incele` aracını veya doğal dilde “Bu sözleşmeyi madde madde, kaynaklı ve karşı görüşleriyle incele” istemini kullanın.
+
+Hukukî mütalaa için `socratlegal_hukuki_mutalaa` aracını veya doğal dilde mütalaa talebini kullanabilirsiniz. `brief`, `standard`, `deep` ve `exhaustive` ayrıntı seviyeleri vardır; mütalaa çıktısı önce özet, sonra ayrıntılı değerlendirme, sonuç ve kaynakça düzeninde hazırlanır. Ham düşünce zinciri gösterilmez; bunun yerine gerekçeler, varsayımlar, belirsizlikler ve kaynak bağlantıları gösterilir.
+
+Kalite profili istemci tarafından seçilebilir: `auto` (model adına göre uyarlanır), `balanced`, `frontier` veya `exhaustive`. Bu profiller çıktı sözleşmesini, araştırma genişliğini ve eleştiri turunu düzenler; daha küçük/ hızlı bir modelin teknik sınırlarını ortadan kaldırdığı garanti edilmez. Doğrudan uygulanabilir kaynak bulunmadığında SocratLegal, aday kaynakları “doğrudan otorite” diye sunmaz; analoji benzerliklerini, farklarını ve kanunilik/ölçülülük sınırlarını ayrı gösterir.
+
+Taranmış PDF veya görüntü bilirkişi raporlarında yerel OCR eklentisi kurulmuşsa PDF sayfaları da yerelde metne çevrilir. OCR motoru yoksa araç `ocr_required` uyarısı verir; okunmamış sayfalardan teknik veya hukuki sonuç üretmez. Kaynak kod kurulumunda `uv sync --extra ocr` ile Python bileşenleri kurulmalı, Windows'ta ayrıca Tesseract ve `tur` dil verisi bulunmalıdır.
 
 Tüm sonuçlar bağlayıcı hukuki görüş değil, kaynaklı ve ihtimalli analizdir. Kişisel veriler dış çağrıdan önce maskelenir; IDE'nin kendi veri politikası ayrıca incelenmelidir.

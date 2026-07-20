@@ -21,8 +21,10 @@ from __future__ import annotations
 import json
 from dataclasses import asdict
 from pathlib import Path
+from typing import Annotated
 
 from fastmcp import FastMCP
+from pydantic import Field
 
 from legalai.packages.aihm.aym_bridge import aihm_aym_kopru as _aihm_aym_kopru
 from legalai.packages.aihm.service import aihm_karar_ara as _aihm_karar_ara
@@ -30,6 +32,7 @@ from legalai.packages.aihm.service import aihm_karar_getir as _aihm_karar_getir
 from legalai.packages.layers.analysis_pipeline import run_pipeline
 from legalai.packages.layers.citation_validator import validate_citations
 from legalai.packages.layers.deep_research import run_deep_research
+from legalai.packages.layers.memorandum import MemorandumProfile, build_memorandum_instructions, memorandum_section_ids
 from legalai.packages.layers.opposing import run_opposing
 from legalai.packages.discovery.catalog import capability_catalog
 from legalai.packages.pii.gateway import PiiGateway
@@ -50,6 +53,12 @@ set_tenant(TenantContext(tenant_id=settings.tenant_id, tenant_name=settings.tena
 
 app = FastMCP(name="SocratLegal MCP Server", version="0.1.0")
 _pii_gateway = PiiGateway()
+
+ApplicationNo = Annotated[str, Field(description="AİHM başvuru numarası; örn. 47533/99.")]
+LanguageCode = Annotated[str, Field(description="Tam metin dili; 'en' veya 'fr'.")]
+LegalQuestion = Annotated[str, Field(description="Araştırılacak hukuki soru veya uyuşmazlık.")]
+JurisdictionHint = Annotated[str | None, Field(description="İsteğe bağlı yargı türü veya hukuk alanı ipucu.")]
+DetailLevel = Annotated[str, Field(description="Çıktı ayrıntısı: brief, standard, deep veya exhaustive.")]
 
 
 @app.tool(
@@ -131,9 +140,10 @@ def cozum_stratejisi_promptu() -> str:
 def bilir_kisi_raporu_itirazi_promptu() -> str:
     return (
         "Bilirkişi raporunu yükle veya ilgili bölümleri belirt; rapor tarihi, olay/ölçüm tarihi, dava tarihi, "
-        "uzmanlık alanı ve itiraz edilmek istenen sonuçları ekle. Bu prompt planlanan özelliktir; üretim modülü "
-        "henüz etkin değil. Gelecekte teknik bulgu, teknik karşı-argüman, hukukî bağlantı ve temporal context "
-        "ayrı katmanlarda üretilecek; insan uzman ve avukat incelemesi zorunlu olacaktır."
+        "uzmanlık alanı ve itiraz edilmek istenen sonuçları ekle. Üretim akışı teknik alanı rapordan çıkarmaya, "
+        "teknik bulguları alternatif hipotezlerle sınamaya, karşı teknik argümanları ve ilgili esas hukuk bağlantılarını "
+        "kurmaya çalışır; HMK m.266 ve m.279-281 usul çıpası olarak ayrıca değerlendirilir. Teknik sonuçlar uzman raporu "
+        "değildir; eksik veri, belirsizlik, kaynak ve insan uzman/avukat incelemesi açıkça gösterilir."
     )
 
 
@@ -153,10 +163,19 @@ def bilir_kisi_raporu_itirazi_promptu() -> str:
     annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
 )
 async def katmanli_analiz(
-    question: str, mode: str = "layered", jurisdiction_hint: str | None = None
+    question: LegalQuestion,
+    mode: Annotated[str, Field(description="Analiz modu; layered veya simple.")] = "layered",
+    jurisdiction_hint: JurisdictionHint = None,
+    quality_profile: Annotated[str, Field(description="Model kalite profili: auto, fast, balanced, frontier veya exhaustive.")] = "auto",
+    model_hint: Annotated[str, Field(description="İsteğe bağlı model adı; kalite sözleşmesi için ipucudur.")] = "",
 ) -> dict:
     result = await run_pipeline(
-        question=question, mode=mode, jurisdiction_hint=jurisdiction_hint, synthesize=False
+        question=question,
+        mode=mode,
+        jurisdiction_hint=jurisdiction_hint,
+        synthesize=False,
+        quality_profile=quality_profile,
+        model_hint=model_hint,
     )
     return result.to_dict()
 
@@ -178,12 +197,14 @@ async def katmanli_analiz(
     annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
 )
 async def _agresif_karsi_taraf_tool(
-    question: str,
-    position: str,
-    role: str = "davacı",
-    jurisdiction_hint: str | None = None,
-    source_scope: str = "targeted",
-    selected_source_ids: list[str] | None = None,
+    question: LegalQuestion,
+    position: Annotated[str, Field(description="Kullanıcının veya temsil edilen tarafın hukuki pozisyonu.")],
+    role: Annotated[str, Field(description="Taraf rolü; varsayılan davacı.")] = "davacı",
+    jurisdiction_hint: JurisdictionHint = None,
+    source_scope: Annotated[str, Field(description="Kaynak kapsamı; targeted veya all.")] = "targeted",
+    selected_source_ids: Annotated[list[str] | None, Field(description="İsteğe bağlı seçili kaynak kimlikleri.")] = None,
+    quality_profile: Annotated[str, Field(description="Model kalite profili: auto, fast, balanced, frontier veya exhaustive.")] = "auto",
+    model_hint: Annotated[str, Field(description="İsteğe bağlı model adı; kalite sözleşmesi için ipucudur.")] = "",
 ) -> dict:
     result = await run_opposing(
         question=question,
@@ -193,6 +214,8 @@ async def _agresif_karsi_taraf_tool(
         source_scope=source_scope,
         selected_source_ids=selected_source_ids,
         synthesize=False,
+        quality_profile=quality_profile,
+        model_hint=model_hint,
     )
     return result.to_dict()
 
@@ -204,6 +227,8 @@ async def agresif_karsi_taraf(
     jurisdiction_hint: str | None = None,
     source_scope: str = "targeted",
     selected_source_ids: list[str] | None = None,
+    quality_profile: str = "auto",
+    model_hint: str = "",
 ) -> dict:
     """Keep the Python API directly awaitable while FastMCP registers the tool."""
     return await _agresif_karsi_taraf_tool.fn(
@@ -213,6 +238,8 @@ async def agresif_karsi_taraf(
         jurisdiction_hint=jurisdiction_hint,
         source_scope=source_scope,
         selected_source_ids=selected_source_ids,
+        quality_profile=quality_profile,
+        model_hint=model_hint,
     )
 
 
@@ -227,12 +254,17 @@ async def agresif_karsi_taraf(
         "kendi sentezini yaparsın (host-orkestrasyonlu mod, API anahtarı "
         "GEREKMEZ). Bir LLM anahtarı VARSA: sunucu Planner→Researcher→"
         "Critic→Editor döngüsünü kendi içinde tam otomatik yürütür ve "
-        "`answer` alanında kaynaklı, hazır bir sentez döner. `depth` (1-5) "
+        "`answer` alanında kaynaklı, hazır bir sentez döner. `depth` ve "
+        "`detail_level` (brief/standard/deep/exhaustive) "
         "en fazla kaç alt soruya bölüneceğini sınırlar."
     ),
     annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
 )
-async def derin_arastirma(question: str, depth: int = 3) -> dict:
+async def derin_arastirma(
+    question: LegalQuestion,
+    depth: Annotated[int, Field(description="Alt soru derinliği; 1 ile 5 arasında.")] = 3,
+    detail_level: DetailLevel = "deep",
+) -> dict:
     if not settings.enable_deep_research:
         return {
             "question": question,
@@ -241,7 +273,7 @@ async def derin_arastirma(question: str, depth: int = 3) -> dict:
             "citations": [],
             "note": "Derin araştırma özelliği .env'de ENABLE_DEEP_RESEARCH=false ile kapatılmış.",
         }
-    result = await run_deep_research(question=question, depth=depth)
+    result = await run_deep_research(question=question, depth=depth, detail_level=detail_level)
     return result.to_dict()
 
 
@@ -258,7 +290,10 @@ async def derin_arastirma(question: str, depth: int = 3) -> dict:
     ),
     annotations={"readOnlyHint": True, "idempotentHint": True},
 )
-async def alinti_dogrula(answer: str, known_doc_ids: list[str]) -> dict:
+async def alinti_dogrula(
+    answer: Annotated[str, Field(description="Belge kimlikleriyle atıflanmış taslak cevap metni.")],
+    known_doc_ids: Annotated[list[str], Field(description="Arama araçlarından elde edilen geçerli belge kimlikleri.")],
+) -> dict:
     return validate_citations(answer, known_doc_ids).to_dict()
 
 
@@ -271,13 +306,13 @@ async def alinti_dogrula(answer: str, known_doc_ids: list[str]) -> dict:
     annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
 )
 async def aihm_karar_ara(
-    query: str = "",
-    respondent: str = "TUR",
-    article: str | None = None,
-    importance: int | None = None,
-    date_from: str | None = None,
-    date_to: str | None = None,
-    limit: int = 20,
+    query: Annotated[str, Field(description="AİHM/HUDOC kararlarında aranacak ifade.")] = "",
+    respondent: Annotated[str, Field(description="Başvurunun yöneldiği devlet kodu; varsayılan TUR.")] = "TUR",
+    article: Annotated[str | None, Field(description="İsteğe bağlı AİHS madde numarası.")] = None,
+    importance: Annotated[int | None, Field(description="İsteğe bağlı önem seviyesi filtresi.")] = None,
+    date_from: Annotated[str | None, Field(description="Başlangıç tarihi; YYYY-MM-DD.")] = None,
+    date_to: Annotated[str | None, Field(description="Bitiş tarihi; YYYY-MM-DD.")] = None,
+    limit: Annotated[int, Field(description="Döndürülecek azami karar sayısı.")] = 20,
 ) -> list[dict]:
     return await _aihm_karar_ara(
         query=query,
@@ -299,7 +334,7 @@ async def aihm_karar_ara(
     ),
     annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
 )
-async def aihm_karar_getir(application_no: str, lang: str = "en") -> dict:
+async def aihm_karar_getir(application_no: ApplicationNo, lang: LanguageCode = "en") -> dict:
     return await _aihm_karar_getir(application_no=application_no, lang=lang)
 
 
@@ -314,7 +349,9 @@ async def aihm_karar_getir(application_no: str, lang: str = "en") -> dict:
     ),
     annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
 )
-async def aihm_aym_kopru(aym_basvuru_no: str) -> dict:
+async def aihm_aym_kopru(
+    aym_basvuru_no: Annotated[str, Field(description="Anayasa Mahkemesi bireysel başvuru numarası.")],
+) -> dict:
     return await _aihm_aym_kopru(aym_basvuru_no=aym_basvuru_no)
 
 
@@ -329,7 +366,9 @@ async def aihm_aym_kopru(aym_basvuru_no: str) -> dict:
     ),
     annotations={"readOnlyHint": False, "idempotentHint": True},
 )
-async def pii_maskele(metin: str) -> str:
+async def pii_maskele(
+    metin: Annotated[str, Field(description="Dış aramadan önce yerelde maskelenecek metin.")],
+) -> str:
     return await _pii_gateway.mask(metin)
 
 
@@ -341,7 +380,9 @@ async def pii_maskele(metin: str) -> str:
     ),
     annotations={"readOnlyHint": True, "idempotentHint": True},
 )
-async def pii_ac(metin: str) -> str:
+async def pii_ac(
+    metin: Annotated[str, Field(description="Aynı yerel oturumda maskelenmiş yer tutucuları içeren metin.")],
+) -> str:
     return await _pii_gateway.unmask(metin)
 
 
@@ -439,27 +480,80 @@ async def _legacy_legalai_corpus_sync(source_id: str, query: str, limit: int = 2
     return await socratlegal_corpus_sync.fn(source_id, query, limit)
 
 
-async def _analysis_alias(question: str, mode: str = "layered", jurisdiction_hint: str | None = None) -> dict:
-    return await katmanli_analiz(question=question, mode=mode, jurisdiction_hint=jurisdiction_hint)
+async def _analysis_alias(
+    question: str,
+    mode: str = "layered",
+    jurisdiction_hint: str | None = None,
+    quality_profile: str = "auto",
+    model_hint: str = "",
+) -> dict:
+    return await katmanli_analiz(
+        question=question,
+        mode=mode,
+        jurisdiction_hint=jurisdiction_hint,
+        quality_profile=quality_profile,
+        model_hint=model_hint,
+    )
 
 
 @app.tool(name="socratlegal_katmanli_analiz", description="SocratLegal katmanlı hukuki analiz.")
-async def _socratlegal_layered_tool(question: str, mode: str = "layered", jurisdiction_hint: str | None = None) -> dict:
-    return await _analysis_alias(question, mode, jurisdiction_hint)
+async def _socratlegal_layered_tool(
+    question: LegalQuestion,
+    mode: Annotated[str, Field(description="Analiz modu; layered veya simple.")] = "layered",
+    jurisdiction_hint: JurisdictionHint = None,
+    quality_profile: Annotated[str, Field(description="Model kalite profili: auto, fast, balanced, frontier veya exhaustive.")] = "auto",
+    model_hint: Annotated[str, Field(description="İsteğe bağlı model adı; kalite sözleşmesi için ipucudur.")] = "",
+) -> dict:
+    return await _analysis_alias(question, mode, jurisdiction_hint, quality_profile, model_hint)
 
 
 @app.tool(name="legalai_katmanli_analiz", description="Geçiş uyumluluğu: SocratLegal katmanlı analiz.")
-async def _legacy_legalai_layered_tool(question: str, mode: str = "layered", jurisdiction_hint: str | None = None) -> dict:
-    return await _analysis_alias(question, mode, jurisdiction_hint)
+async def _legacy_legalai_layered_tool(
+    question: str,
+    mode: str = "layered",
+    jurisdiction_hint: str | None = None,
+    quality_profile: str = "auto",
+    model_hint: str = "",
+) -> dict:
+    return await _analysis_alias(question, mode, jurisdiction_hint, quality_profile, model_hint)
 
 
-async def _opposing_alias(question: str, position: str, role: str = "davacı", jurisdiction_hint: str | None = None, source_scope: str = "targeted", selected_source_ids: list[str] | None = None) -> dict:
-    return await agresif_karsi_taraf(question, position, role, jurisdiction_hint, source_scope, selected_source_ids)
+async def _opposing_alias(
+    question: str,
+    position: str,
+    role: str = "davacı",
+    jurisdiction_hint: str | None = None,
+    source_scope: str = "targeted",
+    selected_source_ids: list[str] | None = None,
+    quality_profile: str = "auto",
+    model_hint: str = "",
+) -> dict:
+    return await agresif_karsi_taraf(
+        question,
+        position,
+        role,
+        jurisdiction_hint,
+        source_scope,
+        selected_source_ids,
+        quality_profile,
+        model_hint,
+    )
 
 
 @app.tool(name="socratlegal_agresif_karsi_taraf", description="SocratLegal agresif karşı taraf ve çözüm stratejisi analizi.")
-async def _socratlegal_opposing_tool(question: str, position: str, role: str = "davacı", jurisdiction_hint: str | None = None, source_scope: str = "targeted", selected_source_ids: list[str] | None = None) -> dict:
-    return await _opposing_alias(question, position, role, jurisdiction_hint, source_scope, selected_source_ids)
+async def _socratlegal_opposing_tool(
+    question: LegalQuestion,
+    position: Annotated[str, Field(description="Kullanıcının veya temsil edilen tarafın hukuki pozisyonu.")],
+    role: Annotated[str, Field(description="Taraf rolü; varsayılan davacı.")] = "davacı",
+    jurisdiction_hint: JurisdictionHint = None,
+    source_scope: Annotated[str, Field(description="Kaynak kapsamı; targeted veya all.")] = "targeted",
+    selected_source_ids: Annotated[list[str] | None, Field(description="İsteğe bağlı seçili kaynak kimlikleri.")] = None,
+    quality_profile: Annotated[str, Field(description="Model kalite profili: auto, fast, balanced, frontier veya exhaustive.")] = "auto",
+    model_hint: Annotated[str, Field(description="İsteğe bağlı model adı; kalite sözleşmesi için ipucudur.")] = "",
+) -> dict:
+    return await _opposing_alias(
+        question, position, role, jurisdiction_hint, source_scope, selected_source_ids, quality_profile, model_hint
+    )
 
 
 @app.tool(name="legalai_agresif_karsi_taraf", description="Geçiş uyumluluğu: SocratLegal agresif karşı taraf analizi.")
@@ -468,13 +562,100 @@ async def _legacy_legalai_opposing_tool(question: str, position: str, role: str 
 
 
 @app.tool(name="socratlegal_derin_arastirma", description="SocratLegal derin hukuki araştırma.")
-async def _socratlegal_deep_tool(question: str, depth: int = 3) -> dict:
-    return await derin_arastirma(question, depth)
+async def _socratlegal_deep_tool(
+    question: LegalQuestion,
+    depth: Annotated[int, Field(description="Alt soru derinliği; 1 ile 5 arasında.")] = 3,
+    detail_level: DetailLevel = "deep",
+) -> dict:
+    return await derin_arastirma(question, depth, detail_level)
 
 
 @app.tool(name="legalai_derin_arastirma", description="Geçiş uyumluluğu: SocratLegal derin araştırma.")
-async def _legacy_legalai_deep_tool(question: str, depth: int = 3) -> dict:
-    return await derin_arastirma(question, depth)
+async def _legacy_legalai_deep_tool(
+    question: LegalQuestion,
+    depth: Annotated[int, Field(description="Alt soru derinliği; 1 ile 5 arasında.")] = 3,
+    detail_level: DetailLevel = "deep",
+) -> dict:
+    return await derin_arastirma(question, depth, detail_level)
+
+
+@app.tool(
+    name="socratlegal_hukuki_mutalaa",
+    description=(
+        "Hukuki soruyu kaynaklı ve 13 bölümlü mütalaa formatında inceler: yönetici özeti, "
+        "maddi vakıalar, normlar, deliller, içtihat/doktrin, karşı görüşler, temporal context, "
+        "merci/süre, strateji, bütünleştirici değerlendirme, sonuç ve kaynakça/alintılar. "
+        "Ayrıntı seviyesi brief/standard/deep/exhaustive olabilir. Sonuç analysis-only ve non-binding'dir."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def _socratlegal_legal_opinion_tool(
+    question: LegalQuestion,
+    detail_level: DetailLevel = "deep",
+    jurisdiction_hint: JurisdictionHint = None,
+    include_strategy: Annotated[bool, Field(description="Çözüm stratejileri 10. bölümde yer alsın mı?")] = True,
+    max_source_quotes: Annotated[int, Field(description="Kaynakça bölümünde gösterilecek azami kısa alıntı sayısı.")] = 3,
+    quality_profile: Annotated[str, Field(description="Model kalite profili: auto, fast, balanced, frontier veya exhaustive.")] = "auto",
+    model_hint: Annotated[str, Field(description="İsteğe bağlı model adı; yalnızca kalite ayarı için ipucudur.")] = "",
+    server_side_synthesis: Annotated[bool, Field(description="İsteğe bağlı API anahtarıyla sunucu sentezi çalışsın mı?")] = False,
+) -> dict:
+    profile = MemorandumProfile(
+        detail_level=detail_level,
+        include_strategy=include_strategy,
+        max_source_quotes=max_source_quotes,
+    )
+    output_contract = build_memorandum_instructions(
+        profile,
+        quality_profile=quality_profile,
+        model_hint=model_hint,
+    )
+    result = await run_pipeline(
+        question=question,
+        mode="layered",
+        jurisdiction_hint=jurisdiction_hint,
+        synthesize=server_side_synthesis,
+        output_contract=output_contract,
+    )
+    payload = result.to_dict()
+    payload["mode"] = "hukuki_mutalaa"
+    payload["memorandum_sections"] = list(memorandum_section_ids())
+    payload["memorandum_detail_level"] = profile.detail_level
+    memo_instructions = build_memorandum_instructions(
+        profile,
+        source_ids=tuple(document["doc_id"] for document in payload.get("sources", [])),
+        quality_profile=quality_profile,
+        model_hint=model_hint,
+    )
+    payload["assistant_instructions"] = "\n\n".join(
+        item for item in (payload.get("assistant_instructions"), memo_instructions) if item
+    )
+    return payload
+
+
+@app.tool(
+    name="legalai_hukuki_mutalaa",
+    description="Geçiş uyumluluğu: SocratLegal 13 bölümlü hukukî mütalaa aracı.",
+)
+async def _legacy_legalai_legal_opinion_tool(
+    question: str,
+    detail_level: str = "deep",
+    jurisdiction_hint: str | None = None,
+    include_strategy: bool = True,
+    max_source_quotes: int = 3,
+    quality_profile: str = "auto",
+    model_hint: str = "",
+    server_side_synthesis: bool = False,
+) -> dict:
+    return await _socratlegal_legal_opinion_tool.fn(
+        question=question,
+        detail_level=detail_level,
+        jurisdiction_hint=jurisdiction_hint,
+        include_strategy=include_strategy,
+        max_source_quotes=max_source_quotes,
+        quality_profile=quality_profile,
+        model_hint=model_hint,
+        server_side_synthesis=server_side_synthesis,
+    )
 
 
 def _bilirkişi_payload(analysis) -> dict:
@@ -503,12 +684,12 @@ async def _bilirkisi_legal_sources(question: str, technical_domain: str) -> list
 
 @app.tool(name="socratlegal_bilirkisi_raporu_analiz", description="Bilirkişi raporunu teknik karşı-argüman, hukuk bağlantısı ve temporal context ile analiz eder.")
 async def _socratlegal_bilirkisi_analysis_tool(
-    report_text: str | None = None,
-    file_path: str | None = None,
-    question: str = "",
-    technical_domain: str = "",
-    event_dates: list[str] | None = None,
-    case_date: str | None = None,
+    report_text: Annotated[str | None, Field(description="Yerel rapor metni; file_path ile birlikte verilmemelidir.")] = None,
+    file_path: Annotated[str | None, Field(description="Yerel PDF/DOCX/TXT/görüntü raporu yolu; ham dosya dışarı gönderilmez.")] = None,
+    question: Annotated[str, Field(description="Raporla ilgili hukuki/teknik itiraz talebi.")] = "",
+    technical_domain: Annotated[str, Field(description="İsteğe bağlı teknik alan; boşsa rapor içinden çıkarım yapılır.")] = "",
+    event_dates: Annotated[list[str] | None, Field(description="Olay veya ölçüm tarihleri.")] = None,
+    case_date: Annotated[str | None, Field(description="Dava/başvuru tarihi.")] = None,
 ) -> dict:
     result = await analyze_report(text=report_text, file_path=file_path, question=question, technical_domain=technical_domain, event_dates=event_dates, case_date=case_date, legal_sources=await _bilirkisi_legal_sources(question, technical_domain))
     return _bilirkişi_payload(result)
@@ -523,7 +704,13 @@ async def _legacy_legalai_bilirkisi_analysis_tool(
 
 @app.tool(name="socratlegal_bilirkisi_raporu_dilekce", description="Bilirkişi raporu analizinden itiraz dilekçesi taslağı üretir.")
 async def _socratlegal_bilirkisi_petition_tool(
-    report_text: str | None = None, file_path: str | None = None, question: str = "", technical_domain: str = "", court: str = "", event_dates: list[str] | None = None, case_date: str | None = None
+    report_text: Annotated[str | None, Field(description="Yerel rapor metni; file_path ile birlikte verilmemelidir.")] = None,
+    file_path: Annotated[str | None, Field(description="Yerel PDF/DOCX/TXT/görüntü raporu yolu; ham dosya dışarı gönderilmez.")] = None,
+    question: Annotated[str, Field(description="İtiraz dilekçesinde cevaplanacak teknik ve hukuki soru.")] = "",
+    technical_domain: Annotated[str, Field(description="İsteğe bağlı teknik alan; boşsa rapordan çıkarılır.")] = "",
+    court: Annotated[str, Field(description="Dilekçe başlığında kullanılacak mahkeme veya merci.")] = "",
+    event_dates: Annotated[list[str] | None, Field(description="Olay veya ölçüm tarihleri.")] = None,
+    case_date: Annotated[str | None, Field(description="Dava/başvuru tarihi.")] = None,
 ) -> dict:
     analysis = await analyze_report(text=report_text, file_path=file_path, question=question, technical_domain=technical_domain, event_dates=event_dates, case_date=case_date, legal_sources=await _bilirkisi_legal_sources(question, technical_domain))
     return {"analysis": _bilirkişi_payload(analysis), "petition": asdict(build_petition_draft(analysis, court=court))}
@@ -548,14 +735,14 @@ async def _legacy_legalai_bilirkisi_petition_tool(
     annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
 )
 async def _socratlegal_contract_review_tool(
-    contract_text: str | None = None,
-    file_path: str | None = None,
-    purpose: str = "",
-    position: str = "",
-    detail_level: str = "standard",
-    event_dates: list[str] | None = None,
-    jurisdiction_hint: str | None = None,
-    server_side_synthesis: bool = False,
+    contract_text: Annotated[str | None, Field(description="Yerel sözleşme metni; file_path ile birlikte verilmemelidir.")] = None,
+    file_path: Annotated[str | None, Field(description="Yerel DOCX/PDF/TXT sözleşme yolu; ham dosya dışarı gönderilmez.")] = None,
+    purpose: Annotated[str, Field(description="İncelemenin amacı; örn. imza öncesi risk taraması veya revizyon.")] = "",
+    position: Annotated[str, Field(description="Kullanıcının tarafı ve ticari/hukuki pozisyonu.")] = "",
+    detail_level: Annotated[str, Field(description="Çıktı ayrıntısı; brief, standard, deep veya exhaustive.")] = "standard",
+    event_dates: Annotated[list[str] | None, Field(description="Sözleşme, ifa, ihlal veya dava tarihleri.")] = None,
+    jurisdiction_hint: JurisdictionHint = None,
+    server_side_synthesis: Annotated[bool, Field(description="İsteğe bağlı API anahtarıyla sunucu sentezi çalışsın mı?")] = False,
 ) -> dict:
     request = ContractReviewRequest(
         contract_text=contract_text,

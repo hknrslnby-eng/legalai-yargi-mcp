@@ -25,6 +25,10 @@ from datetime import date, datetime
 from typing import Any
 
 from legalai.packages.layers.argument_strength_scorer import ArgumentStrengthScorer
+from legalai.packages.layers.authority_gap import (
+    assess_authority_gap,
+    build_authority_gap_instructions,
+)
 from legalai.packages.layers.citation_transfer_filter import CitationTransferFilter
 from legalai.packages.layers.dissent_detector import DissentDetector
 from legalai.packages.layers.grounded_generator import GroundedGenerator
@@ -38,6 +42,7 @@ from legalai.packages.layers.retrieve_documents import RetrieveDocuments
 from legalai.packages.layers.select_jurisdiction_profile import SelectJurisdictionProfile
 from legalai.packages.layers.verified_citation_check import VerifiedCitationCheck
 from legalai.packages.layers.temporal_context import TemporalLegalContextBuilder
+from legalai.packages.layers.quality_contract import build_quality_contract
 from legalai.packages.shared.tenant import current_tenant
 from legalai.packages.shared.types import Document
 
@@ -70,6 +75,7 @@ class AnalysisResult:
     missing_facts: list[str] = field(default_factory=list)
     source_scope: str = "targeted"
     operational_context: dict[str, Any] = field(default_factory=dict)
+    authority_gap: Any | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -99,6 +105,7 @@ class AnalysisResult:
             "missing_facts": list(self.missing_facts or []),
             "source_scope": self.source_scope,
             "operational_context": _jsonish(self.operational_context),
+            "authority_gap": _jsonish(self.authority_gap),
         }
         if self.assistant_instructions is not None:
             payload["assistant_instructions"] = self.assistant_instructions
@@ -126,6 +133,8 @@ def build_assistant_instructions(
     jurisdiction_ids: list[str] | None = None,
     source_context: str = "legal_analysis",
     operational_context: Any | None = None,
+    quality_profile: str = "auto",
+    model_hint: str = "",
 ) -> str:
     """`synthesize=False` modunda, host modele (bu aracı çağıran Cursor/
     Claude/ChatGPT/Antigravity vb. asistana) nihai cevabı NASIL yazması
@@ -147,8 +156,11 @@ def build_assistant_instructions(
         jurisdiction_ids or (),
         source_context=source_context,
         operational_context=operational_context,
+        quality_profile=quality_profile,
+        model_hint=model_hint,
     )
-    return f"{base}\n\n{reasoning}"
+    authority_gap = build_authority_gap_instructions(valid_doc_ids, jurisdiction_ids or ())
+    return f"{base}\n\n{reasoning}\n\n{authority_gap}"
 
 
 def build_layered_pipeline(
@@ -187,6 +199,9 @@ async def run_pipeline(
     documents: list[Document] | None = None,
     pipeline: Pipeline | None = None,
     synthesize: bool = True,
+    output_contract: str | None = None,
+    quality_profile: str = "auto",
+    model_hint: str = "",
 ) -> AnalysisResult:
     """Bkz. §2.6 — MCP tool ve HTTP endpoint bu fonksiyonu çağırır.
 
@@ -204,6 +219,9 @@ async def run_pipeline(
         mode=mode,
         jurisdiction_id=jurisdiction_hint,
         documents=list(documents) if documents else [],
+        output_contract=output_contract or build_quality_contract(
+            quality_profile, model_hint=model_hint
+        ),
     )
 
     active_pipeline = pipeline or build_layered_pipeline(synthesize=synthesize)
@@ -226,6 +244,8 @@ async def run_pipeline(
             jurisdiction_ids=jurisdiction_ids,
             source_context=source_context,
             operational_context=operational_context,
+            quality_profile=quality_profile,
+            model_hint=model_hint,
         )
         assistant_instructions += (
             " Ayrıca evidence alanındaki kaynak türü, tam künye ve kısa ilgili alıntıyı "
@@ -255,4 +275,5 @@ async def run_pipeline(
         assumptions=[],
         missing_facts=[],
         operational_context=operational_context.to_dict(),
+        authority_gap=assess_authority_gap(result_ctx.documents, jurisdiction_ids),
     )

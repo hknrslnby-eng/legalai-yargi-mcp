@@ -33,6 +33,7 @@ class Context:
     evidence: list[Any] = field(default_factory=list)
     strategy_options: list[Any] = field(default_factory=list)
     forum_candidates: list[Any] = field(default_factory=list)
+    output_contract: str | None = None
 
 
 class Layer(Protocol):
