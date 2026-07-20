@@ -41,6 +41,39 @@ class ContractIntake:
 
 
 @dataclass(frozen=True)
+class ContractClassification:
+    legal_nature: str
+    classification_method: str
+    foreign_law_layer: str
+    confidence: float
+    signals: tuple[str, ...] = ()
+    tbk_19_warning: str = "Başlık yerine gerçek ortak irade ve edim dengesi değerlendirilmelidir."
+
+
+@dataclass(frozen=True)
+class PersonaRouteDecision:
+    persona_id: str
+    invoked: bool
+    positive_triggers: tuple[str, ...] = ()
+    negative_reason: str = ""
+    priority: str = "supporting"
+    confidence: float = 0.0
+    verification_needed: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class ContractIssue:
+    issue_id: str
+    clause_number: str | None
+    finding: str
+    risk_level: str
+    legal_rationale: str
+    operational_rationale: str
+    personas: tuple[str, ...]
+    missing_facts: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class RedactionResult:
     text: str
     persisted: bool = False
