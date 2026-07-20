@@ -19,6 +19,7 @@ fonksiyonunu `synthesize=True` ile çağırır — bu durumda `LLMRouter`
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 
 from fastmcp import FastMCP
 
@@ -33,12 +34,17 @@ from legalai.packages.discovery.catalog import capability_catalog
 from legalai.packages.pii.gateway import PiiGateway
 from legalai.packages.shared.settings import settings
 from legalai.packages.shared.tenant import TenantContext, set_tenant
+from legalai.packages.bilirkisi.workflow import analyze_report, build_petition_draft
+from legalai.packages.corpus.models import CorpusDocument
+from legalai.packages.corpus.store import CorpusStore
+from legalai.packages.corpus.sync import CorpusSyncService
+from legalai.packages.corpus.sources.official import build_default_priority_adapters
 
 # Süreç başlarken tenant bağlamı kurulur — bkz. FORK-KAPSAMLI-PLAN.md §2.2.
 # Bugün her zaman "local"; sunucuya taşındığında bu satır middleware'e taşınır.
 set_tenant(TenantContext(tenant_id=settings.tenant_id, tenant_name=settings.tenant_name))
 
-app = FastMCP(name="LegalAI MCP Server", version="0.1.0")
+app = FastMCP(name="SocratLegal MCP Server", version="0.1.0")
 _pii_gateway = PiiGateway()
 
 
@@ -333,6 +339,197 @@ async def pii_maskele(metin: str) -> str:
 )
 async def pii_ac(metin: str) -> str:
     return await _pii_gateway.unmask(metin)
+
+
+# Public SocratLegal names are additive aliases. The original LegalAI Python
+# package and tool names remain registered so existing Cursor/Claude configs do
+# not break during the branding transition.
+@app.tool(name="socratlegal_yardim", description="SocratLegal yetenek kataloğu ve yönlendirme yardımı.")
+async def _socratlegal_yardim_tool() -> dict:
+    return capability_catalog()
+
+
+async def socratlegal_yardim() -> dict:
+    return await _socratlegal_yardim_tool.fn()
+
+
+@app.tool(name="legalai_yardim", description="Geçiş uyumluluğu: SocratLegal yetenek kataloğu.")
+async def _legacy_legalai_yardim_tool() -> dict:
+    return capability_catalog()
+
+
+@app.tool(name="socratlegal_saglik_kontrolu", description="SocratLegal yerel MCP sağlık kontrolü.")
+async def _socratlegal_health_tool() -> dict[str, object]:
+    return {"status": "ok", "version": app.version, "external_calls": False}
+
+
+async def socratlegal_saglik_kontrolu() -> dict[str, object]:
+    return await _socratlegal_health_tool.fn()
+
+
+@app.tool(name="legalai_saglik_kontrolu", description="Geçiş uyumluluğu: SocratLegal sağlık kontrolü.")
+async def _legacy_legalai_health_tool() -> dict[str, object]:
+    return {"status": "ok", "version": app.version, "external_calls": False}
+
+
+@app.tool(name="socratlegal_corpus_durum", description="Yerel SocratLegal corpus veritabanı ve kaynak kayıt durumunu gösterir.")
+async def socratlegal_corpus_durum() -> dict:
+    return await CorpusSyncService().status()
+
+
+@app.tool(name="legalai_corpus_durum", description="Geçiş uyumluluğu: SocratLegal corpus durumunu gösterir.")
+async def _legacy_legalai_corpus_durum() -> dict:
+    return await socratlegal_corpus_durum()
+
+
+@app.tool(name="socratlegal_corpus_belge_ekle", description="Maskelenmiş veya kamuya açık bir corpus belgesini yerel SocratLegal veritabanına ekler.")
+async def socratlegal_corpus_belge_ekle(
+    source_id: str,
+    document_id: str,
+    title: str,
+    body: str,
+    document_type: str = "decision",
+    institution: str = "",
+    url: str = "",
+    citation: str = "",
+    published_on: str | None = None,
+    effective_from: str | None = None,
+    effective_to: str | None = None,
+) -> dict:
+    from datetime import date
+
+    document = CorpusDocument(
+        document_id=document_id,
+        source_id=source_id,
+        title=title,
+        document_type=document_type,
+        institution=institution,
+        body=body,
+        url=url,
+        citation=citation,
+        published_on=date.fromisoformat(published_on) if published_on else None,
+        effective_from=date.fromisoformat(effective_from) if effective_from else None,
+        effective_to=date.fromisoformat(effective_to) if effective_to else None,
+    )
+    return await CorpusSyncService().ingest(source_id, [document])
+
+
+@app.tool(name="legalai_corpus_belge_ekle", description="Geçiş uyumluluğu: SocratLegal yerel corpus belgesi ekleme.")
+async def _legacy_legalai_corpus_belge_ekle(
+    source_id: str, document_id: str, title: str, body: str, document_type: str = "decision", institution: str = "", url: str = "", citation: str = "", published_on: str | None = None, effective_from: str | None = None, effective_to: str | None = None
+) -> dict:
+    return await socratlegal_corpus_belge_ekle(source_id, document_id, title, body, document_type, institution, url, citation, published_on, effective_from, effective_to)
+
+
+@app.tool(name="socratlegal_corpus_sync", description="Maskeli sorguyla yapılandırılmış resmi adapter'ı arar ve sonuçları yerel corpus'a kaydeder.")
+async def socratlegal_corpus_sync(source_id: str, query: str, limit: int = 20) -> dict:
+    adapters = {adapter.source_id: adapter for adapter in build_default_priority_adapters()}
+    adapter = adapters.get(source_id)
+    if adapter is None:
+        return {"source_id": source_id, "status": "unavailable_or_not_configured", "documents_ingested": 0}
+    return await CorpusSyncService().sync_from_adapter(source_id, adapter, query, limit)
+
+
+@app.tool(name="legalai_corpus_sync", description="Geçiş uyumluluğu: SocratLegal resmi kaynak sync.")
+async def _legacy_legalai_corpus_sync(source_id: str, query: str, limit: int = 20) -> dict:
+    return await socratlegal_corpus_sync.fn(source_id, query, limit)
+
+
+async def _analysis_alias(question: str, mode: str = "layered", jurisdiction_hint: str | None = None) -> dict:
+    return await katmanli_analiz(question=question, mode=mode, jurisdiction_hint=jurisdiction_hint)
+
+
+@app.tool(name="socratlegal_katmanli_analiz", description="SocratLegal katmanlı hukuki analiz.")
+async def _socratlegal_layered_tool(question: str, mode: str = "layered", jurisdiction_hint: str | None = None) -> dict:
+    return await _analysis_alias(question, mode, jurisdiction_hint)
+
+
+@app.tool(name="legalai_katmanli_analiz", description="Geçiş uyumluluğu: SocratLegal katmanlı analiz.")
+async def _legacy_legalai_layered_tool(question: str, mode: str = "layered", jurisdiction_hint: str | None = None) -> dict:
+    return await _analysis_alias(question, mode, jurisdiction_hint)
+
+
+async def _opposing_alias(question: str, position: str, role: str = "davacı", jurisdiction_hint: str | None = None, source_scope: str = "targeted", selected_source_ids: list[str] | None = None) -> dict:
+    return await agresif_karsi_taraf(question, position, role, jurisdiction_hint, source_scope, selected_source_ids)
+
+
+@app.tool(name="socratlegal_agresif_karsi_taraf", description="SocratLegal agresif karşı taraf ve çözüm stratejisi analizi.")
+async def _socratlegal_opposing_tool(question: str, position: str, role: str = "davacı", jurisdiction_hint: str | None = None, source_scope: str = "targeted", selected_source_ids: list[str] | None = None) -> dict:
+    return await _opposing_alias(question, position, role, jurisdiction_hint, source_scope, selected_source_ids)
+
+
+@app.tool(name="legalai_agresif_karsi_taraf", description="Geçiş uyumluluğu: SocratLegal agresif karşı taraf analizi.")
+async def _legacy_legalai_opposing_tool(question: str, position: str, role: str = "davacı", jurisdiction_hint: str | None = None, source_scope: str = "targeted", selected_source_ids: list[str] | None = None) -> dict:
+    return await _opposing_alias(question, position, role, jurisdiction_hint, source_scope, selected_source_ids)
+
+
+@app.tool(name="socratlegal_derin_arastirma", description="SocratLegal derin hukuki araştırma.")
+async def _socratlegal_deep_tool(question: str, depth: int = 3) -> dict:
+    return await derin_arastirma(question, depth)
+
+
+@app.tool(name="legalai_derin_arastirma", description="Geçiş uyumluluğu: SocratLegal derin araştırma.")
+async def _legacy_legalai_deep_tool(question: str, depth: int = 3) -> dict:
+    return await derin_arastirma(question, depth)
+
+
+def _bilirkişi_payload(analysis) -> dict:
+    return asdict(analysis)
+
+
+async def _bilirkisi_legal_sources(question: str, technical_domain: str) -> list[dict]:
+    """Ground the technical matrix in locally available corpus evidence."""
+    try:
+        hits = await CorpusStore(settings.corpus_db_path).search(question or technical_domain, 10)
+    except Exception:
+        return []
+    return [
+        {
+            "id": hit.document.document_id,
+            "source_id": hit.document.source_id,
+            "title": hit.document.title,
+            "citation": hit.document.citation,
+            "source_url": hit.document.url,
+            "quote": hit.chunk.text[:1000],
+            "non_binding": hit.source.source_type in {"academic", "international_policy"},
+        }
+        for hit in hits
+    ]
+
+
+@app.tool(name="socratlegal_bilirkisi_raporu_analiz", description="Bilirkişi raporunu teknik karşı-argüman, hukuk bağlantısı ve temporal context ile analiz eder.")
+async def _socratlegal_bilirkisi_analysis_tool(
+    report_text: str | None = None,
+    file_path: str | None = None,
+    question: str = "",
+    technical_domain: str = "",
+    event_dates: list[str] | None = None,
+    case_date: str | None = None,
+) -> dict:
+    result = await analyze_report(text=report_text, file_path=file_path, question=question, technical_domain=technical_domain, event_dates=event_dates, case_date=case_date, legal_sources=await _bilirkisi_legal_sources(question, technical_domain))
+    return _bilirkişi_payload(result)
+
+
+@app.tool(name="legalai_bilirkisi_raporu_analiz", description="Geçiş uyumluluğu: SocratLegal bilirkişi raporu analizi.")
+async def _legacy_legalai_bilirkisi_analysis_tool(
+    report_text: str | None = None, file_path: str | None = None, question: str = "", technical_domain: str = "", event_dates: list[str] | None = None, case_date: str | None = None
+) -> dict:
+    return await _socratlegal_bilirkisi_analysis_tool(report_text, file_path, question, technical_domain, event_dates, case_date)
+
+
+@app.tool(name="socratlegal_bilirkisi_raporu_dilekce", description="Bilirkişi raporu analizinden itiraz dilekçesi taslağı üretir.")
+async def _socratlegal_bilirkisi_petition_tool(
+    report_text: str | None = None, file_path: str | None = None, question: str = "", technical_domain: str = "", court: str = "", event_dates: list[str] | None = None, case_date: str | None = None
+) -> dict:
+    analysis = await analyze_report(text=report_text, file_path=file_path, question=question, technical_domain=technical_domain, event_dates=event_dates, case_date=case_date, legal_sources=await _bilirkisi_legal_sources(question, technical_domain))
+    return {"analysis": _bilirkişi_payload(analysis), "petition": asdict(build_petition_draft(analysis, court=court))}
+
+
+@app.tool(name="legalai_bilirkisi_raporu_dilekce", description="Geçiş uyumluluğu: SocratLegal bilirkişi itiraz dilekçesi.")
+async def _legacy_legalai_bilirkisi_petition_tool(
+    report_text: str | None = None, file_path: str | None = None, question: str = "", technical_domain: str = "", court: str = "", event_dates: list[str] | None = None, case_date: str | None = None
+) -> dict:
+    return await _socratlegal_bilirkisi_petition_tool(report_text, file_path, question, technical_domain, court, event_dates, case_date)
 
 
 def main() -> None:

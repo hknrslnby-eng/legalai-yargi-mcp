@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     tenant_id: str = "local"
     tenant_name: str = "Local"
     database_url: str = "sqlite+aiosqlite:///./.data/legalai.db"
+    corpus_db_path: str = "./.data/socratlegal_corpus.db"
     storage_root: str = "./.data"
     usage_db_path: str = "./.data/usage.db"
 

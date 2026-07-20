@@ -8,7 +8,9 @@ from typing import Any, Protocol
 from anayasa_mcp_module.client import AnayasaMahkemesiApiClient
 from anayasa_mcp_module.models import AnayasaNormDenetimiSearchRequest
 
-from legalai.packages.layers.retrieve_documents import BedestenSearchBackend
+from legalai.packages.layers.retrieve_documents import BedestenSearchBackend, FederatedDocumentSearchBackend
+from legalai.packages.corpus.store import CorpusStore
+from legalai.packages.shared.settings import settings
 from legalai.packages.pii.outbound import mask_for_external
 from legalai.packages.layers.temporal_context import InvalEvent, NormRecord, TemporalSourceBackend
 from legalai.packages.shared.evidence import SourceScope
@@ -46,9 +48,11 @@ class IntegratedLegalSourceBackend(TemporalSourceBackend):
         self,
         decision_backend: DecisionBackend | None = None,
         norm_client: Any | None = None,
+        corpus_store: Any | None = None,
     ) -> None:
-        self.decision_backend = decision_backend or BedestenSearchBackend()
+        self.decision_backend = decision_backend or FederatedDocumentSearchBackend()
         self.norm_client = norm_client or AnayasaMahkemesiApiClient()
+        self.corpus_store = corpus_store or CorpusStore(settings.corpus_db_path)
 
     async def search_documents(self, query: str, limit: int = 50) -> list[Document]:
         return await self.decision_backend.search(query, limit)
@@ -86,6 +90,27 @@ class IntegratedLegalSourceBackend(TemporalSourceBackend):
                     confidence=0.45,
                 )
             )
+        try:
+            for hit in await self.corpus_store.search(query, 20):
+                document = hit.document
+                if document.document_type not in {"regulation", "legislation", "guidance", "principle_decision", "norm"}:
+                    continue
+                records.append(
+                    NormRecord(
+                        id=document.document_id,
+                        title=document.title,
+                        citation=document.citation,
+                        effective_from=document.effective_from,
+                        effective_to=document.effective_to,
+                        status="active" if document.effective_to is None else "superseded",
+                        source_url=document.url,
+                        quote=document.body[:1000],
+                        confidence=0.7,
+                    )
+                )
+        except Exception:
+            # A local corpus outage must not discard AYM/live temporal results.
+            pass
         return records
 
     async def search_invalidation_events(
