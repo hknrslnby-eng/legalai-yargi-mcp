@@ -43,6 +43,14 @@ Yeni özellikler yayınlandığında aynı portable paketin yeni sürümü indir
 
 Güncelleme kontrolü yalnızca sürüm metadata'sını okur ve varsayılan olarak 24 saatte bir yapılır; kullanıcı belgelerinin metni gönderilmez.
 
+Yeni kurulumlarda ayrı bir manifest indirmeden GitHub Releases metadata'sı kontrol edilebilir:
+
+```powershell
+.\runtime\uv.exe run --directory .\app socratlegal update check --platform-tag windows-x64
+```
+
+Bu komut yalnızca yeni sürüm olup olmadığını ve ilgili release bağlantısını gösterir. Arşiv kendiliğinden indirilmez veya kurulmaz. Kullanıcı yeni portable paketi Releases sayfasından açıkça indirip checksum'ı doğruladıktan sonra `update apply` komutunu çalıştırır. İnternet erişimi istenmiyorsa mevcut `--manifest-file` seçeneğiyle yerel metadata kullanılabilir.
+
 ```powershell
 .\runtime\uv.exe run --directory .\app socratlegal update check --manifest-file .\release-manifest-windows-x64.json
 .\runtime\uv.exe run --directory .\app socratlegal update apply --archive .\socratlegal-NEW-windows-x64.zip --manifest-file .\release-manifest-windows-x64.json --active-app .\app

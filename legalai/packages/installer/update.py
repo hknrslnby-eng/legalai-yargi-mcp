@@ -12,7 +12,10 @@ import zipfile
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from platform import machine, system
 from typing import Callable
+from urllib.error import URLError
+from urllib.request import urlopen
 
 from .versioning import compare_versions
 
@@ -44,6 +47,56 @@ _REQUIRED_FIELDS = {
     "version", "channel", "release_url", "archive_name", "sha256",
     "data_schema_version", "minimum_supported_version",
 }
+RELEASE_REPOSITORY = "hknrslnby-eng/legalai-yargi-mcp"
+
+
+def default_platform_tag() -> str:
+    """Return the portable-release tag used by the current host platform."""
+    operating_system = system().lower()
+    architecture = machine().lower()
+    if operating_system.startswith("win"):
+        return "windows-x64" if architecture in {"amd64", "x86_64", "x64"} else "windows-arm64"
+    if operating_system == "darwin":
+        return "macos-arm64" if architecture in {"arm64", "aarch64"} else "macos-x64"
+    if operating_system == "linux":
+        return "linux-arm64" if architecture in {"arm64", "aarch64"} else "linux-x64"
+    raise UpdateError(f"Desteklenmeyen platform: {operating_system}/{architecture}")
+
+
+def default_manifest_url(platform_tag: str) -> str:
+    tag = platform_tag.strip()
+    if not tag or any(character in tag for character in "/\\?#"):
+        raise UpdateError("Geçersiz platform etiketi.")
+    return (
+        f"https://github.com/{RELEASE_REPOSITORY}/releases/latest/download/"
+        f"release-manifest-{tag}.json"
+    )
+
+
+def fetch_release_manifest(
+    url: str,
+    *,
+    get: Callable[[str], bytes | str | dict[str, object]] | None = None,
+) -> dict[str, object]:
+    """Fetch only release metadata; never downloads an archive."""
+    if get is None:
+        def get(url_to_fetch: str) -> bytes:
+            with urlopen(url_to_fetch, timeout=10) as response:
+                return response.read()
+
+    try:
+        raw = get(url)
+        if isinstance(raw, dict):
+            payload = raw
+        elif isinstance(raw, bytes):
+            payload = json.loads(raw.decode("utf-8"))
+        else:
+            payload = json.loads(raw)
+    except (OSError, URLError, UnicodeDecodeError, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise UpdateError(f"Release manifest okunamadı: {error}") from error
+    if not isinstance(payload, dict):
+        raise UpdateError("Release manifest bir JSON nesnesi olmalıdır.")
+    return payload
 
 
 def load_release_manifest(payload: dict[str, object]) -> ReleaseManifest:
@@ -95,6 +148,27 @@ def check_for_update(
         encoding="utf-8",
     )
     return UpdateCheckResult(compare_versions(current_version, manifest.version) < 0, manifest, False, now)
+
+
+def check_remote_update(
+    current_version: str,
+    *,
+    state_path: Path,
+    manifest_url: str | None = None,
+    platform_tag: str | None = None,
+    get: Callable[[str], bytes | str | dict[str, object]] | None = None,
+    now: datetime | None = None,
+    interval: timedelta = timedelta(hours=24),
+) -> UpdateCheckResult:
+    """Check a GitHub Releases manifest with a local 24-hour cache."""
+    url = manifest_url or default_manifest_url(platform_tag or default_platform_tag())
+    return check_for_update(
+        current_version,
+        lambda: fetch_release_manifest(url, get=get),
+        state_path=state_path,
+        now=now,
+        interval=interval,
+    )
 
 
 def _sha256(path: Path) -> str:

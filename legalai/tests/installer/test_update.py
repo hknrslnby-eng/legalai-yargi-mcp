@@ -10,6 +10,9 @@ from legalai.packages.installer.update import (
     UpdateError,
     apply_update,
     check_for_update,
+    check_remote_update,
+    default_manifest_url,
+    fetch_release_manifest,
     load_release_manifest,
     rollback_update,
 )
@@ -137,3 +140,38 @@ def test_cli_update_check_reads_metadata_manifest(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert "available" in result.stdout
+
+
+def test_default_manifest_url_is_platform_specific() -> None:
+    assert default_manifest_url("windows-x64").endswith(
+        "/releases/latest/download/release-manifest-windows-x64.json"
+    )
+
+
+def test_fetch_release_manifest_decodes_json_without_contract_text() -> None:
+    manifest = {"version": "1.0.0", "channel": "stable"}
+
+    payload = fetch_release_manifest(
+        "https://example.test/manifest.json",
+        get=lambda _url: json.dumps(manifest).encode("utf-8"),
+    )
+
+    assert payload == manifest
+
+
+def test_remote_update_check_uses_cache_and_never_downloads_archive(tmp_path: Path) -> None:
+    archive = tmp_path / "release.zip"
+    archive.write_bytes(b"release")
+    manifest = _manifest(archive, "9.0.0")
+    calls: list[str] = []
+
+    result = check_remote_update(
+        "1.0.0",
+        manifest_url="https://example.test/manifest.json",
+        state_path=tmp_path / "state.json",
+        get=lambda url: calls.append(url) or json.dumps(manifest).encode("utf-8"),
+    )
+
+    assert result.available is True
+    assert calls == ["https://example.test/manifest.json"]
+    assert archive.name not in calls[0]

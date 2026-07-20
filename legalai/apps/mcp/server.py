@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import asdict
+from pathlib import Path
 
 from fastmcp import FastMCP
 
@@ -38,6 +39,7 @@ from legalai.packages.bilirkisi.workflow import analyze_report, build_petition_d
 from legalai.packages.contracts.models import ContractReviewRequest
 from legalai.packages.contracts.review import review_contract
 from legalai.packages.corpus.models import CorpusDocument
+from legalai.packages.installer.update import UpdateError, check_remote_update
 from legalai.packages.corpus.store import CorpusStore
 from legalai.packages.corpus.sync import CorpusSyncService
 from legalai.packages.corpus.sources.official import build_default_priority_adapters
@@ -593,6 +595,70 @@ async def _legacy_legalai_contract_review_tool(
         jurisdiction_hint=jurisdiction_hint,
         server_side_synthesis=server_side_synthesis,
     )
+
+
+@app.tool(
+    name="socratlegal_guncelleme_kontrol",
+    description=(
+        "GitHub Releases üzerinden yalnızca SocratLegal sürüm metadata'sını kontrol eder. "
+        "Arşiv indirmez, otomatik kurmaz, IDE ayarlarını değiştirmez ve kullanıcı belgelerini göndermez."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def _socratlegal_update_check_tool(
+    current_version: str = "0.2.2",
+    platform_tag: str | None = None,
+    manifest_url: str | None = None,
+) -> dict:
+    try:
+        result = check_remote_update(
+            current_version,
+            platform_tag=platform_tag,
+            manifest_url=manifest_url,
+            state_path=Path(settings.storage_root) / "update-check.json",
+        )
+    except UpdateError as error:
+        return {
+            "status": "error",
+            "error": str(error),
+            "auto_apply": False,
+            "archive_downloaded": False,
+        }
+    return {
+        "status": "ok",
+        "available": result.available,
+        "version": result.manifest.version if result.manifest else None,
+        "channel": result.manifest.channel if result.manifest else None,
+        "release_url": result.manifest.release_url if result.manifest else None,
+        "archive_name": result.manifest.archive_name if result.manifest else None,
+        "from_cache": result.from_cache,
+        "checked_at": result.checked_at.isoformat(),
+        "auto_apply": False,
+        "archive_downloaded": False,
+        "analysis_only": True,
+        "non_binding": True,
+    }
+
+
+async def socratlegal_guncelleme_kontrol(
+    current_version: str = "0.2.2",
+    platform_tag: str | None = None,
+    manifest_url: str | None = None,
+) -> dict:
+    """Directly awaitable facade for local tests and non-MCP integrations."""
+    return await _socratlegal_update_check_tool.fn(current_version, platform_tag, manifest_url)
+
+
+@app.tool(
+    name="legalai_guncelleme_kontrol",
+    description="Geçiş uyumluluğu: SocratLegal sürüm metadata kontrolü.",
+)
+async def _legacy_legalai_update_check(
+    current_version: str = "0.2.2",
+    platform_tag: str | None = None,
+    manifest_url: str | None = None,
+) -> dict:
+    return await socratlegal_guncelleme_kontrol(current_version, platform_tag, manifest_url)
 
 
 def main() -> None:

@@ -14,6 +14,7 @@ def capability_catalog() -> dict[str, Any]:
             "socratlegal_agresif_karsi_taraf": "agresif_karsi_taraf",
             "socratlegal_derin_arastirma": "derin_arastirma",
             "socratlegal_sozlesme_incele": "sozlesme_incele",
+            "socratlegal_guncelleme_kontrol": "guncelleme_kontrol",
             "socratlegal_bilirkisi_raporu_analiz": "bilirkisi_raporu_analiz",
             "socratlegal_bilirkisi_raporu_dilekce": "bilirkisi_raporu_dilekce",
             "socratlegal_corpus_durum": "corpus_durum",
@@ -56,6 +57,15 @@ def capability_catalog() -> dict[str, Any]:
                 "inputs": ["sözleşme metni veya yerel dosya yolu", "kullanıcının amacı ve pozisyonu", "varsa olay/tarih ve yetki bilgileri"],
                 "output": "Hukuki nitelendirme, ilgili persona rotaları, madde/boşluk riskleri, kaynaklı araştırma talimatları ve yabancı dil revizyon biçimi.",
                 "example_prompt": "Bu sözleşmeyi kiracı açısından madde madde incele; riskleri, eksikleri, uygulanacak hukuk ve kaynaklı revizyon önerilerini göster.",
+            },
+            {
+                "id": "guncelleme_kontrol",
+                "label": "Güncelleme kontrolü",
+                "use_when": "SocratLegal'in GitHub Releases üzerinde yeni portable sürümü olup olmadığı kontrol edileceğinde.",
+                "levels": ["metadata kontrolü"],
+                "inputs": ["isteğe bağlı platform etiketi", "isteğe bağlı mevcut sürüm"],
+                "output": "Yeni sürüm, kanal ve açık release bağlantısı; otomatik indirme/kurma yapılmaz.",
+                "example_prompt": "SocratLegal için yeni sürüm kontrolü yap; yalnızca metadata göster, indirme veya kurma yapma.",
             },
             {
                 "id": "alinti_dogrula",

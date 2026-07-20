@@ -16,7 +16,14 @@ from legalai.packages.usage.store import UsageStore
 from legalai.packages.installer.ides import detect_ide_configs
 from legalai.packages.installer.models import InstallRequest
 from legalai.packages.installer.service import install_socratlegal
-from legalai.packages.installer.update import apply_update, check_for_update, load_release_manifest, rollback_update
+from legalai.packages.installer.update import (
+    UpdateError,
+    apply_update,
+    check_for_update,
+    check_remote_update,
+    load_release_manifest,
+    rollback_update,
+)
 
 
 app = typer.Typer(help="LegalAI yerel yönetim araçları.", no_args_is_help=True)
@@ -31,18 +38,29 @@ app.add_typer(update_app, name="update")
 
 @update_app.command("check")
 def update_check(
-    manifest_file: Path = typer.Option(..., "--manifest-file", help="Release manifest JSON dosyası veya indirilen metadata"),
+    manifest_file: Path | None = typer.Option(None, "--manifest-file", help="Yerel release manifest JSON dosyası"),
+    manifest_url: str | None = typer.Option(None, "--manifest-url", help="Release manifest metadata URL'si"),
+    platform_tag: str | None = typer.Option(None, "--platform-tag", help="windows-x64, macos-arm64 veya linux-x64"),
     state_path: Path = typer.Option(Path.home() / ".socratlegal" / "update-check.json", "--state-path"),
     current_version: str = typer.Option("0.2.2", "--current-version"),
 ) -> None:
-    """Yalnızca sürüm metadata'sını kontrol eder; belge içeriği göndermez."""
-    payload = json.loads(manifest_file.read_text(encoding="utf-8"))
-    result = check_for_update(
-        current_version,
-        lambda: payload,
-        state_path=state_path,
-        interval=timedelta(hours=24),
-    )
+    """Yalnızca sürüm metadata'sını kontrol eder; arşiv indirme/kurma yapmaz."""
+    if manifest_file and manifest_url:
+        raise typer.BadParameter("--manifest-file ile --manifest-url birlikte kullanılamaz.")
+    try:
+        if manifest_file:
+            payload = json.loads(manifest_file.read_text(encoding="utf-8"))
+            result = check_for_update(current_version, lambda: payload, state_path=state_path)
+        else:
+            result = check_remote_update(
+                current_version,
+                manifest_url=manifest_url,
+                platform_tag=platform_tag,
+                state_path=state_path,
+                interval=timedelta(hours=24),
+            )
+    except (OSError, json.JSONDecodeError, UpdateError) as error:
+        raise typer.BadParameter(str(error)) from error
     typer.echo(json.dumps({
         "available": result.available,
         "version": result.manifest.version if result.manifest else None,

@@ -46,3 +46,7 @@ uv run legalai qa "Bu olay için görevli mahkeme ve süre risklerini kaynaklı 
 ```
 
 Çıktılar `analysis_only` ve `non_binding` niteliğindedir; kesin veya bağlayıcı hukukî görüş değildir.
+
+## Güncellemeler
+
+Portable kullanıcılar yeni sürümleri GitHub Releases sayfasından açıkça indirir. `socratlegal update check --platform-tag windows-x64` yalnızca release metadata'sını kontrol eder; arşiv indirmez, otomatik kurmaz ve IDE MCP ayarlarını değiştirmez. Ayrıntılar için [portable kurulum ve güncelleme rehberine](docs/socratlegal-user-install.md) bakın.
