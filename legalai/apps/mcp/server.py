@@ -38,6 +38,7 @@ from legalai.packages.bilirkisi.workflow import analyze_report, build_petition_d
 from legalai.packages.corpus.models import CorpusDocument
 from legalai.packages.corpus.store import CorpusStore
 from legalai.packages.corpus.sync import CorpusSyncService
+from legalai.packages.corpus.sources.official import build_default_priority_adapters
 
 # Süreç başlarken tenant bağlamı kurulur — bkz. FORK-KAPSAMLI-PLAN.md §2.2.
 # Bugün her zaman "local"; sunucuya taşındığında bu satır middleware'e taşınır.
@@ -418,6 +419,20 @@ async def _legacy_legalai_corpus_belge_ekle(
     source_id: str, document_id: str, title: str, body: str, document_type: str = "decision", institution: str = "", url: str = "", citation: str = "", published_on: str | None = None, effective_from: str | None = None, effective_to: str | None = None
 ) -> dict:
     return await socratlegal_corpus_belge_ekle(source_id, document_id, title, body, document_type, institution, url, citation, published_on, effective_from, effective_to)
+
+
+@app.tool(name="socratlegal_corpus_sync", description="Maskeli sorguyla yapılandırılmış resmi adapter'ı arar ve sonuçları yerel corpus'a kaydeder.")
+async def socratlegal_corpus_sync(source_id: str, query: str, limit: int = 20) -> dict:
+    adapters = {adapter.source_id: adapter for adapter in build_default_priority_adapters()}
+    adapter = adapters.get(source_id)
+    if adapter is None:
+        return {"source_id": source_id, "status": "unavailable_or_not_configured", "documents_ingested": 0}
+    return await CorpusSyncService().sync_from_adapter(source_id, adapter, query, limit)
+
+
+@app.tool(name="legalai_corpus_sync", description="Geçiş uyumluluğu: SocratLegal resmi kaynak sync.")
+async def _legacy_legalai_corpus_sync(source_id: str, query: str, limit: int = 20) -> dict:
+    return await socratlegal_corpus_sync.fn(source_id, query, limit)
 
 
 async def _analysis_alias(question: str, mode: str = "layered", jurisdiction_hint: str | None = None) -> dict:

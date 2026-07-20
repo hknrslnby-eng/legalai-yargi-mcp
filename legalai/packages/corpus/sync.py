@@ -2,11 +2,14 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from datetime import date
+import re
 from typing import Any, Iterable
 
 from legalai.packages.shared.settings import settings
 
 from .models import CorpusCitation, CorpusDocument, CorpusRevision, SourceRecord
+from .federated import SourceSearchResult
+from legalai.packages.pii.outbound import mask_for_external
 from .sources.registry import SourceRegistry, default_source_registry
 from .store import CorpusStore
 
@@ -49,3 +52,26 @@ class CorpusSyncService:
             "chunks": await self.store.count("corpus_chunks"),
             "sources": [asdict(item) for item in self.registry.all()],
         }
+
+    async def sync_from_adapter(self, source_id: str, adapter: Any, query: str, limit: int = 20) -> dict[str, Any]:
+        """Search one live adapter and persist its normalized public results."""
+        masked_query = await mask_for_external(query)
+        # Keep a conservative identifier boundary even when a malformed TCKN
+        # fails the checksum-aware PII matcher.
+        masked_query = re.sub(r"\b\d{11}\b", "[TCKN_MASKELENDI]", masked_query)
+        results: list[SourceSearchResult] = await adapter.search(masked_query, limit)
+        documents = [
+            CorpusDocument(
+                document_id=result.id,
+                source_id=source_id,
+                title=result.title or result.citation or result.id,
+                document_type=str(result.metadata.get("document_type", "decision")),
+                institution=source_id,
+                body=result.body,
+                url=result.source_url,
+                citation=result.citation,
+                metadata={**result.metadata, "retrieval_mode": "live_sync"},
+            )
+            for result in results
+        ]
+        return await self.ingest(source_id, documents)

@@ -7,6 +7,8 @@ import json
 import typer
 
 from legalai.packages.layers.analysis_pipeline import run_pipeline
+from legalai.packages.corpus.sources.official import build_default_priority_adapters
+from legalai.packages.corpus.sync import CorpusSyncService
 from legalai.packages.shared.settings import settings
 from legalai.packages.usage.store import UsageStore
 
@@ -15,6 +17,8 @@ app = typer.Typer(help="LegalAI yerel yönetim araçları.", no_args_is_help=Tru
 usage_app = typer.Typer(help="LLM kullanım raporları.", no_args_is_help=True)
 app.add_typer(usage_app, name="usage")
 _QA_MODES = {"layered", "simple"}
+corpus_app = typer.Typer(help="SocratLegal local corpus tools", no_args_is_help=True)
+app.add_typer(corpus_app, name="corpus")
 
 
 @app.command("qa")
@@ -55,6 +59,36 @@ def usage_report(
     """Print a tenant-scoped monthly usage report as JSON."""
     report = asyncio.run(UsageStore(settings.usage_db_path).report(month, tenant_id=tenant_id))
     typer.echo(json.dumps(report, ensure_ascii=False, indent=2))
+
+
+@corpus_app.command("status")
+def corpus_status() -> None:
+    """Show local SocratLegal corpus status."""
+    typer.echo(json.dumps(asyncio.run(CorpusSyncService().status()), ensure_ascii=False, indent=2))
+
+
+@corpus_app.command("sync")
+def corpus_sync(
+    query: str = typer.Option(..., "--query", help="Query sent to the configured official adapter."),
+    source: str = typer.Option("all", "--source", help="all or a source id such as rekabet_kurumu, kik, kvkk."),
+    limit: int = typer.Option(20, "--limit", min=1, max=100),
+) -> None:
+    """Mask a query, search configured official adapters, and persist results locally."""
+    adapters = {adapter.source_id: adapter for adapter in build_default_priority_adapters()}
+    selected = list(adapters) if source == "all" else [source]
+
+    async def _run() -> list[dict]:
+        service = CorpusSyncService()
+        reports: list[dict] = []
+        for source_id in selected:
+            adapter = adapters.get(source_id)
+            if adapter is None:
+                reports.append({"source_id": source_id, "status": "unavailable_or_not_configured"})
+                continue
+            reports.append(await service.sync_from_adapter(source_id, adapter, query, limit))
+        return reports
+
+    typer.echo(json.dumps(asyncio.run(_run()), ensure_ascii=False, indent=2))
 
 
 def main() -> None:

@@ -17,6 +17,7 @@ def capability_catalog() -> dict[str, Any]:
             "socratlegal_bilirkisi_raporu_dilekce": "bilirkisi_raporu_dilekce",
             "socratlegal_corpus_durum": "corpus_durum",
             "socratlegal_corpus_belge_ekle": "corpus_belge_ekle",
+            "socratlegal_corpus_sync": "corpus_sync",
         },
         "capabilities": [
             {
