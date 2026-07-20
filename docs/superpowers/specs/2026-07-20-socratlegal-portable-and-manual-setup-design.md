@@ -155,6 +155,12 @@ değiştirileceğini hemen altında göstermelidir.
 
 - Release arşivleri GitHub Release üzerinden yayımlanır.
 - Her arşiv için checksum yayımlanır.
+- Portable kurulum sabit bir başlatıcı ve değiştirilebilir `app` katmanı
+  kullanır; IDE kayıtları sürüm klasörlerine bağlanmaz.
+- Başlatıcı, kullanıcı onayıyla GitHub Release sürüm bilgisini kontrol eder;
+  sessiz ve zorlayıcı güncelleme varsayılan değildir.
+- Güncelleme yeni arşivi geçici alana indirir, checksum doğrular, mevcut
+  uygulamayı yedekler ve başarısız başlatmada önceki sürüme dönebilir.
 - Güncelleme uygulama dosyalarını yenilerken yerel `data`/corpus dizinini
   silmez.
 - Ayar dosyasının yedeği alınmadan güncelleme yapılmaz.
@@ -186,6 +192,17 @@ değiştirileceğini hemen altında göstermelidir.
   yapabilmeli.
 - Her örnekteki sabit yolun nasıl değiştirileceği açıkça belirtilmeli.
 - Kurulum sonrası ilk sağlık kontrolü ve basit katmanlı analiz çalışmalı.
+
+### Güncelleme testi
+
+- Yeni sürüm bilgisi mevcut sürümden yüksekse kullanıcıya güncelleme bildirimi
+  verilmeli.
+- Checksum uyuşmazlığında mevcut uygulama ve veri dizini değişmemeli.
+- Başarılı güncelleme `app.previous` yedeğini korumalı.
+- Başlatma doğrulaması başarısızsa önceki uygulama geri yüklenebilmeli.
+- Güncelleme sırasında IDE JSON/TOML kayıtları yeniden yazılmamalı.
+- `data`, corpus, API anahtarları ve PII haritaları uygulama güncellemesinden
+  etkilenmemeli.
 
 ## Uygulama sırası
 

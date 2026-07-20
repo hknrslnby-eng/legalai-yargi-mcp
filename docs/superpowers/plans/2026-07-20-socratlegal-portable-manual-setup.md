@@ -19,6 +19,7 @@
 - Portable runtime data and corpus remain local and are not committed to Git.
 - API keys and personal data must not be written to installer logs.
 - Executable packaging is explicitly deferred.
+- Portable updates use a stable launcher, explicit version metadata, checksum verification, backup, and rollback; the updater is opt-in and never silently overwrites the active application.
 
 ---
 
@@ -419,7 +420,69 @@ git add .github/workflows/portable-release.yml scripts/portable-manifest.json sc
 git commit -m "ci: build SocratLegal portable release archives"
 ```
 
-### Task 6: Rewrite user-facing README and setup documentation
+### Task 6: Add version checking, safe portable updates, and rollback
+
+**Files:**
+- Create: `legalai/packages/installer/update.py`
+- Create: `legalai/packages/installer/versioning.py`
+- Create: `legalai/tests/installer/test_update.py`
+- Modify: `scripts/portable-manifest.json`
+- Modify: `scripts/start.cmd`
+- Modify: `scripts/start.sh`
+- Modify: `scripts/install.ps1`
+- Modify: `scripts/install.sh`
+
+**Interfaces:**
+- `ReleaseManifest(version: str, channel: str, release_url: str, archive_name: str, sha256: str, data_schema_version: int, minimum_supported_version: str)` represents a published release.
+- `compare_versions(current: str, available: str) -> int` returns `-1`, `0`, or `1` using PEP 440-compatible versions.
+- `check_for_update(current: ReleaseManifest, metadata_url: str, http_get: Callable[[str], bytes]) -> UpdateCheckResult` retrieves only release metadata and never sends document text.
+- `apply_update(install_root: Path, archive: Path, expected_sha256: str, backup_root: Path) -> UpdateResult` verifies the archive, stages it, preserves `data`, atomically replaces `app`, and records `app.previous` for rollback.
+- `rollback_update(install_root: Path) -> UpdateResult` restores the previous application after a failed startup validation.
+
+- [ ] **Step 1: Write failing version and update tests**
+
+Cover current/equal/newer versions, malformed metadata, checksum mismatch, successful replacement, preservation of `data`, backup creation, and rollback after a failed health marker. Verify that a failed update leaves the active application untouched.
+
+- [ ] **Step 2: Run focused update tests and verify they fail**
+
+```powershell
+uv run pytest legalai/tests/installer/test_update.py -q
+```
+
+Expected: collection failure because version and update modules are absent.
+
+- [ ] **Step 3: Implement manifest parsing and version comparison**
+
+Use a strict JSON manifest schema. Reject missing version, archive, checksum, channel, or minimum-version fields. Use `packaging.version.Version` already available through the project dependency graph; if it is not directly available, add `packaging>=24.0` explicitly rather than comparing version strings lexicographically.
+
+- [ ] **Step 4: Implement metadata-only update checking**
+
+The checker must be opt-in, rate-limited to one check per 24 hours by a local timestamp, and return `available`, `current_version`, `available_version`, and `message`. Network failure must degrade to `status = unavailable` without affecting MCP startup.
+
+- [ ] **Step 5: Implement staged update, checksum verification, backup, and rollback**
+
+Download/extract into a temporary sibling directory. Verify SHA-256 before touching the active app. Rename the active `app` to `app.previous`, move the staged `app` into place, preserve `data`, and write an update marker. If the post-update startup validation fails, restore `app.previous` and remove the incomplete app. Never replace IDE configuration files as part of an app update.
+
+- [ ] **Step 6: Route launch scripts through the stable update-aware launcher**
+
+The launchers must continue to start the active `app` path regardless of version. They may print an available-update notice, but they must not auto-apply an update without explicit `--apply-update` or installer confirmation. A failed metadata check must not prevent the current server from starting.
+
+- [ ] **Step 7: Run update tests and verify they pass**
+
+```powershell
+uv run pytest legalai/tests/installer/test_update.py -q
+```
+
+Expected: all version, checksum, preservation, backup, and rollback tests pass.
+
+- [ ] **Step 8: Commit the safe update lifecycle**
+
+```powershell
+git add legalai/packages/installer/update.py legalai/packages/installer/versioning.py legalai/tests/installer/test_update.py scripts/portable-manifest.json scripts/start.cmd scripts/start.sh scripts/install.ps1 scripts/install.sh
+git commit -m "feat: add safe SocratLegal portable updates"
+```
+
+### Task 7: Rewrite user-facing README and setup documentation
 
 **Files:**
 - Modify: `README.md`
@@ -473,7 +536,7 @@ git add README.md docs/socratlegal-setup.md docs/mcp-client-setup.md docs/socrat
 git commit -m "docs: add portable-first SocratLegal installation guide"
 ```
 
-### Task 7: End-to-end verification and handoff
+### Task 8: End-to-end verification and handoff
 
 **Files:**
 - Test: `legalai/tests/installer/test_end_to_end_install.py`
