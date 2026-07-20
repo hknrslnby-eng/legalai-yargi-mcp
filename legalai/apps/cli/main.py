@@ -19,6 +19,7 @@ from legalai.packages.installer.service import install_socratlegal
 from legalai.packages.installer.update import (
     UpdateError,
     apply_update,
+    archive_download_url,
     check_for_update,
     check_remote_update,
     load_release_manifest,
@@ -62,11 +63,17 @@ def update_check(
     except (OSError, json.JSONDecodeError, UpdateError) as error:
         raise typer.BadParameter(str(error)) from error
     typer.echo(json.dumps({
+        "current_version": current_version,
         "available": result.available,
-        "version": result.manifest.version if result.manifest else None,
+        "available_version": result.manifest.version if result.manifest else None,
         "channel": result.manifest.channel if result.manifest else None,
+        "release_url": result.manifest.release_url if result.manifest else None,
+        "archive_url": archive_download_url(result.manifest) if result.manifest else None,
+        "sha256": result.manifest.sha256 if result.manifest else None,
         "from_cache": result.from_cache,
         "checked_at": result.checked_at.isoformat(),
+        "archive_downloaded": False,
+        "auto_apply": False,
     }, ensure_ascii=False, indent=2))
 
 

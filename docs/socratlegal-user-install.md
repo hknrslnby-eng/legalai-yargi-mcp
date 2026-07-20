@@ -49,7 +49,7 @@ Yeni kurulumlarda ayrı bir manifest indirmeden GitHub Releases metadata'sı kon
 .\runtime\uv.exe run --directory .\app socratlegal update check --platform-tag windows-x64
 ```
 
-Bu komut yalnızca yeni sürüm olup olmadığını ve ilgili release bağlantısını gösterir. Arşiv kendiliğinden indirilmez veya kurulmaz. Kullanıcı yeni portable paketi Releases sayfasından açıkça indirip checksum'ı doğruladıktan sonra `update apply` komutunu çalıştırır. İnternet erişimi istenmiyorsa mevcut `--manifest-file` seçeneğiyle yerel metadata kullanılabilir.
+Bu komut yalnızca yeni sürüm olup olmadığını ve ilgili release bağlantısını gösterir. Arşiv otomatik olarak indirilmez veya kurulmaz. Kullanıcı yeni portable paketi Releases sayfasından açıkça indirip checksum'ı doğruladıktan sonra `update apply` komutunu çalıştırır. İnternet erişimi istenmiyorsa mevcut `--manifest-file` seçeneğiyle yerel metadata kullanılabilir.
 
 ```powershell
 .\runtime\uv.exe run --directory .\app socratlegal update check --manifest-file .\release-manifest-windows-x64.json
@@ -69,5 +69,7 @@ Araç adlarını ezberlemek gerekmez. Sohbete doğal dille isteğinizi yazabilir
 - “Yüklediğim bilirkişi raporunu teknik ve hukuki yönden incele; itiraz dilekçesi taslağı hazırla.”
 
 `socratlegal_yardim` aracı veya `legalai://capabilities` kaynağı, istemcinin desteklediği araçları ve örnek istemleri gösterir. Bilirkişi raporu akışı üretim modülüdür; teknik alan kullanıcı tarafından verilmezse sistem rapordan alanı çıkarmaya çalışır, belirsiz sonuçları varsayım olarak etiketler ve teknik karşı argümanları hukuk kaynaklarıyla bağlamaya çalışır.
+
+Sözleşme incelemesi için `socratlegal_sozlesme_incele` aracını veya doğal dilde “Bu sözleşmeyi madde madde, kaynaklı ve karşı görüşleriyle incele” istemini kullanın.
 
 Tüm sonuçlar bağlayıcı hukuki görüş değil, kaynaklı ve ihtimalli analizdir. Kişisel veriler dış çağrıdan önce maskelenir; IDE'nin kendi veri politikası ayrıca incelenmelidir.

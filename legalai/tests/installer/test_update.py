@@ -159,6 +159,13 @@ def test_fetch_release_manifest_decodes_json_without_contract_text() -> None:
     assert payload == manifest
 
 
+def test_fetch_release_manifest_requires_https_and_limits_metadata_size() -> None:
+    with pytest.raises(UpdateError):
+        fetch_release_manifest("http://example.test/manifest.json", get=lambda _url: b"{}")
+    with pytest.raises(UpdateError):
+        fetch_release_manifest("https://example.test/manifest.json", get=lambda _url: b"x" * (1024 * 1024 + 1))
+
+
 def test_remote_update_check_uses_cache_and_never_downloads_archive(tmp_path: Path) -> None:
     archive = tmp_path / "release.zip"
     archive.write_bytes(b"release")

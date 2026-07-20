@@ -15,6 +15,7 @@ from pathlib import Path
 from platform import machine, system
 from typing import Callable
 from urllib.error import URLError
+from urllib.parse import urlparse
 from urllib.request import urlopen
 
 from .versioning import compare_versions
@@ -48,6 +49,7 @@ _REQUIRED_FIELDS = {
     "data_schema_version", "minimum_supported_version",
 }
 RELEASE_REPOSITORY = "hknrslnby-eng/legalai-yargi-mcp"
+SUPPORTED_PLATFORM_TAGS = frozenset({"windows-x64", "macos-arm64", "macos-x64", "linux-x64"})
 
 
 def default_platform_tag() -> str:
@@ -55,17 +57,21 @@ def default_platform_tag() -> str:
     operating_system = system().lower()
     architecture = machine().lower()
     if operating_system.startswith("win"):
-        return "windows-x64" if architecture in {"amd64", "x86_64", "x64"} else "windows-arm64"
+        if architecture in {"amd64", "x86_64", "x64"}:
+            return "windows-x64"
+        raise UpdateError(f"Desteklenmeyen Windows mimarisi: {architecture}")
     if operating_system == "darwin":
         return "macos-arm64" if architecture in {"arm64", "aarch64"} else "macos-x64"
     if operating_system == "linux":
-        return "linux-arm64" if architecture in {"arm64", "aarch64"} else "linux-x64"
+        if architecture in {"amd64", "x86_64", "x64"}:
+            return "linux-x64"
+        raise UpdateError(f"Desteklenmeyen Linux mimarisi: {architecture}")
     raise UpdateError(f"Desteklenmeyen platform: {operating_system}/{architecture}")
 
 
 def default_manifest_url(platform_tag: str) -> str:
     tag = platform_tag.strip()
-    if not tag or any(character in tag for character in "/\\?#"):
+    if tag not in SUPPORTED_PLATFORM_TAGS:
         raise UpdateError("Geçersiz platform etiketi.")
     return (
         f"https://github.com/{RELEASE_REPOSITORY}/releases/latest/download/"
@@ -79,6 +85,9 @@ def fetch_release_manifest(
     get: Callable[[str], bytes | str | dict[str, object]] | None = None,
 ) -> dict[str, object]:
     """Fetch only release metadata; never downloads an archive."""
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or not parsed.netloc:
+        raise UpdateError("Release metadata adresi HTTPS olmalıdır.")
     if get is None:
         def get(url_to_fetch: str) -> bytes:
             with urlopen(url_to_fetch, timeout=10) as response:
@@ -89,14 +98,29 @@ def fetch_release_manifest(
         if isinstance(raw, dict):
             payload = raw
         elif isinstance(raw, bytes):
+            if len(raw) > 1024 * 1024:
+                raise UpdateError("Release metadata boyutu 1 MiB sınırını aşıyor.")
             payload = json.loads(raw.decode("utf-8"))
         else:
+            if len(raw.encode("utf-8")) > 1024 * 1024:
+                raise UpdateError("Release metadata boyutu 1 MiB sınırını aşıyor.")
             payload = json.loads(raw)
     except (OSError, URLError, UnicodeDecodeError, TypeError, ValueError, json.JSONDecodeError) as error:
         raise UpdateError(f"Release manifest okunamadı: {error}") from error
     if not isinstance(payload, dict):
         raise UpdateError("Release manifest bir JSON nesnesi olmalıdır.")
     return payload
+
+
+def archive_download_url(manifest: ReleaseManifest) -> str | None:
+    """Derive the GitHub asset URL when the manifest has a tagged release URL."""
+    marker = "/releases/tag/"
+    if marker not in manifest.release_url:
+        return None
+    base, tag = manifest.release_url.split(marker, 1)
+    if not base or not tag:
+        return None
+    return f"{base}/releases/download/{tag}/{manifest.archive_name}"
 
 
 def load_release_manifest(payload: dict[str, object]) -> ReleaseManifest:

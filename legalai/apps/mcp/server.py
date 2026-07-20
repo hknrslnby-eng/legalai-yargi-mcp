@@ -39,7 +39,7 @@ from legalai.packages.bilirkisi.workflow import analyze_report, build_petition_d
 from legalai.packages.contracts.models import ContractReviewRequest
 from legalai.packages.contracts.review import review_contract
 from legalai.packages.corpus.models import CorpusDocument
-from legalai.packages.installer.update import UpdateError, check_remote_update
+from legalai.packages.installer.update import UpdateError, archive_download_url, check_remote_update
 from legalai.packages.corpus.store import CorpusStore
 from legalai.packages.corpus.sync import CorpusSyncService
 from legalai.packages.corpus.sources.official import build_default_priority_adapters
@@ -626,11 +626,14 @@ async def _socratlegal_update_check_tool(
         }
     return {
         "status": "ok",
+        "current_version": current_version,
         "available": result.available,
-        "version": result.manifest.version if result.manifest else None,
+        "available_version": result.manifest.version if result.manifest else None,
         "channel": result.manifest.channel if result.manifest else None,
         "release_url": result.manifest.release_url if result.manifest else None,
         "archive_name": result.manifest.archive_name if result.manifest else None,
+        "archive_url": archive_download_url(result.manifest) if result.manifest else None,
+        "sha256": result.manifest.sha256 if result.manifest else None,
         "from_cache": result.from_cache,
         "checked_at": result.checked_at.isoformat(),
         "auto_apply": False,
