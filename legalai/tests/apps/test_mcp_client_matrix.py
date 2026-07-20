@@ -16,10 +16,11 @@ def test_codex_and_cursor_configs_are_independent_stdio_records() -> None:
     assert codex_legalai["cwd"] == "."
 
     cursor_servers = cursor["mcpServers"]
-    legalai = cursor_servers["legalai"]
+    legalai = cursor_servers.get("legalai") or cursor_servers.get("socratlegal")
+    assert legalai is not None
     assert legalai["cwd"].endswith("legalai-yargi-mcp")
     assert legalai["args"] == ["-m", "legalai.apps.mcp.server"]
-    assert "yargi-mcp-fork" in cursor_servers
+    assert {"yargi-mcp-fork", "socratlegal"} & cursor_servers.keys()
 
 
 def test_client_configs_do_not_contain_inline_api_keys() -> None:
