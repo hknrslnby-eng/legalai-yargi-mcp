@@ -169,6 +169,8 @@ def apply_update(
         if active_app.exists() and previous.exists():
             shutil.rmtree(active_app)
             shutil.move(str(previous), str(active_app))
+        elif active_app.exists():
+            shutil.rmtree(active_app)
         if isinstance(error, UpdateError):
             raise
         raise UpdateError(f"Güncelleme uygulanamadı: {error}") from error

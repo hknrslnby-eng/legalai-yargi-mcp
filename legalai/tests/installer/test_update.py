@@ -100,6 +100,19 @@ def test_failed_startup_validation_rolls_back(tmp_path: Path) -> None:
     assert (active_app / "old.txt").read_text(encoding="utf-8") == "old"
 
 
+def test_failed_first_install_does_not_leave_new_app(tmp_path: Path) -> None:
+    active_app = tmp_path / "app"
+    archive = tmp_path / "release.zip"
+    with zipfile.ZipFile(archive, "w") as handle:
+        handle.writestr("app/new.txt", "new")
+    manifest = load_release_manifest(_manifest(archive))
+
+    with pytest.raises(UpdateError):
+        apply_update(archive, active_app, manifest, validator=lambda _: False)
+
+    assert not active_app.exists()
+
+
 def test_explicit_rollback_restores_previous_app(tmp_path: Path) -> None:
     active_app = tmp_path / "app"
     previous = tmp_path / "app.previous"
