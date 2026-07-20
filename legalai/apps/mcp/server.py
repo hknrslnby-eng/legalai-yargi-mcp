@@ -35,6 +35,8 @@ from legalai.packages.pii.gateway import PiiGateway
 from legalai.packages.shared.settings import settings
 from legalai.packages.shared.tenant import TenantContext, set_tenant
 from legalai.packages.bilirkisi.workflow import analyze_report, build_petition_draft
+from legalai.packages.contracts.models import ContractReviewRequest
+from legalai.packages.contracts.review import review_contract
 from legalai.packages.corpus.models import CorpusDocument
 from legalai.packages.corpus.store import CorpusStore
 from legalai.packages.corpus.sync import CorpusSyncService
@@ -530,6 +532,67 @@ async def _legacy_legalai_bilirkisi_petition_tool(
     report_text: str | None = None, file_path: str | None = None, question: str = "", technical_domain: str = "", court: str = "", event_dates: list[str] | None = None, case_date: str | None = None
 ) -> dict:
     return await _socratlegal_bilirkisi_petition_tool(report_text, file_path, question, technical_domain, court, event_dates, case_date)
+
+
+@app.tool(
+    name="socratlegal_sozlesme_incele",
+    description=(
+        "Yerel olarak sağlanan sözleşme metnini veya dosyasını PII'yi dışarı göndermeden "
+        "inceler; hukuki nitelendirme, persona yönlendirmesi, madde/boşluk riskleri, "
+        "operasyonel bağlam, temporal context ve kaynaklı araştırma talimatları döndürür. "
+        "Sonuç analysis-only ve non-binding'dir. contract_text veya file_path'ten yalnızca "
+        "biri verilmeli; due diligence bu aracın kapsamı dışındadır."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def _socratlegal_contract_review_tool(
+    contract_text: str | None = None,
+    file_path: str | None = None,
+    purpose: str = "",
+    position: str = "",
+    detail_level: str = "standard",
+    event_dates: list[str] | None = None,
+    jurisdiction_hint: str | None = None,
+    server_side_synthesis: bool = False,
+) -> dict:
+    request = ContractReviewRequest(
+        contract_text=contract_text,
+        file_path=file_path,
+        purpose=purpose,
+        position=position,
+        detail_level=detail_level,
+        event_dates=event_dates,
+        jurisdiction_hint=jurisdiction_hint,
+        server_side_synthesis=server_side_synthesis,
+    )
+    result = await review_contract(request)
+    return result.to_dict()
+
+
+@app.tool(
+    name="legalai_sozlesme_incele",
+    description="Geçiş uyumluluğu: SocratLegal sözleşme inceleme aracının aynı işlevli alias'ı.",
+)
+async def _legacy_legalai_contract_review_tool(
+    contract_text: str | None = None,
+    file_path: str | None = None,
+    purpose: str = "",
+    position: str = "",
+    detail_level: str = "standard",
+    event_dates: list[str] | None = None,
+    jurisdiction_hint: str | None = None,
+    server_side_synthesis: bool = False,
+) -> dict:
+    return await _socratlegal_contract_review_tool.fn(
+        contract_text=contract_text,
+        file_path=file_path,
+        purpose=purpose,
+        position=position,
+        detail_level=detail_level,
+        event_dates=event_dates,
+        jurisdiction_hint=jurisdiction_hint,
+        server_side_synthesis=server_side_synthesis,
+    )
 
 
 def main() -> None:
