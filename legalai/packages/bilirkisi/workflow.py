@@ -37,6 +37,13 @@ class ExtractedReport:
 
 
 @dataclass(frozen=True)
+class DomainInference:
+    domain: str
+    confidence: float
+    evidence: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class ReportClaim:
     claim_id: str
     excerpt: str
@@ -45,6 +52,10 @@ class ReportClaim:
     legal_links: tuple[str, ...]
     temporal_effect: str
     missing_evidence: tuple[str, ...]
+    technical_questions: tuple[str, ...] = ()
+    alternative_hypotheses: tuple[str, ...] = ()
+    legal_issue_links: tuple[str, ...] = ()
+    research_instructions: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -171,6 +182,56 @@ def _claim_lines(text: str) -> list[str]:
     return lines[:25] or ["Raporda değerlendirilmesi gereken belirli bir bulgu ayrıştırılamadı."]
 
 
+def infer_technical_domain(report_text: str, supplied_domain: str = "") -> DomainInference:
+    if supplied_domain.strip():
+        return DomainInference(supplied_domain.strip(), 1.0, ("Kullanıcı tarafından teknik alan sağlandı.",))
+    lowered = report_text.casefold()
+    candidates = (
+        ("fire_safety_engineering", ("yangın", "yangin", "yangın yükü", "duman", "sprinkler", "kalibrasyon")),
+        ("structural_engineering", ("betonarme", "kolon", "kiriş", "deprem", "statik", "taşıyıcı")),
+        ("accounting_finance", ("bilanço", "mizan", "muhasebe", "amortisman", "nakit akışı")),
+        ("medical_forensic", ("tıbbi", "yaralanma", "maluliyet", "epikriz", "otopsi", "tedavi")),
+        ("software_cybersecurity", ("yazılım", "sunucu", "log", "siber", "zararlı yazılım", "veritabanı")),
+        ("environmental_engineering", ("emisyon", "atık", "çevre", "zemin", "kirlilik", "gürültü")),
+    )
+    scores = [(domain, tuple(term for term in terms if term in lowered)) for domain, terms in candidates]
+    domain, evidence = max(scores, key=lambda item: len(item[1]), default=("unspecified", ()))
+    if not evidence:
+        return DomainInference("unspecified", 0.20, ("Teknik alan metinden güvenle çıkarılamadı.",))
+    confidence = min(0.95, 0.55 + 0.12 * len(evidence))
+    return DomainInference(domain, confidence, evidence)
+
+
+def link_substantive_issues(question: str, domain: DomainInference) -> tuple[str, ...]:
+    lowered = question.casefold()
+    links = [
+        "Teknik bulgunun ispat değeri, ilgili maddi hukuk unsuruna ve illiyet değerlendirmesine bağlanmalıdır.",
+        "Teknik yöntem, raporun gerekçesi ve denetime elverişliliği HMK m.266 ve m.279-281 çerçevesinde ayrıca incelenmelidir.",
+    ]
+    if any(term in lowered for term in ("sigorta", "tazminat", "poliçe", "hasar")):
+        links.append("Sigorta sözleşmesinin teminat kapsamı, hasar nedeni, illiyet ve eksper/rapor değerlendirmesiyle bağlantı kurulmalıdır.")
+    if any(term in lowered for term in ("sözleşme", "bedel", "ifa", "fesih")):
+        links.append("Teknik bulgunun sözleşmesel edim, ayıp, ifa ve zarar unsurlarına etkisi araştırılmalıdır.")
+    if any(term in lowered for term in ("ceza", "suç", "soruşturma", "kast")):
+        links.append("Teknik bulgunun suçun maddi unsuru, kast/taksir ve illiyet bakımından etkisi araştırılmalıdır.")
+    links.append(f"{domain.domain} alanındaki teknik standart, ölçüm yöntemi ve alternatif hipotezler erişilebilir kaynaklarla doğrulanmalıdır.")
+    return tuple(links)
+
+
+def _research_brief(excerpt: str, domain: DomainInference, question: str) -> tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...], tuple[str, ...]]:
+    technical_questions = (
+        "Yöntem tekrar üretilebilir ve denetlenebilir mi?",
+        "Ham veri, ölçüm belirsizliği, kalibrasyon ve örnekleme kayıtları mevcut mu?",
+        "Aynı bulguyu açıklayabilecek alternatif teknik hipotezler test edilmiş mi?",
+    )
+    alternatives = (
+        f"{domain.domain} alanında kullanılan varsayım veya örnekleme değişirse sonuç değişebilir.",
+        "Ham veri/kalibrasyon/ölçüm belirsizliği eksikliği, kesinlik iddiasını zayıflatabilir.",
+    )
+    materials = ("ham veri", "yöntem ve standardın sürümü", "kalibrasyon/numune kayıtları", "alternatif hipotez testleri")
+    return technical_questions, alternatives, materials, link_substantive_issues(question, domain)
+
+
 def _technical_counterargument(excerpt: str, domain: str) -> tuple[str, tuple[str, ...]]:
     lowered = excerpt.casefold()
     missing: list[str] = []
@@ -201,27 +262,44 @@ async def analyze_report(
     # or live corpus adapters, even though extraction already redacts common IDs.
     external_text = await mask_for_external(report.external_text)
     report = ExtractedReport(report.text, external_text, report.format, report.source_name, report.ocr_required, report.warnings)
+    inference = infer_technical_domain(report.text, technical_domain)
     claims: list[ReportClaim] = []
     for index, excerpt in enumerate(_claim_lines(report.text), 1):
-        counter, missing = _technical_counterargument(excerpt, technical_domain)
+        counter, missing = _technical_counterargument(excerpt, inference.domain)
+        technical_questions, alternatives, required_materials, legal_issue_links = _research_brief(
+            excerpt, inference, question
+        )
         claims.append(
             ReportClaim(
                 claim_id=f"RAPOR-{index}",
                 excerpt=excerpt,
                 technical_finding="Rapor bulgusu yerel metinden ayrıştırıldı; uzman doğrulaması gerekir.",
                 technical_counterargument=counter,
-                legal_links=("HMK m.266 ve bilirkişi incelemesinin sınırları (güncel metin/veritabanı ile doğrulanmalı)", "HMK m.279-281 kapsamında gerekçe, denetime elverişlilik ve itiraz değerlendirmesi"),
+                legal_links=(
+                    "HMK m.266 ve bilirkişi incelemesinin sınırları (güncel metin/veritabanı ile doğrulanmalı)",
+                    "HMK m.279-281 kapsamında gerekçe, denetime elverişlilik ve itiraz değerlendirmesi",
+                    *legal_issue_links,
+                ),
                 temporal_effect="Rapor, olay ve dava tarihleriyle birlikte olay tarihinde yürürlükteki teknik/hukuki çerçeveye göre ayrıca karşılaştırılmalıdır.",
-                missing_evidence=missing,
+                missing_evidence=tuple(dict.fromkeys((*missing, *required_materials))),
+                technical_questions=technical_questions,
+                alternative_hypotheses=alternatives,
+                legal_issue_links=legal_issue_links,
+                research_instructions=(
+                    "Aynı teknik bilim dalında standart, yöntem, ham veri ve karşı hipotezleri derinlemesine araştır; "
+                    "teknik sonucu kesin uzman görüşü gibi sunma.",
+                ),
             )
         )
     temporal = {"event_dates": event_dates or [], "case_date": case_date, "status": "date-specific-pending-source-resolution"}
     instructions = (
-        "Her RAPOR-* iddiasını önce aynı teknik bilim dalında test et; sonra karşı teknik hipotezi, "
-        "eksik veriyi ve yöntem sorununu ayır; ardından corpus kaynaklarıyla mevzuat/içtihat bağlantısını kur. "
-        "Kaynak yoksa kesin görüş yazma; sonucu non-binding analiz olarak sun."
+        f"Teknik alan çıkarımı: {inference.domain} (güven {inference.confidence:.2f}). "
+        "Her RAPOR-* iddiasını önce aynı teknik bilim dalında kapsamlı bir araştırma/tez hazırlığı gibi test et; "
+        "standartları, yöntemleri, ham veriyi, hata/ölçüm belirsizliğini ve alternatif teknik hipotezleri araştır. "
+        "Sonra her teknik karşı argümanı ilgili maddi hukuk unsuru, usul kuralı, mevzuat ve erişilmiş içtihatlarla bağla. "
+        "Kaynak yoksa kesin görüş yazma; teknik uzman görüşü değildir, non-binding analiz ve araştırma brifidir."
     )
-    return BilirKisiAnalysis(report, question, technical_domain, tuple(claims), temporal, tuple(legal_sources or ()), True, True, instructions)
+    return BilirKisiAnalysis(report, question, inference.domain, tuple(claims), temporal, tuple(legal_sources or ()), True, True, instructions)
 
 
 def build_petition_draft(analysis: BilirKisiAnalysis, *, court: str = "") -> PetitionDraft:
