@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from pathlib import Path
 
 import typer
 
@@ -11,6 +12,9 @@ from legalai.packages.corpus.sources.official import build_default_priority_adap
 from legalai.packages.corpus.sync import CorpusSyncService
 from legalai.packages.shared.settings import settings
 from legalai.packages.usage.store import UsageStore
+from legalai.packages.installer.ides import detect_ide_configs
+from legalai.packages.installer.models import InstallRequest
+from legalai.packages.installer.service import install_socratlegal
 
 
 app = typer.Typer(help="LegalAI yerel yönetim araçları.", no_args_is_help=True)
@@ -19,6 +23,45 @@ app.add_typer(usage_app, name="usage")
 _QA_MODES = {"layered", "simple"}
 corpus_app = typer.Typer(help="SocratLegal local corpus tools", no_args_is_help=True)
 app.add_typer(corpus_app, name="corpus")
+
+
+@app.command("install")
+def install(
+    install_dir: Path = typer.Option(Path.cwd(), "--install-dir", help="SocratLegal kaynak veya uygulama klasörü"),
+    ide: list[str] = typer.Option([], "--ide", help="cursor, antigravity, vscode, claude veya codex; tekrarlanabilir"),
+    portable_root: Path | None = typer.Option(None, "--portable-root", help="Portable klasörünün kökü"),
+    data_dir: Path | None = typer.Option(None, "--data-dir", help="Belgeler ve yerel corpus için ayrı veri klasörü"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Dosyaya yazmadan ne yapılacağını göster"),
+    repair: bool = typer.Option(False, "--repair", help="Bitişik iki JSON nesnesinden oluşan eski ayarı onarmayı dene"),
+) -> None:
+    """SocratLegal'i seçilen IDE'lere tek komutla bağlar."""
+    known = {item.ide_id: item for item in detect_ide_configs(
+        home=Path.home(),
+        appdata=Path.home() / "AppData" / "Roaming",
+        project_dir=install_dir,
+    )}
+    selected = list(known) if not ide or "all" in ide else ide
+    unknown = [item for item in selected if item not in known]
+    if unknown:
+        raise typer.BadParameter(f"Bilinmeyen IDE: {', '.join(unknown)}", param_hint="--ide")
+    request = InstallRequest(
+        install_dir=install_dir,
+        data_dir=data_dir,
+        ide_ids=tuple(selected),
+        portable_root=portable_root,
+        dry_run=dry_run,
+        repair=repair,
+    )
+    try:
+        results = install_socratlegal(request, project_dir=install_dir)
+    except ValueError as error:
+        raise typer.BadParameter(str(error)) from error
+    for result in results:
+        typer.echo(f"{result.ide_id}: {result.status} — {result.message} [{result.config_path}]")
+    if portable_root:
+        typer.echo("Portable çalışma yolu seçildi; sistem Python/uv kurulumu gerekmez.")
+    else:
+        typer.echo("Kaynak checkout yolu seçildi; mevcut .venv Python çalıştırıcısı kullanılacak.")
 
 
 @app.command("qa")
