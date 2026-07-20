@@ -55,6 +55,10 @@ production = [
     "gunicorn>=22.0.0",
     "uvicorn[standard]>=0.30.0",
 ]
+ocr = [
+    "Pillow>=10.0.0",
+    "pytesseract>=0.3.13",
+]
 
 [project.scripts]
 yargi-mcp = "mcp_server_main:main"

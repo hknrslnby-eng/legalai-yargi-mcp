@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+import re
 from dataclasses import dataclass, field
 from typing import Any, Protocol
+
+from legalai.packages.pii.outbound import mask_for_external
 
 
 @dataclass(frozen=True)
@@ -63,9 +66,12 @@ class FederatedRetriever:
 
     async def search(self, query: str, limit: int = 20) -> FederatedSearchResult:
         adapters = (self.local, *self.live)
+        external_query = await mask_for_external(query)
+        external_query = re.sub(r"\b\d{11}\b", "[TCKN_MASKELENDI]", external_query)
         async def run(adapter: SearchAdapter):
             try:
-                return adapter.source_id, await asyncio.wait_for(adapter.search(query, limit), self.timeout_seconds), None
+                adapter_query = query if adapter.source_id in {"local", "local_corpus"} else external_query
+                return adapter.source_id, await asyncio.wait_for(adapter.search(adapter_query, limit), self.timeout_seconds), None
             except Exception as exc:
                 return adapter.source_id, [], exc
 

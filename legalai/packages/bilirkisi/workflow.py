@@ -11,7 +11,7 @@ import re
 import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any, Callable, Iterable
 from xml.etree import ElementTree
 
 from legalai.packages.pii.outbound import mask_for_external
@@ -93,7 +93,24 @@ def _xml_text(xml: bytes, tags: Iterable[str]) -> str:
     return "\n".join(value.strip() for value in values if value.strip())
 
 
-def _read_file(path: Path) -> tuple[str, bool, list[str]]:
+OcrProvider = Callable[[Path], str | None]
+
+
+def _default_ocr_provider() -> OcrProvider | None:
+    try:
+        from PIL import Image
+        import pytesseract
+    except ImportError:
+        return None
+
+    def _extract(path: Path) -> str | None:
+        with Image.open(path) as image:
+            return pytesseract.image_to_string(image, lang="tur+eng")
+
+    return _extract
+
+
+def _read_file(path: Path, ocr_provider: OcrProvider | None = None) -> tuple[str, bool, list[str]]:
     suffix = path.suffix.lower()
     if suffix not in _SUPPORTED:
         raise ValueError(f"Desteklenmeyen bilirkişi raporu formatı: {suffix or 'uzantısız'}")
@@ -123,17 +140,25 @@ def _read_file(path: Path) -> tuple[str, bool, list[str]]:
 
         reader = PdfReader(str(path))
         return "\n".join(page.extract_text() or "" for page in reader.pages), False, []
-    return "", True, ["Görüntü raporu için OCR gerekir; OCR motoru bu yerel çekirdekte etkin değildir."]
+    provider = ocr_provider or _default_ocr_provider()
+    if provider is not None:
+        try:
+            extracted = provider(path) or ""
+            if extracted.strip():
+                return extracted, False, []
+        except Exception as exc:
+            return "", True, [f"OCR sağlayıcısı çalışmadı: {type(exc).__name__}"]
+    return "", True, ["Görüntü raporu için OCR gerekir; yerel OCR motoru bulunamadı."]
 
 
-def extract_report_text(*, text: str | None = None, file_path: str | Path | None = None) -> ExtractedReport:
+def extract_report_text(*, text: str | None = None, file_path: str | Path | None = None, ocr_provider: OcrProvider | None = None) -> ExtractedReport:
     if bool(text) == bool(file_path):
         raise ValueError("Tam olarak text veya file_path verilmelidir.")
     if text is not None:
         raw, fmt, source_name, ocr, warnings = text, "text", "inline", False, []
     else:
         path = Path(file_path)  # type: ignore[arg-type]
-        raw, ocr, warnings = _read_file(path)
+        raw, ocr, warnings = _read_file(path, ocr_provider)
         fmt, source_name = path.suffix.lower().lstrip("."), path.name
     return ExtractedReport(raw, _mask_text(raw), fmt, source_name, ocr, tuple(warnings))
 

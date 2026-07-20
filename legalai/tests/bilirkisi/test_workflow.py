@@ -37,6 +37,27 @@ def test_extract_report_text_reads_docx_without_sending_original_file(tmp_path):
     assert "Teknik değerlendirme" in result.text
 
 
+def test_extract_report_text_uses_injected_ocr_provider_for_image_reports(tmp_path):
+    path = tmp_path / "rapor.png"
+    path.write_bytes(b"not-a-real-image-for-injected-provider")
+
+    result = extract_report_text(file_path=path, ocr_provider=lambda _: "Görüntüde teknik bulgu vardır.")
+
+    assert result.format == "png"
+    assert result.ocr_required is False
+    assert "teknik bulgu" in result.text
+
+
+def test_extract_report_text_reports_ocr_requirement_when_no_engine_is_available(tmp_path):
+    path = tmp_path / "rapor.jpg"
+    path.write_bytes(b"not-a-real-image")
+
+    result = extract_report_text(file_path=path, ocr_provider=lambda _: None)
+
+    assert result.ocr_required is True
+    assert result.warnings
+
+
 @pytest.mark.asyncio
 async def test_analysis_builds_technical_counterarguments_and_legal_grounding():
     result = await analyze_report(
@@ -78,4 +99,3 @@ def analyze_report_sync_for_test():
             technical_domain="laboratuvar",
         )
     )
-

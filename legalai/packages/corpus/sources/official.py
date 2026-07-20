@@ -7,7 +7,11 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+import hashlib
 from typing import Any
+from urllib.parse import urljoin
+
+from bs4 import BeautifulSoup
 
 from legalai.packages.corpus.federated import SourceSearchResult
 
@@ -79,6 +83,58 @@ class KikOfficialAdapter:
         return items
 
 
+class OfficialHtmlCollectionAdapter:
+    """Search an official public collection page without changing upstream code.
+
+    ``fetch_text`` is injectable for tests and for institutions whose site
+    requires a custom transport. The default uses a short-lived httpx client.
+    Collection pages are only discovery surfaces; each matching detail URL is
+    fetched and retained as provenance.
+    """
+
+    def __init__(self, *, source_id: str, collection_urls: tuple[str, ...], fetch_text: Any | None = None) -> None:
+        self.source_id = source_id
+        self.collection_urls = collection_urls
+        self._fetch_text = fetch_text
+
+    async def _fetch(self, url: str) -> str:
+        if self._fetch_text is not None:
+            return await self._fetch_text(url)
+        import httpx
+
+        async with httpx.AsyncClient(timeout=20, follow_redirects=True, headers={"User-Agent": "SocratLegal/0.1"}) as client:
+            response = await client.get(url)
+            response.raise_for_status()
+            return response.text
+
+    async def search(self, query: str, limit: int) -> list[SourceSearchResult]:
+        terms = [part.casefold() for part in query.split() if part.strip()]
+        results: list[SourceSearchResult] = []
+        seen: set[str] = set()
+        for collection_url in self.collection_urls:
+            try:
+                html = await self._fetch(collection_url)
+            except Exception:
+                continue
+            soup = BeautifulSoup(html, "html.parser")
+            for link in soup.find_all("a", href=True):
+                title = " ".join(link.get_text(" ", strip=True).split())
+                url = urljoin(collection_url, str(link["href"]))
+                if not title or url in seen or (terms and not all(term in title.casefold() for term in terms)):
+                    continue
+                seen.add(url)
+                try:
+                    detail = await self._fetch(url)
+                    body = " ".join(BeautifulSoup(detail, "html.parser").get_text(" ", strip=True).split())
+                except Exception:
+                    body = title
+                document_id = hashlib.sha256(url.encode("utf-8")).hexdigest()[:24]
+                results.append(SourceSearchResult(document_id, body or title, self.source_id, title, url, title, {"document_type": "decision", "retrieval_mode": "live"}))
+                if len(results) >= limit:
+                    return results
+        return results
+
+
 @dataclass(frozen=True)
 class ConfiguredSource:
     source_id: str
@@ -138,4 +194,25 @@ def build_default_priority_adapters() -> tuple[Any, ...]:
             adapters.append(KeywordGatedAdapter(KvkkOfficialAdapter(KvkkApiClient()), ("kvkk", "kişisel veri", "veri sorumlusu", "açık rıza")))
         except Exception:
             pass
+    adapters.append(
+        KeywordGatedAdapter(
+            OfficialHtmlCollectionAdapter(
+                source_id="kdk",
+                collection_urls=("https://ombudsman.gov.tr/KararYayinlarimiz",),
+            ),
+            ("kamu denetçiliği", "ombudsman", "tavsiye kararı", "idare"),
+        )
+    )
+    adapters.append(
+        KeywordGatedAdapter(
+            OfficialHtmlCollectionAdapter(
+                source_id="tihek",
+                collection_urls=(
+                    "https://cocuk.tihek.gov.tr/kategori/pages/kararlar",
+                    "https://uom.tihek.gov.tr/kategori/pages/kararlar",
+                ),
+            ),
+            ("tihek", "ayrımcılık", "eşitlik", "insan hakları"),
+        )
+    )
     return tuple(adapters)

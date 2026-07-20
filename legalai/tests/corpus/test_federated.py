@@ -12,9 +12,11 @@ class FakeAdapter:
         self.error = error
         self.delay = delay
         self.started = False
+        self.received_query = None
 
     async def search(self, query, limit):
         self.started = True
+        self.received_query = query
         if self.delay:
             await asyncio.sleep(self.delay)
         if self.error:
@@ -59,3 +61,13 @@ async def test_federated_retriever_isolates_source_failure_and_reports_availabil
     assert result.availability["local"] == "unavailable"
     assert result.availability["hudoc"] == "available"
 
+
+@pytest.mark.asyncio
+async def test_federated_retriever_masks_live_queries_but_keeps_local_query():
+    local = FakeAdapter("local_corpus", [SourceSearchResult("local-1", "yerel", "local_corpus")])
+    live = FakeAdapter("tihek", [SourceSearchResult("live-1", "canlı", "tihek")])
+
+    await FederatedRetriever(local=local, live=(live,)).search("TCKN 12345678901", limit=10)
+
+    assert local.received_query == "TCKN 12345678901"
+    assert "12345678901" not in live.received_query
