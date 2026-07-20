@@ -13,6 +13,8 @@ def capability_catalog() -> dict[str, Any]:
             "socratlegal_katmanli_analiz": "katmanli_analiz",
             "socratlegal_agresif_karsi_taraf": "agresif_karsi_taraf",
             "socratlegal_derin_arastirma": "derin_arastirma",
+            "socratlegal_sozlesme_incele": "sozlesme_incele",
+            "socratlegal_guncelleme_kontrol": "guncelleme_kontrol",
             "socratlegal_bilirkisi_raporu_analiz": "bilirkisi_raporu_analiz",
             "socratlegal_bilirkisi_raporu_dilekce": "bilirkisi_raporu_dilekce",
             "socratlegal_corpus_durum": "corpus_durum",
@@ -48,6 +50,24 @@ def capability_catalog() -> dict[str, Any]:
                 "example_prompt": "Bu karmaşık soruyu en fazla 4 alt soruya böl, her biri için kaynaklı araştırma yap ve çelişkileri göster.",
             },
             {
+                "id": "sozlesme_incele",
+                "label": "Sözleşme inceleme",
+                "use_when": "Bir sözleşmenin hukuki niteliği, madde riskleri, eksikleri, yabancı unsur ve operasyonel etkileri inceleneceğinde.",
+                "levels": ["yalın risk taraması", "madde bazlı inceleme", "kaynaklı ve temporal ayrıntılı inceleme"],
+                "inputs": ["sözleşme metni veya yerel dosya yolu", "kullanıcının amacı ve pozisyonu", "varsa olay/tarih ve yetki bilgileri"],
+                "output": "Hukuki nitelendirme, ilgili persona rotaları, madde/boşluk riskleri, kaynaklı araştırma talimatları ve yabancı dil revizyon biçimi.",
+                "example_prompt": "Bu sözleşmeyi kiracı açısından madde madde incele; riskleri, eksikleri, uygulanacak hukuk ve kaynaklı revizyon önerilerini göster.",
+            },
+            {
+                "id": "guncelleme_kontrol",
+                "label": "Güncelleme kontrolü",
+                "use_when": "SocratLegal'in GitHub Releases üzerinde yeni portable sürümü olup olmadığı kontrol edileceğinde.",
+                "levels": ["metadata kontrolü"],
+                "inputs": ["isteğe bağlı platform etiketi", "isteğe bağlı mevcut sürüm"],
+                "output": "Yeni sürüm, kanal ve açık release bağlantısı; otomatik indirme/kurma yapılmaz.",
+                "example_prompt": "SocratLegal için yeni sürüm kontrolü yap; yalnızca metadata göster, indirme veya kurma yapma.",
+            },
+            {
                 "id": "alinti_dogrula",
                 "label": "Kaynak/alinti doğrulama",
                 "use_when": "Taslak cevapta kullanılan [#belge_id] atıflarının gerçekten mevcut belgelerde bulunup bulunmadığı kontrol edileceğinde.",
@@ -68,9 +88,7 @@ def capability_catalog() -> dict[str, Any]:
         ],
         "planned_capabilities": [
             "bilirkişi raporu teknik itiraz analizi ve itiraz dilekçesi (üretim aracı aktif)",
-            "bilirkiÅŸi raporu teknik itiraz analizi ve itiraz dilekçesi (üretim aracı aktif)",
             "dilekçe şablonu ve kaynaklı dilekçe taslağı",
-            "sözleşme inceleme",
             "due diligence",
         ],
         "natural_language_routing": (

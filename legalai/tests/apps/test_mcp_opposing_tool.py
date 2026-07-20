@@ -33,7 +33,7 @@ def test_codex_and_cursor_configs_are_independent_and_secret_free():
 
     assert "mcp_servers.legalai" in codex_text
     assert "mcpServers" in cursor_payload
-    assert "yargi-mcp-fork" in cursor_payload["mcpServers"]
+    assert {"yargi-mcp-fork", "socratlegal"} & cursor_payload["mcpServers"].keys()
     assert "OPENROUTER_API_KEY" not in codex_text
     assert "DEEPSEEK_API_KEY" not in codex_text
     assert "localhost" not in codex_text.lower()

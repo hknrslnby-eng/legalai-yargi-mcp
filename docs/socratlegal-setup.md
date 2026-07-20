@@ -1,5 +1,7 @@
 # SocratLegal local setup
 
+Normal kullanıcı için [portable kullanıcı kurulum rehberini](socratlegal-user-install.md) izleyin. Portable paket Python/uv kurulumu ve hosting gerektirmez; aşağıdaki checkout yolu geliştiriciler içindir.
+
 SocratLegal is the public name of this fork. The local Python package can keep
 the `legalai` name for compatibility, while new MCP clients should register
 `socratlegal-mcp`.
@@ -42,7 +44,7 @@ The KDK and TİHEK HTML collection adapters are keyword-gated and use official
 public collection pages. They are availability-tolerant: a site layout change
 is reported as a source failure rather than converted into invented evidence.
 
-Image reports are accepted. For OCR, install the optional Python extra with
+Image reports are accepted. Expert-report analysis and petition generation are active production flows. For OCR, install the optional Python extra with
 `uv sync --extra ocr`; Windows still needs a local Tesseract executable and
 Turkish language data. Without an OCR engine the tool returns `ocr_required`
 and does not pretend that the image was read.

@@ -1,4 +1,6 @@
-# LegalAI MCP istemci kurulumu
+# SocratLegal MCP istemci kurulumu
+
+Normal kullanıcı için [portable kullanıcı kurulum rehberini](socratlegal-user-install.md) izleyin. Bu sayfa, IDE ayarını elle yapmak isteyen veya mevcut checkout ile çalışan kullanıcı içindir.
 
 LegalAI bu aşamada yerel STDIO MCP sunucusudur. Ayrı hosting, global daemon veya ortak TCP portu gerekmez. Her IDE kendi istemci kaydından bağımsız bir süreç başlatır; böylece Cursor kaydı ile Codex kaydı çakışmaz.
 
@@ -49,7 +51,7 @@ Benim pozisyonumu karsi taraf avukati gibi test et; en guclu karsi argumanlari v
 Bu olay icin dava, icra, arabuluculuk, idareye basvuru ve Avukatlik Kanunu 35/A dahil genis cozum stratejisi cikar.
 ```
 
-Prompt menusu bulunan istemcilerde `agresif_karsi_taraf_promptu`, `cozum_stratejisi_promptu` ve planlanan `bilir_kisi_raporu_itirazi_promptu` gorulebilir. Sonuncusu henuz uretim modulu degildir; yalnizca ileride istenecek girdileri yonlendirir.
+Prompt menusu bulunan istemcilerde `agresif_karsi_taraf_promptu`, `cozum_stratejisi_promptu` ve `bilir_kisi_raporu_itirazi_promptu` gorulebilir. Bilirkisi raporu itirazi artik uretim akisidir; teknik bulgular, karsi teknik aciklamalar ve bunlarin ilgili hukuk kaynaklariyla baglantilari birlikte degerlendirilir.
 
 ## Privacy-first kurali
 
@@ -96,6 +98,10 @@ Gerçek anahtarlar ve kullanıcıya özel mutlak yollar repoya yazılmamalıdır
 `.codex/config.toml`, `.cursor/mcp.json` ve diğer istemci kayıtları ayrı dosyalardır. Aynı anda çalışmaları için global port, ortak daemon veya zorunlu global geçici dosya yoktur. İstemci ayarları değiştirilmeden önce mevcut dosya yedeklenmeli; bu repo kurulumu hiçbir kullanıcı ayarını üzerine yazmaz.
 
 Bu sprint remote MCP/HTTP hosting kurmaz. Gelecekte remote transport eklenirse domain katmanı ve istemci sözleşmesi korunacaktır.
+
+## Guncelleme ve veri korumasi
+
+Portable surum guncellemeleri `app` katmanini checksum dogrulayarak degistirir; `data`, yerel corpus, belgeler, API anahtarlari ve IDE ayarlari korunur. Basarisiz baslangicta `app.previous` uzerinden rollback yapilabilir. Guncelleme kontrolu yalnizca surum metadata'sidir ve 24 saatlik onbellek araligi kullanir. Ayrintili komutlar icin [kullanici kurulum rehberine](socratlegal-user-install.md) bakin.
 
 ## Tek `legalai` kurulumu ile kapsam
 

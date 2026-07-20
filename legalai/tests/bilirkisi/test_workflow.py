@@ -8,6 +8,7 @@ from legalai.packages.bilirkisi.workflow import (
     analyze_report,
     build_petition_draft,
     extract_report_text,
+    infer_technical_domain,
 )
 
 
@@ -74,6 +75,27 @@ async def test_analysis_builds_technical_counterarguments_and_legal_grounding():
     assert result.claims[0].legal_links
     assert result.temporal_context["event_dates"] == ["01.02.2024"]
     assert result.non_binding is True
+
+
+@pytest.mark.asyncio
+async def test_analysis_infers_domain_and_builds_substantive_research_links():
+    result = await analyze_report(
+        text="Yangın yükü hesabında numune alma ve kalibrasyon açıklanmamıştır.",
+        question="Sigorta tazminatına etkisini incele.",
+    )
+
+    claim = result.claims[0]
+    assert result.technical_domain == "fire_safety_engineering"
+    assert claim.alternative_hypotheses
+    assert any("sigorta" in item.casefold() for item in claim.legal_issue_links)
+    assert "teknik uzman görüşü değildir" in result.assistant_instructions
+
+
+def test_infer_technical_domain_reports_confidence_and_evidence():
+    inference = infer_technical_domain("Yangın yükü ve kalibrasyon raporu")
+    assert inference.domain == "fire_safety_engineering"
+    assert inference.confidence > 0.5
+    assert inference.evidence
 
 
 def test_petition_draft_maps_each_report_claim_to_objection_and_missing_evidence():

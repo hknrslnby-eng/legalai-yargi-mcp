@@ -159,6 +159,8 @@ def test_build_assistant_instructions_includes_structured_reasoning_when_request
     assert "1. Hukuki sorun nedir?" in instructions
     assert "Temporal Legal Context" in instructions
     assert "non-binding" in instructions
+    assert "Yönetici özeti" in instructions
+    assert "operasyonel bağlam" in instructions.lower()
 
 
 @pytest.mark.asyncio
@@ -200,3 +202,20 @@ async def test_run_pipeline_synthesize_true_still_includes_llm_layers_in_trace()
     assert result.answer == "cevap [#d1]"
     assert result.citations == ["d1"]
     assert result.assistant_instructions is None  # pipeline açıkça verildi
+
+
+@pytest.mark.asyncio
+async def test_run_pipeline_exposes_operational_context_in_result_dict():
+    fixed_doc = Document(id="d1", body="belge metni")
+
+    result = await run_pipeline(
+        question="Kripto cüzdanına yönlendirildim ve ödeme yaptım",
+        documents=[fixed_doc],
+        synthesize=False,
+    )
+
+    payload = result.to_dict()
+
+    assert payload["operational_context"]["domain"] == "crypto_asset_operations"
+    assert payload["operational_context"]["items"]
+    assert "kesin olgu değildir" in payload["operational_context"]["safety_note"]

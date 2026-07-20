@@ -222,6 +222,9 @@ CLAUDE.md
 .data/
 _env_dir_backup_mistake/
 
+# Local subagent worktrees
+.worktrees/
+
 # Yukarıdaki "test_*" kuralı upstream'in kendi debug dosyaları içindir;
 # bizim gerçek test paketimizi (legalai/tests/) hariç tutmasın:
 !legalai/tests/**/test_*.py
