@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 
 @dataclass(frozen=True)
@@ -71,6 +72,38 @@ class ContractIssue:
     operational_rationale: str
     personas: tuple[str, ...]
     missing_facts: tuple[str, ...] = ()
+
+
+@dataclass
+class ContractReviewResult:
+    executive_summary: str
+    classification: dict[str, Any]
+    persona_routes: list[dict[str, Any]]
+    clause_findings: list[dict[str, Any]]
+    gap_findings: list[dict[str, Any]]
+    evidence: list[dict[str, Any]]
+    temporal_context: Any
+    operational_context: dict[str, Any]
+    assistant_instructions: str
+    privacy: dict[str, Any]
+    analysis_only: bool = True
+    non_binding: bool = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "executive_summary": self.executive_summary,
+            "classification": self.classification,
+            "persona_routes": self.persona_routes,
+            "clause_findings": self.clause_findings,
+            "gap_findings": self.gap_findings,
+            "evidence": self.evidence,
+            "temporal_context": self.temporal_context,
+            "operational_context": self.operational_context,
+            "assistant_instructions": self.assistant_instructions,
+            "privacy": self.privacy,
+            "analysis_only": True,
+            "non_binding": True,
+        }
 
 
 @dataclass(frozen=True)

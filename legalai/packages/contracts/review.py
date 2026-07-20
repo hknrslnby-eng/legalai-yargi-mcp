@@ -2,13 +2,19 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import asdict
+from typing import Any, Awaitable, Callable
 
+from .intake import extract_contract
 from .models import (
     ContractClassification,
     ContractIntake,
     ContractIssue,
+    ContractReviewRequest,
+    ContractReviewResult,
     PersonaRouteDecision,
 )
+from .privacy import ContractPrivacyGate
 
 
 def _has(text: str, *terms: str) -> bool:
@@ -168,3 +174,95 @@ def build_issue_matrix(
                 )
             )
     return tuple(issues)
+
+
+def _classification_dict(value: ContractClassification) -> dict[str, Any]:
+    return asdict(value)
+
+
+def _build_masked_research_query(
+    redacted_text: str,
+    classification: ContractClassification,
+    issues: tuple[ContractIssue, ...],
+) -> str:
+    issue_ids = ", ".join(issue.issue_id for issue in issues)
+    return (
+        "SocratLegal sözleşme incelemesi için yalnızca aşağıdaki maskelenmiş metin ve metadata ile kaynak araştırması yap. "
+        "Hukuki iddiaları erişilen kaynakların gerçek künyelerine bağla; erişilmeyen kaynak veya alıntı uydurma.\n"
+        f"Nitelendirme: {classification.legal_nature}; yöntem: {classification.classification_method}; "
+        f"MÖHUK katmanı: {classification.foreign_law_layer}.\n"
+        f"İncelenecek issue id'leri: {issue_ids or '(genel tarama)'}.\n"
+        f"MASKELENMİŞ SÖZLEŞME METNİ:\n{redacted_text}"
+    )
+
+
+def _assistant_instructions(
+    intake: ContractIntake,
+    classification: ContractClassification,
+    analysis_dict: dict[str, Any],
+    request: ContractReviewRequest,
+) -> str:
+    instructions = (
+        "Bu araç nihai hukuki görüş üretmez. Önce Yönetici özeti, sonra sözleşmenin gerçek hukuki niteliği, "
+        "persona bulguları, madde bazlı riskler, boşluklar, karşı görüşler, varsayımlar ve kaynakça yaz. "
+        "Her hukuki iddiayı yalnızca dönen kaynakların künye/belge id'siyle destekle; operational context'i hipotez olarak etiketle. "
+        "Temporal context, uygulanacak hukuk, görev-yetki ve süre risklerini erişilen kaynaklarla kontrol et. "
+        f"Kullanıcının rolü: {request.position or 'belirtilmedi'}. Çıktı ayrıntı seviyesi: {request.detail_level}."
+    )
+    if classification.foreign_law_layer == "mohuk_priority" or intake.language in {"foreign", "mixed"}:
+        instructions += (
+            " source_language_revision: Her revizyon önerisinde önce Türkçe hukuki açıklama, sonra kaynak dilinde "
+            "hukuki terminolojiye uygun öneri hükmü, ardından Turkish counterpart başlığı altında Türkçe karşılık göster. "
+            "Bu metin yeminli/sertifikalı çeviri değildir; dil veya anlam belirsizliğini açıkça belirt."
+        )
+    if analysis_dict.get("assistant_instructions"):
+        instructions += "\nKaynak pipeline talimatı:\n" + str(analysis_dict["assistant_instructions"])
+    return instructions
+
+
+async def review_contract(
+    request: ContractReviewRequest,
+    pipeline_runner: Callable[..., Awaitable[Any]] | None = None,
+) -> ContractReviewResult:
+    """Review a local contract through the existing federated analysis pipeline."""
+    intake = extract_contract(text=request.contract_text, file_path=request.file_path)
+    redaction = ContractPrivacyGate().redact(intake.text)
+    classification = classify_contract(intake)
+    routes = route_personas(classification, intake)
+    issues = build_issue_matrix(intake, classification, routes)
+    query = _build_masked_research_query(redaction.text, classification, issues)
+
+    if pipeline_runner is None:
+        from legalai.packages.layers.analysis_pipeline import run_pipeline
+
+        pipeline_runner = run_pipeline
+    analysis = await pipeline_runner(
+        question=query,
+        mode="layered",
+        jurisdiction_hint=request.jurisdiction_hint,
+        synthesize=request.server_side_synthesis,
+    )
+    analysis_dict = analysis.to_dict() if hasattr(analysis, "to_dict") else dict(analysis)
+    evidence = list(analysis_dict.get("evidence") or analysis_dict.get("sources") or [])
+    executive_summary = (
+        f"Sözleşme {classification.legal_nature} olarak ön sınıflandırıldı; güven düzeyi {classification.confidence:.2f}. "
+        f"{len(issues)} madde/boşluk bulgusu ve {len(evidence)} kaynak sonucu incelenmelidir."
+    )
+    privacy = {
+        "persisted": False,
+        "external_raw_text_sent": False,
+        "ocr_required": intake.ocr_required,
+        "warnings": ["Taranmış PDF için yerel OCR gerekir."] if intake.ocr_required else [],
+    }
+    return ContractReviewResult(
+        executive_summary=executive_summary,
+        classification=_classification_dict(classification),
+        persona_routes=[asdict(route) for route in routes],
+        clause_findings=[asdict(issue) for issue in issues if issue.issue_id.startswith("clause-")],
+        gap_findings=[asdict(issue) for issue in issues if not issue.issue_id.startswith("clause-")],
+        evidence=evidence,
+        temporal_context=analysis_dict.get("temporal_context"),
+        operational_context=dict(analysis_dict.get("operational_context") or {}),
+        assistant_instructions=_assistant_instructions(intake, classification, analysis_dict, request),
+        privacy=privacy,
+    )
