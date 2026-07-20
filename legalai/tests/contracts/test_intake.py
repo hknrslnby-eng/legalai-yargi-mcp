@@ -5,6 +5,7 @@ from pathlib import Path
 
 import pytest
 from pypdf import PdfWriter
+from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
 from legalai.packages.contracts import ContractReviewRequest, extract_contract
 
@@ -26,6 +27,26 @@ def make_scanned_pdf(tmp_path: Path) -> Path:
     path = tmp_path / "scanned.pdf"
     writer = PdfWriter()
     writer.add_blank_page(width=300, height=300)
+    with path.open("wb") as handle:
+        writer.write(handle)
+    return path
+
+
+def make_digital_pdf(tmp_path: Path) -> Path:
+    path = tmp_path / "digital.pdf"
+    writer = PdfWriter()
+    page = writer.add_blank_page(width=300, height=300)
+    stream = DecodedStreamObject()
+    stream.set_data(b"BT /F1 12 Tf 72 720 Td (ARTICLE 1 - Payment) Tj ET")
+    page[NameObject("/Contents")] = writer._add_object(stream)
+    font = DictionaryObject({
+        NameObject("/Type"): NameObject("/Font"),
+        NameObject("/Subtype"): NameObject("/Type1"),
+        NameObject("/BaseFont"): NameObject("/Helvetica"),
+    })
+    page[NameObject("/Resources")] = DictionaryObject({
+        NameObject("/Font"): DictionaryObject({NameObject("/F1"): writer._add_object(font)})
+    })
     with path.open("wb") as handle:
         writer.write(handle)
     return path
@@ -83,6 +104,13 @@ def test_contract_intake_reads_docx_and_signals_scanned_pdf(tmp_path):
     assert scanned.ocr_required is True
 
 
+def test_contract_intake_reads_digital_pdf_without_ocr(tmp_path):
+    intake = extract_contract(file_path=make_digital_pdf(tmp_path))
+    assert intake.format == "pdf"
+    assert intake.ocr_required is False
+    assert "Payment" in intake.text
+
+
 def test_extract_contract_reads_txt_and_md_from_local_files(tmp_path):
     txt_path = tmp_path / "contract.txt"
     txt_path.write_text("MADDE 1 - Teslim\nTeslim tarihi 20.07.2026.", encoding="utf-8")
@@ -132,3 +160,15 @@ def test_extract_contract_detects_foreign_language_and_foreign_elements():
     assert intake.language == "foreign"
     assert intake.foreign_element_signals
     assert any("governing" in signal.lower() or "arbitration" in signal.lower() for signal in intake.foreign_element_signals)
+
+
+def test_extract_contract_detects_non_london_foreign_performance_and_address():
+    intake = extract_contract(
+        text=(
+            "Vereinbarung - Zahlung in EUR. Geltendes Recht ist deutsches Recht. "
+            "Erfüllungsort: Berlin; Gerichtsstand Berlin."
+        )
+    )
+    assert intake.language == "foreign"
+    assert any("country" in signal.lower() for signal in intake.foreign_element_signals)
+    assert any("performance" in signal.lower() for signal in intake.foreign_element_signals)

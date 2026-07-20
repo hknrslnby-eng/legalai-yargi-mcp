@@ -42,14 +42,16 @@ def _read_file(path: Path) -> tuple[str, str, bool]:
 
 def _detect_language(text: str) -> str:
     lowered = f" {text.casefold()} "
-    turkish_score = sum(
-        marker in lowered
-        for marker in (" madde ", " sözleşme ", " taraf ", " teslim ", " ödeme ", " bedel ", " tarihi ", " türk ")
-    ) + sum(character in text for character in "çğıöşüÇĞİÖŞÜ")
-    foreign_score = sum(
-        marker in lowered
-        for marker in (" article ", " agreement ", " governed by ", " arbitration ", " shall ", " payment ", " english law ", " london ")
+    turkish_markers = (
+        " madde ", " sözleşme ", " sozlesme ", " taraf ", " teslim ", " ödeme ", " odeme ", " bedel ", " tarihi ", " türk ",
     )
+    foreign_markers = (
+        " article ", " agreement ", " governed by ", " governing law ", " arbitration ", " shall ", " payment ", " english law ",
+        " vereinbarung ", " zahlung ", " deutsches recht ", " gerichtsstand ", " erfüllungsort ", " erfullungsort ", " contrat ", " droit applicable ", " paiement ",
+        " arbitrage ", " acuerdo ", " pago ", " ley aplicable ", " contratto ", " pagamento ", " legge applicabile ",
+    )
+    turkish_score = sum(marker in lowered for marker in turkish_markers)
+    foreign_score = sum(marker in lowered for marker in foreign_markers)
     if turkish_score and foreign_score:
         return "mixed"
     if foreign_score:
@@ -60,20 +62,34 @@ def _detect_language(text: str) -> str:
 def _foreign_element_signals(text: str, language: str) -> tuple[str, ...]:
     lowered = text.casefold()
     signals: list[str] = []
-
     if language in {"foreign", "mixed"}:
         signals.append(f"Language signal: {language}")
-    if re.search(r"\b(?:USD|EUR|GBP|CHF)\b|[$€£]", text):
+    if re.search(r"\b(?:USD|EUR|GBP|CHF|JPY|CNY|CAD|AUD|SEK|NOK|DKK)\b|[$€£¥]", text, re.IGNORECASE):
         signals.append("Foreign currency reference detected.")
-    if any(token in lowered for token in ("london", "england", "english law", "united kingdom", "germany", "paris", "new york")):
+    if any(
+        token in lowered
+        for token in (
+            "london", "england", "english law", "united kingdom", "germany", "deutschland", "berlin", "paris", "france",
+            "madrid", "spain", "rome", "italy", "netherlands", "belgium", "switzerland", "austria", "new york",
+            "delaware", "singapore", "dubai", "usa", "united states",
+        )
+    ) or re.search(r"\b[A-Z]\d[A-Z][ -]?\d[A-Z]\d\b", text):
         signals.append("Foreign country or address reference detected.")
-    if "governed by" in lowered or "governing law" in lowered or "english law" in lowered:
+    if any(
+        token in lowered
+        for token in ("governed by", "governing law", "applicable law", "english law", "droit applicable", "geltendes recht", "ley aplicable")
+    ):
         signals.append("Governing law points to a foreign legal system.")
-    if any(token in lowered for token in ("arbitration", "icc", "lcia", "siac")):
+    if any(token in lowered for token in ("arbitration", "icc", "lcia", "siac", "arbitrage", "schiedsgericht")):
         signals.append("Arbitration forum suggests a foreign element.")
-    if any(token in lowered for token in ("outside turkey", "abroad", "overseas", "delivery in london", "performed in london")):
+    if any(
+        token in lowered
+        for token in (
+            "outside turkey", "abroad", "overseas", "place of performance", "performed in", "delivery in", "shipped to",
+            "lieu d'execution", "lieu d’exécution", "lieferort", "erfüllungsort",
+        )
+    ):
         signals.append("Performance appears tied to a foreign location.")
-
     return tuple(dict.fromkeys(signals))
 
 
@@ -104,7 +120,6 @@ def _extract_clauses(text: str) -> tuple[Clause, ...]:
             if body_lines and body_lines[-1] != "":
                 body_lines.append("")
             continue
-
         normalized = re.sub(r"^#+\s*", "", line)
         match = _CLAUSE_PATTERN.match(normalized)
         starts_with_keyword = normalized.casefold().startswith(("madde ", "article ", "clause "))
@@ -117,7 +132,6 @@ def _extract_clauses(text: str) -> tuple[Clause, ...]:
                 body="",
             )
             continue
-
         if current is None:
             current = Clause(position=1, body="")
         body_lines.append(line)
@@ -132,26 +146,14 @@ def _extract_clauses(text: str) -> tuple[Clause, ...]:
 def extract_contract(*, text: str | None = None, file_path: Path | None = None) -> ContractIntake:
     if (text is None) == (file_path is None):
         raise ValueError("Exactly one of text or file_path must be provided.")
-
     if text is not None:
-        raw_text = text
-        fmt = "text"
-        ocr_required = False
+        raw_text, fmt, ocr_required = text, "text", False
     else:
         raw_text, fmt, ocr_required = _read_file(Path(file_path))
-
     if not raw_text or not raw_text.strip():
         if ocr_required:
-            return ContractIntake(
-                text="",
-                format=fmt,
-                clauses=(),
-                language="tr",
-                foreign_element_signals=(),
-                ocr_required=True,
-            )
+            return ContractIntake(text="", format=fmt, clauses=(), language="tr", foreign_element_signals=("Language undetermined because OCR is required.",), ocr_required=True)
         raise ValueError("Contract input is empty.")
-
     normalized = raw_text.strip()
     language = _detect_language(normalized)
     return ContractIntake(

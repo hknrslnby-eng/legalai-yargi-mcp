@@ -27,3 +27,17 @@ def test_contract_redaction_masks_party_address_and_signature_lines():
     assert "ayse@example.com" not in result.text
     assert "555 123 45 67" not in result.text
     assert result.persisted is False
+
+
+def test_contract_redaction_masks_unlabelled_party_address_and_contact_lines():
+    raw = (
+        "Between Alice Example and Bob Example\n"
+        "Rue de la Paix 10, 75002 Paris\n"
+        "Contact alice@example.fr"
+    )
+
+    result = ContractPrivacyGate().redact(raw)
+
+    assert "Alice Example" not in result.text
+    assert "Rue de la Paix" not in result.text
+    assert "alice@example.fr" not in result.text
