@@ -36,6 +36,29 @@ class FakeNormClient:
         return Doc()
 
 
+class FakeCorpusStore:
+    async def search(self, query, limit):
+        class Source:
+            source_id = "kvkk"
+
+        class Document:
+            document_id = "kvkk-norm-1"
+            title = "KVKK ilke kararı"
+            document_type = "principle_decision"
+            citation = "KVKK 2024/1"
+            effective_from = date(2024, 1, 1)
+            effective_to = None
+            url = "https://example.test/kvkk-1"
+            body = "Veri güvenliği ilkeleri"
+
+        class Hit:
+            document = Document()
+            source = Source()
+            chunk = None
+
+        return [Hit()]
+
+
 @pytest.mark.asyncio
 async def test_integrated_backend_delegates_decision_search_and_normalizes_norm_event():
     decisions = FakeDecisionBackend()
@@ -62,3 +85,12 @@ async def test_backend_returns_danistay_reference_without_inventing_date():
     danistay_event = next(event for event in events if event.authority == "Danıştay")
     assert danistay_event.decision_date is None
     assert danistay_event.effective_date is None
+
+
+@pytest.mark.asyncio
+async def test_integrated_backend_reads_local_corpus_norms_for_temporal_context():
+    backend = IntegratedLegalSourceBackend(norm_client=FakeNormClient(), corpus_store=FakeCorpusStore())
+
+    records = await backend.search_norms("veri güvenliği", date(2024, 6, 1), "targeted")
+
+    assert any(record.id == "kvkk-norm-1" for record in records)

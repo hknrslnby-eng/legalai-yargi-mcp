@@ -1,0 +1,61 @@
+sources:
+  - source_id: kvkk
+    label: "KVKK board/principle decisions and guides"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, regulatory_analysis, kvkk_research]
+    full_text_storage: allowed
+  - source_id: kik
+    label: "Kamu Ihale Kurulu decisions and regulations"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, public_procurement_research]
+    full_text_storage: allowed
+  - source_id: tihek
+    label: "TİHEK decisions"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, human_rights_research]
+    full_text_storage: allowed
+  - source_id: kdk
+    label: "Kamu Denetçiliği Kurumu decisions"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, administrative_research]
+    full_text_storage: allowed
+  - source_id: bddk
+    label: "BDDK decisions and regulations"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, regulatory_analysis]
+    full_text_storage: allowed
+  - source_id: spk
+    label: "SPK decisions and regulations"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, regulatory_analysis]
+    full_text_storage: allowed
+  - source_id: rtuk
+    label: "RTÜK decisions"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, regulatory_analysis]
+    full_text_storage: allowed
+  - source_id: epdk
+    label: "EPDK decisions"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, regulatory_analysis]
+    full_text_storage: allowed
+  - source_id: btk
+    label: "BTK decisions"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, regulatory_analysis]
+    full_text_storage: allowed
+  - source_id: kgk
+    label: "KGK decisions and standards"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, regulatory_analysis]
+    full_text_storage: allowed

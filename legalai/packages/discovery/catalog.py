@@ -6,6 +6,18 @@ from typing import Any
 
 def capability_catalog() -> dict[str, Any]:
     return {
+        "brand": "SocratLegal",
+        "server_name": "SocratLegal MCP Server",
+        "legacy_brand": "LegalAI",
+        "active_public_tools": {
+            "socratlegal_katmanli_analiz": "katmanli_analiz",
+            "socratlegal_agresif_karsi_taraf": "agresif_karsi_taraf",
+            "socratlegal_derin_arastirma": "derin_arastirma",
+            "socratlegal_bilirkisi_raporu_analiz": "bilirkisi_raporu_analiz",
+            "socratlegal_bilirkisi_raporu_dilekce": "bilirkisi_raporu_dilekce",
+            "socratlegal_corpus_durum": "corpus_durum",
+            "socratlegal_corpus_belge_ekle": "corpus_belge_ekle",
+        },
         "capabilities": [
             {
                 "id": "katmanli_analiz",
@@ -54,7 +66,8 @@ def capability_catalog() -> dict[str, Any]:
             },
         ],
         "planned_capabilities": [
-            "bilirkişi raporu teknik itiraz analizi ve itiraz dilekçesi",
+            "bilirkişi raporu teknik itiraz analizi ve itiraz dilekçesi (üretim aracı aktif)",
+            "bilirkiÅŸi raporu teknik itiraz analizi ve itiraz dilekçesi (üretim aracı aktif)",
             "dilekçe şablonu ve kaynaklı dilekçe taslağı",
             "sözleşme inceleme",
             "due diligence",

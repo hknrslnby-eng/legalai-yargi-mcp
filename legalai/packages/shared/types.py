@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -12,3 +13,5 @@ class Document:
     body: str
     source: str = ""       # yargitay | danistay | aihm | kik | ...
     citation: str = ""
+    source_url: str = ""
+    metadata: dict[str, Any] | None = None
