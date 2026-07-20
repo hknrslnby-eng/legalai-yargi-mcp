@@ -8,6 +8,13 @@
 
 **Tech Stack:** Python 3.11+ for the development checkout, `pathlib`, `json`, `tomllib`/`tomlkit`, Typer, PowerShell, POSIX shell, GitHub Actions, and the existing `uv.lock` dependency workflow.
 
+## Implementation status
+
+Tasks 1–8 are implemented in the local branch. This includes launch models,
+safe JSON/TOML merging and repair, IDE discovery and one-command installation,
+portable launch/package scripts, release workflow, checksum-verified update and
+rollback, user documentation, and the full regression/end-to-end test pass.
+
 ## Global Constraints
 
 - No hosting or remote SocratLegal runtime is introduced.
