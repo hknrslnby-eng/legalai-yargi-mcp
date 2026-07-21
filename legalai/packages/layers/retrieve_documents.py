@@ -39,8 +39,9 @@ class BedestenSearchBackend:
     çökmez ama neden belgesiz kaldığı izlenebilir kalır.
     """
 
-    def __init__(self, item_types: list[str] | None = None) -> None:
+    def __init__(self, item_types: list[str] | None = None, source_id: str | None = None) -> None:
         self._item_types = item_types or ["YARGITAYKARARI", "DANISTAYKARAR"]
+        self._source_id = source_id
         self._client = None  # lazy — testlerde ağ bağımlılığı tetiklenmesin
 
     def _get_client(self):
@@ -77,11 +78,22 @@ class BedestenSearchBackend:
                 Document(
                     id=entry.documentId,
                     body=markdown.markdown_content or "",
-                    source=entry.itemType.name.lower(),
+                    source=self._source_id or entry.itemType.name.lower(),
                     citation=citation,
                 )
             )
         return documents
+
+
+class BamBedestenSearchBackend(BedestenSearchBackend):
+    """Bedesten adapter restricted to verified BAM civil decisions."""
+
+    def __init__(self, item_types: list[str] | None = None) -> None:
+        super().__init__(item_types=item_types or ["ISTINAFHUKUK"], source_id="bam")
+
+
+def build_bam_adapter() -> "_DocumentBackendAdapter":
+    return _DocumentBackendAdapter(BamBedestenSearchBackend(), source_id="bam")
 
 
 class _LocalCorpusAdapter:
