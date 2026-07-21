@@ -14,6 +14,13 @@ _LENS_KEYWORDS: dict[str, tuple[str, ...]] = {
     "marka": ("marka", "marka hakkı"),
     "patent": ("patent", "buluş"),
     "ticaret": ("ticaret", "şirket", "ticari iş"),
+    "gumruk_hukuku": ("gümrük", "gtip", "menşe", "gümrük vergisi"),
+    "dis_ticaret": ("dış ticaret", "ithalat", "ihracat"),
+    "vergi_hukuku": ("vergi", "tarife", "telafi edici vergi"),
+    "urun_gtip": ("gtip", "hs code", "benzer mal", "ürün", "menşe"),
+    "dto_hukuku": ("dtö", "wto", "anti-dumping agreement", "scm agreement", "safeguards agreement"),
+    "ab_ticaret_hukuku": ("ab ticaret", "dg trade", "2016/1036", "2016/1037", "2015/478"),
+    "abd_trade_remedy": ("usdoc", "usitc", "tariff act", "title vii", "trade remedy"),
 }
 
 
