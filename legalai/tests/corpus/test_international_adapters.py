@@ -83,6 +83,14 @@ async def test_concrete_international_adapters_keep_source_identity(factory, sou
     assert results[0].metadata["authority_level"]
 
 
+def test_competition_report_adapter_uses_official_report_collection():
+    adapter = CompetitionReportAdapter()
+
+    assert adapter.collection_urls == (
+        "https://competition-policy.ec.europa.eu/publications/annual-reports_en",
+    )
+
+
 @pytest.mark.asyncio
 async def test_official_collection_adapter_limit_zero_returns_no_documents():
     async def fetch_text(url: str) -> str:

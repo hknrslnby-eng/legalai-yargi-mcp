@@ -128,7 +128,7 @@ class CompetitionReportAdapter(OfficialCollectionAdapter):
     def __init__(self, *, source_id: str = "competition_reports", fetch_text: FetchText | None = None) -> None:
         super().__init__(
             source_id=source_id,
-            collection_urls=("https://competition-policy.ec.europa.eu/about/news",),
+            collection_urls=("https://competition-policy.ec.europa.eu/publications/annual-reports_en",),
             source_kind="economic_report",
             authority_level="non_binding_economic_reference",
             fetch_text=fetch_text,
