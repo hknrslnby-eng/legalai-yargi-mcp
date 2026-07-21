@@ -15,6 +15,14 @@ class IdeConfig:
     exists: bool
 
 
+IdeDescriptor = IdeConfig
+
+
+def discover_supported_ides(*, home: Path, appdata: Path, project_dir: Path) -> tuple[IdeDescriptor, ...]:
+    """Return all supported clients and whether their config currently exists."""
+    return detect_ide_configs(home=home, appdata=appdata, project_dir=project_dir)
+
+
 def detect_ide_configs(*, home: Path, appdata: Path, project_dir: Path) -> tuple[IdeConfig, ...]:
     candidates = (
         ("cursor", "Cursor", home / ".cursor" / "mcp.json", "json"),

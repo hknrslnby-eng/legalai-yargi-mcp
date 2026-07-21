@@ -88,3 +88,6 @@ Kalite profili istemci tarafından seçilebilir: `auto` (model adına göre uyar
 Taranmış PDF veya görüntü bilirkişi raporlarında yerel OCR eklentisi kurulmuşsa PDF sayfaları da yerelde metne çevrilir. OCR motoru yoksa araç `ocr_required` uyarısı verir; okunmamış sayfalardan teknik veya hukuki sonuç üretmez. Kaynak kod kurulumunda `uv sync --extra ocr` ile Python bileşenleri kurulmalı, Windows'ta ayrıca Tesseract ve `tur` dil verisi bulunmalıdır.
 
 Tüm sonuçlar bağlayıcı hukuki görüş değil, kaynaklı ve ihtimalli analizdir. Kişisel veriler dış çağrıdan önce maskelenir; IDE'nin kendi veri politikası ayrıca incelenmelidir.
+## Tüm kurulu IDE'lere tek portable kayıt
+
+Portable klasöründeki kurulum betiği mevcut desteklenen istemcileri tespit eder. Windows'ta `scripts\\install.ps1 -Ide all -OnlyInstalled`, macOS/Linux'ta `scripts/install.sh --only-installed` komutları yalnızca mevcut Cursor, Antigravity, VS Code, Claude ve Codex kayıtlarına ekleme yapar; bulunmayan istemciler `skipped` olarak raporlanır. Sonradan yeni bir IDE kurarsanız aynı betiği tekrar çalıştırmanız yeterlidir; portable paketi yeniden indirmeniz gerekmez. Mevcut sunucular korunur ve değişiklikten önce yedek alınır.
