@@ -23,3 +23,11 @@ def test_mcp_prompts_are_available_for_plain_and_refined_workflows() -> None:
 
 def test_capability_resource_has_direct_python_facade() -> None:
     assert "capabilities" in server_module.legalai_capabilities_resource()
+
+
+def test_pre_action_legacy_alias_is_registered() -> None:
+    import asyncio
+
+    tools = asyncio.run(server_module.app.get_tools())
+    assert "socratlegal_onbilgi_ve_strateji" in tools
+    assert "legalai_onbilgi_ve_strateji" in tools
