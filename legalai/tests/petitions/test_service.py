@@ -63,3 +63,11 @@ def test_lengthen_requires_sources_and_rejects_new_facts():
     assert result.lengthening_safeguards["new_facts_allowed"] is False
     assert result.source_requirements["allowed_source_ids"] == ["doc-1"]
     assert "Türkçe" in result.quality["language_instruction"]
+
+
+def test_party_position_changes_the_quality_contract():
+    claimant = process_petition(PetitionRequest(operation="draft", petition_text=None, question="Alacak", party_position="davacı"))
+    respondent = process_petition(PetitionRequest(operation="draft", petition_text=None, question="Alacak", party_position="davalı"))
+    assert claimant.quality["party_position"] == "davacı"
+    assert respondent.quality["party_position"] == "davalı"
+    assert claimant.quality["party_position_instruction"] != respondent.quality["party_position_instruction"]

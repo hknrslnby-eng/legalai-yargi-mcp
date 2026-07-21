@@ -26,7 +26,13 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
         raise ValueError("Bu işlem için petition_text gereklidir.")
 
     text = request.petition_text or ""
-    quality = build_petition_quality(request.question, request.jurisdiction_hint, request.source_documents, request.detail_level)
+    quality = build_petition_quality(
+        request.question,
+        request.jurisdiction_hint,
+        request.source_documents,
+        request.detail_level,
+        request.party_position,
+    )
     domains = quality["cross_domain_inquiry"].detected_domains
     operational = quality["operational_context"]
     protected = _protected_topics(text)

@@ -17,6 +17,7 @@ def build_petition_quality(
     jurisdiction_hint: str | None,
     source_documents: list[dict[str, Any]],
     detail_level: str,
+    party_position: str = "",
 ) -> dict[str, Any]:
     domains = [part.strip() for part in (jurisdiction_hint or "hukuk").replace("/", ",").split(",") if part.strip()]
     documents = [
@@ -33,7 +34,12 @@ def build_petition_quality(
     operational = OperationalContextBuilder().build(question, domains)
     cards = build_operational_cards(question, domains, (question,))
     source_ids = tuple(document.id for document in documents)
+    position = party_position.strip() or "belirsiz taraf pozisyonu"
     return {
+        "party_position": position,
+        "party_position_instruction": (
+            f"Dilekçe ve karşı argümanları '{position}' pozisyonundan kur; karşı tarafın olası itirazlarını ayrıca test et."
+        ),
         "turkish_language_professor_lens": True,
         "language_instruction": "Türkçe hukuk dili profesörü perspektifi: açık, tutarlı, duru ve hukuki anlamı değiştirmeyen yazım.",
         "detail_level": detail_level,
