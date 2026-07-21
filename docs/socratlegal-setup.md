@@ -30,6 +30,9 @@ Active public tools include:
 - `socratlegal_derin_arastirma`
 - `socratlegal_bilirkisi_raporu_analiz`
 - `socratlegal_bilirkisi_raporu_dilekce`
+- `socratlegal_onbilgi_ve_strateji`
+- `socratlegal_dilekce_hazirla`, `socratlegal_dilekce_incele`, `socratlegal_dilekce_kisalt`, `socratlegal_dilekce_uzat`
+- `socratlegal_komut_sozlugu` and resource `socratlegal://commands`
 - `socratlegal_corpus_durum` and `socratlegal_corpus_belge_ekle`
 
 The old `legalai_*` names remain aliases. In Cursor, rename only the visible
@@ -43,6 +46,10 @@ missing evidence require qualified human review.
 The KDK and TİHEK HTML collection adapters are keyword-gated and use official
 public collection pages. They are availability-tolerant: a site layout change
 is reported as a source failure rather than converted into invented evidence.
+
+The Reklam Kurulu adapter uses the official Ministry of Trade decision collection,
+is keyword-gated, and preserves decision title, citation, official URL and live
+retrieval provenance. Tests inject HTML fixtures and do not require a live site.
 
 Image reports are accepted. Expert-report analysis and petition generation are active production flows. For OCR, install the optional Python extra with
 `uv sync --extra ocr`; Windows still needs a local Tesseract executable and
