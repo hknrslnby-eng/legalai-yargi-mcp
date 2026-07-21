@@ -1,61 +1,113 @@
 sources:
   - source_id: kvkk
-    label: "KVKK board/principle decisions and guides"
+    label: "KVKK Kurul/ilke kararları ve rehberler"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
     allowed_contexts: [legal_analysis, regulatory_analysis, kvkk_research]
     full_text_storage: allowed
+    publisher_class: public_institution
+    license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: kik
-    label: "Kamu Ihale Kurulu decisions and regulations"
+    label: "Kamu İhale Kurulu kararları ve düzenlemeleri"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
     allowed_contexts: [legal_analysis, public_procurement_research]
     full_text_storage: allowed
+    publisher_class: public_institution
+    license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: tihek
-    label: "TİHEK decisions"
+    label: "TİHEK kararları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
     allowed_contexts: [legal_analysis, human_rights_research]
     full_text_storage: allowed
+    publisher_class: public_institution
+    license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: kdk
-    label: "Kamu Denetçiliği Kurumu decisions"
+    label: "Kamu Denetçiliği Kurumu kararları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
     allowed_contexts: [legal_analysis, administrative_research]
     full_text_storage: allowed
+    publisher_class: public_institution
+    license_note: "Tavsiye niteliği ve resmi yayın koşulları açıkça belirtilir."
   - source_id: bddk
-    label: "BDDK decisions and regulations"
+    label: "BDDK kararları ve düzenlemeleri"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
     allowed_contexts: [legal_analysis, regulatory_analysis]
     full_text_storage: allowed
+    publisher_class: public_institution
+    license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: spk
-    label: "SPK decisions and regulations"
+    label: "SPK kararları ve düzenlemeleri"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
     allowed_contexts: [legal_analysis, regulatory_analysis]
     full_text_storage: allowed
+    publisher_class: public_institution
+    license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: rtuk
-    label: "RTÜK decisions"
+    label: "RTÜK kararları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
     allowed_contexts: [legal_analysis, regulatory_analysis]
     full_text_storage: allowed
+    publisher_class: public_institution
+    license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: epdk
-    label: "EPDK decisions"
+    label: "EPDK kararları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
     allowed_contexts: [legal_analysis, regulatory_analysis]
     full_text_storage: allowed
+    publisher_class: public_institution
+    license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: btk
-    label: "BTK decisions"
+    label: "BTK kararları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
     allowed_contexts: [legal_analysis, regulatory_analysis]
     full_text_storage: allowed
+    publisher_class: public_institution
+    license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: kgk
-    label: "KGK decisions and standards"
+    label: "KGK kararları ve standartları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
     allowed_contexts: [legal_analysis, regulatory_analysis]
     full_text_storage: allowed
+    publisher_class: public_institution
+    license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
+  - source_id: bam
+    label: "Bölge Adliye Mahkemeleri kararları"
+    source_kind: judicial_decision
+    authority_level: domestic_judicial_reference
+    allowed_contexts: [legal_analysis, civil_research]
+    full_text_storage: metadata_or_excerpt_only
+    publisher_class: public_judiciary
+    license_note: "Resmi yargı yayını; tam metin saklama ve yeniden kullanım koşulları doğrulanır."
+  - source_id: bim
+    label: "Bölge İdare Mahkemeleri kararları"
+    source_kind: judicial_decision
+    authority_level: domestic_judicial_reference
+    allowed_contexts: [legal_analysis, administrative_research]
+    full_text_storage: metadata_or_excerpt_only
+    publisher_class: public_judiciary
+    license_note: "Canlı doğrulama bekleniyor; tam metin saklama koşulları doğrulanır."
+  - source_id: idare_mahkemeleri
+    label: "Birinci derece idare mahkemeleri kararları"
+    source_kind: judicial_decision
+    authority_level: domestic_judicial_reference
+    allowed_contexts: [legal_analysis, administrative_research]
+    full_text_storage: metadata_or_excerpt_only
+    publisher_class: public_judiciary
+    license_note: "Resmi yargı yayını; tam metin saklama koşulları doğrulanır."
+  - source_id: danistay
+    label: "Danıştay kararları"
+    source_kind: judicial_decision
+    authority_level: domestic_high_court_reference
+    allowed_contexts: [legal_analysis, administrative_research]
+    full_text_storage: metadata_or_excerpt_only
+    publisher_class: public_judiciary
+    license_note: "Resmi yargı yayını; tam metin saklama koşulları doğrulanır."

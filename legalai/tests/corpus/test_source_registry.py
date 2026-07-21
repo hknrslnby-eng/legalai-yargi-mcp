@@ -1,6 +1,14 @@
 from legalai.packages.corpus.sources.registry import default_source_registry
 
 
+def test_registry_separates_status_and_authority():
+    registry = default_source_registry()
+
+    assert registry.get("bam").status == "live_ready"
+    assert registry.get("bim").status == "verification_pending"
+    assert registry.get("oecd_competition").authority_level == "non_binding_policy_reference"
+
+
 def test_default_registry_keeps_corpus_priority_separate_from_legal_authority():
     registry = default_source_registry()
 

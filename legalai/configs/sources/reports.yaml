@@ -1,0 +1,21 @@
+sources:
+  - source_id: competition_reports
+    label: "Rekabet, piyasa ve sektör raporları"
+    source_kind: economic_report
+    authority_level: non_binding_economic_reference
+    allowed_contexts: [competition_research, economic_analysis]
+    full_text_storage: metadata_or_excerpt_only
+    publisher_class: public_or_intergovernmental_publisher
+    license_note: "Ekonomik/olgusal destek sağlar; emsal veya bağlayıcı hukuk değildir. Yayıncı lisansı ve atıf koşulları korunur."
+    citation_required: true
+    precedential: false
+  - source_id: institution_reports
+    label: "Kamu kurumlarının faaliyet ve sektör raporları"
+    source_kind: institution_report
+    authority_level: non_binding_economic_reference
+    allowed_contexts: [legal_analysis, economic_analysis, regulatory_analysis]
+    full_text_storage: metadata_or_excerpt_only
+    publisher_class: public_institution
+    license_note: "Ekonomik/olgusal destek sağlar; emsal veya bağlayıcı hukuk değildir. Yayıncı lisansı ve atıf koşulları korunur."
+    citation_required: true
+    precedential: false
