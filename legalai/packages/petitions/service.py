@@ -24,6 +24,8 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
         raise ValueError("operation draft, review, shorten veya lengthen olmalıdır.")
     if request.operation != "draft" and not (request.petition_text or "").strip():
         raise ValueError("Bu işlem için petition_text gereklidir.")
+    if request.use_style_profile and not request.style_profile_consent:
+        raise PermissionError("Bir üslup profili uygulanmadan önce açık kullanıcı onayı gerekir.")
 
     text = request.petition_text or ""
     quality = build_petition_quality(
@@ -33,6 +35,14 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
         request.detail_level,
         request.party_position,
     )
+    style_profile = {
+        "profile_id": request.style_profile_id,
+        "applied": bool(request.use_style_profile and request.style_profile_id),
+        "consent": bool(request.style_profile_consent),
+        "raw_examples_persisted": False,
+        "instruction": "Profil yalnızca başlık, atıf, ton ve argüman sırasını etkileyebilir; hukuki anlamı, kaynak seviyesini ve güvenlik başlıklarını değiştiremez.",
+    }
+    quality["style_profile_instruction"] = style_profile["instruction"]
     domains = quality["cross_domain_inquiry"].detected_domains
     operational = quality["operational_context"]
     protected = _protected_topics(text)
@@ -91,6 +101,7 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
         },
         evidence_ledger=evidence_ledger,
         operational_cards=quality["operational_cards"],
+        style_profile=style_profile,
         cross_domain_inquiry={
             "question": quality["cross_domain_inquiry"].question,
             "detected_domains": domains,

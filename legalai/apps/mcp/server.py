@@ -226,6 +226,9 @@ async def _process_petition_tool(
     event_dates: list[str] | None,
     source_documents: list[dict[str, object]] | None,
     detail_level: str,
+    style_profile_id: str | None,
+    use_style_profile: bool,
+    style_profile_consent: bool,
 ) -> dict:
     result = process_petition(
         PetitionRequest(
@@ -237,6 +240,9 @@ async def _process_petition_tool(
             event_dates=event_dates,
             source_documents=source_documents or [],
             detail_level=detail_level,
+            style_profile_id=style_profile_id,
+            use_style_profile=use_style_profile,
+            style_profile_consent=style_profile_consent,
         )
     )
     return result.to_dict()
@@ -260,8 +266,11 @@ async def _socratlegal_petition_draft_tool(
     event_dates: Annotated[list[str] | None, Field(description="Olay, tebliğ, dava ve yürürlük açısından önemli tarihler.")] = None,
     source_documents: Annotated[list[dict[str, object]] | None, Field(description="İzin verilen kaynak kayıtları: id, citation ve kısa quote alanları.")] = None,
     detail_level: Annotated[str, Field(description="Çıktı ayrıntısı: brief, standard, deep veya exhaustive.")] = "deep",
+    style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
+    use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
+    style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
 ) -> dict:
-    return await _process_petition_tool("draft", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+    return await _process_petition_tool("draft", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
 
 
 @app.tool(name="socratlegal_dilekce_incele", description=_petition_description("review"))
@@ -273,8 +282,11 @@ async def _socratlegal_petition_review_tool(
     event_dates: Annotated[list[str] | None, Field(description="Olay, tebliğ, dava ve yürürlük açısından önemli tarihler.")] = None,
     source_documents: Annotated[list[dict[str, object]] | None, Field(description="İzin verilen kaynak kayıtları: id, citation ve kısa quote alanları.")] = None,
     detail_level: Annotated[str, Field(description="Çıktı ayrıntısı: brief, standard, deep veya exhaustive.")] = "deep",
+    style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
+    use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
+    style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
 ) -> dict:
-    return await _process_petition_tool("review", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+    return await _process_petition_tool("review", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
 
 
 @app.tool(name="socratlegal_dilekce_kisalt", description=_petition_description("shorten"))
@@ -286,8 +298,11 @@ async def _socratlegal_petition_shorten_tool(
     event_dates: Annotated[list[str] | None, Field(description="Olay, tebliğ, dava ve yürürlük açısından önemli tarihler.")] = None,
     source_documents: Annotated[list[dict[str, object]] | None, Field(description="İzin verilen kaynak kayıtları: id, citation ve kısa quote alanları.")] = None,
     detail_level: Annotated[str, Field(description="Çıktı ayrıntısı: brief, standard, deep veya exhaustive.")] = "standard",
+    style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
+    use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
+    style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
 ) -> dict:
-    return await _process_petition_tool("shorten", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+    return await _process_petition_tool("shorten", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
 
 
 @app.tool(name="socratlegal_dilekce_uzat", description=_petition_description("lengthen"))
@@ -299,8 +314,11 @@ async def _socratlegal_petition_lengthen_tool(
     event_dates: Annotated[list[str] | None, Field(description="Olay, tebliğ, dava ve yürürlük açısından önemli tarihler.")] = None,
     source_documents: Annotated[list[dict[str, object]] | None, Field(description="İzin verilen kaynak kayıtları: id, citation ve kısa quote alanları.")] = None,
     detail_level: Annotated[str, Field(description="Çıktı ayrıntısı: brief, standard, deep veya exhaustive.")] = "deep",
+    style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
+    use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
+    style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
 ) -> dict:
-    return await _process_petition_tool("lengthen", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+    return await _process_petition_tool("lengthen", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
 
 
 @app.tool(name="legalai_dilekce_hazirla", description="Geçiş uyumluluğu: SocratLegal genel dilekçe taslağı.")

@@ -85,8 +85,8 @@ def capability_catalog() -> dict[str, Any]:
                 "label": "Genel kaynaklı dilekçe işlemleri",
                 "use_when": "Dilekçe hazırlanması, incelenmesi, kısaltılması veya uzatılması istendiğinde.",
                 "levels": ["taslak", "kaynaklı ve çapraz yargı incelemesi", "derin kaynaklı revizyon"],
-                "inputs": ["dilekçe metni veya talep", "işlem türü", "taraf pozisyonu", "varsa tarihler ve kaynak kayıtları"],
-                "output": "Korumalı usul başlıkları, norm/içtihat/doktrin alıntı talimatı, operasyonel bağlam, çapraz yargı etkileri ve Türkçe dil profesörü perspektifi.",
+                "inputs": ["dilekçe metni veya talep", "işlem türü", "taraf pozisyonu", "varsa tarihler ve kaynak kayıtları", "isteğe bağlı yerel üslup profili ve açık onay"],
+                "output": "Korumalı usul başlıkları, norm/içtihat/doktrin alıntı talimatı, operasyonel bağlam, çapraz yargı etkileri, Türkçe dil profesörü perspektifi ve PII'siz yerel üslup profili sınırı.",
                 "example_prompt": "Dilekçeyi kaynaklı, tutarlı ve duru Türkçeyle incele; dava şartı, görev, kesin yetki, süre, delil ve talep sonucunu koru.",
             },
             {

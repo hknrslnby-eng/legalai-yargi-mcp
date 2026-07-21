@@ -32,6 +32,10 @@ Kurulumdan önce ne yapılacağını görmek için `-DryRun`, ekrandaki iki biti
 
 Tebligat, ihtar, dava dilekçesi, savunma talebi veya iddianame gibi süreci tetikleyen bir belge için sohbete “önce eksik bilgi-belge-delil listesini çıkar, sonra dava dışı ve dava içi çözüm yollarını süre ve merci riskleriyle karşılaştır” yazın. SocratLegal bunu `socratlegal_onbilgi_ve_strateji` yeteneğine yönlendirir. Tüm sonuçlar koşullu, analysis-only ve non-binding araştırma taslağıdır.
 
+## Dilekçe üslup profili
+
+Kullanıcı isterse kendi örnek dilekçelerinden yalnızca başlık, atıf biçimi, ton ve argüman sırası gibi yapısal sinyaller çıkarılabilir. Ham örnekler, kişisel veriler veya örnek metinler GPT/Claude/Codex genel eğitimine gönderilmez; profil yerel türetilmiş metadata'dır. Profilin bir işlemde uygulanması için `style_profile_consent=true` açık kullanıcı onayı gerekir. Profil temizlendiğinde türetilmiş yerel metadata da kaldırılmalıdır; hukuki kaynak ve güvenlik başlıkları üslup profili tarafından değiştirilemez.
+
 Geliştirici veya kaynak koddan çalışan kullanıcı repoyu indirip sistemine `uv` kurduktan sonra şunları çalıştırabilir:
 
 ```powershell

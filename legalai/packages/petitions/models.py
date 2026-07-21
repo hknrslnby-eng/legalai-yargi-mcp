@@ -16,6 +16,9 @@ class PetitionRequest:
     event_dates: list[str] | None = None
     source_documents: list[dict[str, Any]] = field(default_factory=list)
     detail_level: str = "standard"
+    style_profile_id: str | None = None
+    use_style_profile: bool = False
+    style_profile_consent: bool = False
 
 
 @dataclass
@@ -32,6 +35,7 @@ class PetitionResult:
     source_requirements: dict[str, Any] = field(default_factory=dict)
     evidence_ledger: list[dict[str, Any]] = field(default_factory=list)
     operational_cards: list[dict[str, Any]] = field(default_factory=list)
+    style_profile: dict[str, Any] = field(default_factory=dict)
     cross_domain_inquiry: dict[str, Any] = field(default_factory=dict)
     operational_context: dict[str, Any] = field(default_factory=dict)
     temporal_context: dict[str, Any] = field(default_factory=dict)
