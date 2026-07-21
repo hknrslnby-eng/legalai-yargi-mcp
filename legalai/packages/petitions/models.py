@@ -30,6 +30,8 @@ class PetitionResult:
     lengthening_safeguards: dict[str, Any] = field(default_factory=dict)
     quality: dict[str, Any] = field(default_factory=dict)
     source_requirements: dict[str, Any] = field(default_factory=dict)
+    evidence_ledger: list[dict[str, Any]] = field(default_factory=list)
+    operational_cards: list[dict[str, Any]] = field(default_factory=list)
     cross_domain_inquiry: dict[str, Any] = field(default_factory=dict)
     operational_context: dict[str, Any] = field(default_factory=dict)
     temporal_context: dict[str, Any] = field(default_factory=dict)

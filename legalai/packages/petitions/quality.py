@@ -1,10 +1,12 @@
 """Shared quality guardrails for every general pleading operation."""
 from __future__ import annotations
 
+from dataclasses import asdict
 from typing import Any
 
 from legalai.packages.layers.cross_domain_inquiry import build_cross_domain_inquiry
 from legalai.packages.layers.operational_context import OperationalContextBuilder
+from legalai.packages.layers.operational_cards import build_operational_cards
 from legalai.packages.layers.quality_contract import build_quality_contract
 from legalai.packages.layers.quality_policy import build_quality_context
 from legalai.packages.shared.types import Document
@@ -29,6 +31,7 @@ def build_petition_quality(
     ]
     inquiry = build_cross_domain_inquiry(question, domains, documents)
     operational = OperationalContextBuilder().build(question, domains)
+    cards = build_operational_cards(question, domains, (question,))
     source_ids = tuple(document.id for document in documents)
     return {
         "turkish_language_professor_lens": True,
@@ -38,4 +41,5 @@ def build_petition_quality(
         "quality_policy": build_quality_context(domains, ["kıdemli hukukçu", "Türkçe dil profesörü"], source_ids, operational),
         "cross_domain_inquiry": inquiry,
         "operational_context": operational,
+        "operational_cards": [asdict(card) for card in cards],
     }

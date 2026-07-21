@@ -7,6 +7,7 @@ from typing import Any
 
 from .models import PetitionRequest, PetitionResult
 from .quality import build_petition_quality
+from legalai.packages.shared.evidence import EvidenceRecord
 
 _PROTECTED = {
     "dava şartı": ("dava şartı", "dava sarti"),
@@ -46,6 +47,19 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
         summary = "Kaynak, olay ve talep bilgileri tamamlandığında host model bu iskeleti kaynaklı dilekçeye dönüştürebilir."
 
     inquiry = quality["cross_domain_inquiry"].render()
+    evidence_ledger = [
+        EvidenceRecord(
+            claim_id="petition-allowed-source",
+            source_id=str(item.get("id")),
+            source_type=str(item.get("source", "user-supplied")),
+            full_citation=str(item.get("citation", "")),
+            short_quote=str(item.get("quote", "")),
+            relevance="high",
+            supported=bool(item.get("citation") and item.get("quote")),
+        ).to_dict()
+        for item in request.source_documents
+        if item.get("id")
+    ]
     return PetitionResult(
         operation=request.operation,
         executive_summary=summary,
@@ -69,6 +83,8 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
             "allowed_source_ids": [str(item.get("id")) for item in request.source_documents if item.get("id")],
             "unsupported_claim_action": "kaynak yoksa açıkça doğrulama gerekli olarak işaretle; künye veya alıntı uydurma",
         },
+        evidence_ledger=evidence_ledger,
+        operational_cards=quality["operational_cards"],
         cross_domain_inquiry={
             "question": quality["cross_domain_inquiry"].question,
             "detected_domains": domains,
