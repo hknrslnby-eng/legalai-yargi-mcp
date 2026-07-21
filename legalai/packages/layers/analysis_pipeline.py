@@ -266,7 +266,9 @@ async def run_pipeline(
     assistant_instructions = None
     if not synthesize and pipeline is None:
         source_context = (
-            "competition_research"
+            "trade_defense_research"
+            if "ticaret_savunmasi" in jurisdiction_ids
+            else "competition_research"
             if "rekabet" in jurisdiction_ids
             else "legal_analysis"
         )

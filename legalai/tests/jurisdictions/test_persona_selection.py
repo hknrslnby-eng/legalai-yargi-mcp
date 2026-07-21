@@ -19,3 +19,12 @@ def test_specialized_lens_is_returned_for_contract_question():
     selection = guess_jurisdictions("Sözleşmenin feshi ve cezai şart uygulanır mı?")
 
     assert "sozlesmeler" in selection.expert_lenses
+
+
+def test_trade_defense_question_selects_ticaret_savunmasi():
+    selection = guess_jurisdictions(
+        "Çin menşeli çelik ürünlere karşı dampinge karşı vergi soruşturması açıldı, GTİP itirazı ve savunma stratejisi ne olmalı?"
+    )
+
+    assert selection.primary == "ticaret_savunmasi"
+    assert "gumruk_hukuku" in selection.expert_lenses

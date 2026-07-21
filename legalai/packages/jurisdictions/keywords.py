@@ -29,4 +29,9 @@ JURISDICTION_KEYWORDS: dict[str, list[str]] = {
     "kvkk": ["KVKK", "kişisel veri", "veri sorumlusu", "veri işleyen"],
     "kik": ["kamu ihale", "itirazen şikâyet", "ihale sözleşmesi"],
     "reklam_kurulu": ["reklam kurulu", "ticari reklam", "aldatıcı reklam", "haksız ticari uygulama", "tüketici reklamı"],
+    "ticaret_savunmasi": [
+        "damping", "dampinge karşı", "anti-dumping", "sübvansiyon",
+        "telafi edici vergi", "korunma tedbiri", "ithalatta haksız rekabet",
+        "gtip", "ithalat soruşturması", "gözden geçirme soruşturması",
+    ],
 }

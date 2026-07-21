@@ -29,3 +29,11 @@ def test_requested_doctrine_sources_are_catalogued():
         "rekabet_authority_expert_theses",
         "rekabet_journal",
     }.issubset(policies)
+
+
+def test_trade_defense_sources_load_with_expected_authority_levels():
+    policies = load_source_policies()
+
+    assert policies["ticaret_bakanligi_ithalat"].authority_level == "domestic_institution_decision"
+    assert policies["wto_trade_remedy_agreements"].authority_level == "comparative_legislation"
+    assert "trade_defense_research" in policies["eu_trade_defense_regulations"].allowed_contexts

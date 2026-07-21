@@ -164,6 +164,19 @@ def test_build_assistant_instructions_includes_structured_reasoning_when_request
 
 
 @pytest.mark.asyncio
+async def test_pipeline_uses_trade_defense_source_context_for_trade_defense_profile():
+    result = await run_pipeline(
+        question="Dampinge karşı soruşturma savunması",
+        jurisdiction_hint="ticaret_savunmasi",
+        documents=[Document(id="d1", body="belge")],
+        synthesize=False,
+    )
+
+    assert result.assistant_instructions is not None
+    assert "Kaynak bağlamı: trade_defense_research" in result.assistant_instructions
+
+
+@pytest.mark.asyncio
 async def test_run_pipeline_synthesize_false_skips_llm_and_returns_instructions():
     fixed_doc = Document(id="d1", body="belge metni")
 

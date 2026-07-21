@@ -183,7 +183,11 @@ def _build_host_orchestrated_instructions(
     persona = compose_persona_instructions(ids, expert_lenses or [])
     reasoning = build_reasoning_instructions(
         ids,
-        source_context="competition_research" if "rekabet" in ids else "legal_analysis",
+        source_context=(
+            "trade_defense_research" if "ticaret_savunmasi" in ids
+            else "competition_research" if "rekabet" in ids
+            else "legal_analysis"
+        ),
         question=question,
         documents=documents or (),
     )
@@ -235,7 +239,11 @@ def _research_contract(question: str, detail_level: str) -> str:
     persona = compose_persona_instructions(jurisdiction_ids, selection.expert_lenses)
     reasoning = build_reasoning_instructions(
         jurisdiction_ids,
-        source_context="competition_research" if "rekabet" in jurisdiction_ids else "legal_analysis",
+        source_context=(
+            "trade_defense_research" if "ticaret_savunmasi" in jurisdiction_ids
+            else "competition_research" if "rekabet" in jurisdiction_ids
+            else "legal_analysis"
+        ),
         question=question,
         documents=(),
     )

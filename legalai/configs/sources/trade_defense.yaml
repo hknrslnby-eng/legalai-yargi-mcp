@@ -1,0 +1,37 @@
+sources:
+  - source_id: ticaret_bakanligi_ithalat
+    label: "Ticaret Bakanlığı İthalat Genel Müdürlüğü kararları ve tebliğleri"
+    source_kind: institution_decision
+    authority_level: domestic_institution_decision
+    allowed_contexts: [legal_analysis, trade_defense_research]
+    full_text_storage: allowed
+  - source_id: wto_trade_remedy_agreements
+    label: "DTÖ Anti-Damping/SCM/Safeguards Anlaşmaları ve DSB kararları"
+    source_kind: foreign_legislation
+    authority_level: comparative_legislation
+    allowed_contexts: [trade_defense_research, legal_analysis]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: eu_trade_defense_regulations
+    label: "AB Tüzük 2016/1036, 2016/1037, 2015/478 ve DG TRADE kararları"
+    source_kind: foreign_institution_decision
+    authority_level: comparative_institution_reference
+    allowed_contexts: [trade_defense_research, legal_analysis]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: eu_court_trade_defense
+    label: "ABAD/Genel Mahkeme ticaret savunması kararları"
+    source_kind: foreign_judicial_decision
+    authority_level: comparative_judicial_reference
+    allowed_contexts: [trade_defense_research, legal_analysis]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: us_trade_remedy_determinations
+    label: "ABD USDOC/USITC Tariff Act Title VII tespitleri"
+    source_kind: foreign_institution_decision
+    authority_level: comparative_institution_reference
+    allowed_contexts: [trade_defense_research, legal_analysis]
+    full_text_storage: metadata_or_excerpt_only
+  - source_id: trade_defense_doctrine
+    label: "Ticaret politikası savunması doktrini ve akademik yayınlar"
+    source_kind: doctrine
+    authority_level: non_binding_doctrine
+    allowed_contexts: [trade_defense_research, doctrine_research]
+    full_text_storage: metadata_or_excerpt_only

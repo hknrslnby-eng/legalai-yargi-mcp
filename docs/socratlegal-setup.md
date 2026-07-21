@@ -23,6 +23,9 @@ documents have been downloaded. Rekabet and KİK live adapters are keyword
 gated; KVKK is enabled only when `BRAVE_API_TOKEN` is explicitly configured.
 Missing sources are reported as unavailable and do not erase other hits.
 
+Supported legal capability: Ticaret politikası savunması (damping, sübvansiyon,
+korunma tedbirleri — Türkiye birincil, AB/ABD/DTÖ karşılaştırmalı).
+
 Active public tools include:
 
 - `socratlegal_katmanli_analiz`
