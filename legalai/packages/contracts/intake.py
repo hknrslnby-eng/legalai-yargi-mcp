@@ -1,54 +1,57 @@
 from __future__ import annotations
 
 import re
-import zipfile
 from pathlib import Path
-from xml.etree import ElementTree
+
+from legalai.packages.documents import DocumentInput, OcrProvider, extract_document
 
 from .models import Clause, ContractIntake
 
-_SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx"}
 _CLAUSE_PATTERN = re.compile(
-    r"^(?:#+\s*)?(?:(?:madde|article|clause)\s+)?(?P<number>\d+(?:\.\d+)*)\s*(?:[-–—:.]\s*(?P<heading>.+))?$",
+    r"^(?:#+\s*)?(?:(?:madde|article|clause)\s+)?(?P<number>\d+(?:\.\d+)*)\s*(?:[-â€“â€”:.]\s*(?P<heading>.+))?$",
     re.IGNORECASE,
 )
-
-
-def _xml_text(xml: bytes) -> str:
-    root = ElementTree.fromstring(xml)
-    values = [node.text or "" for node in root.iter() if node.tag.rsplit("}", 1)[-1] == "t"]
-    return "\n".join(value.strip() for value in values if value.strip())
-
-
-def _read_file(path: Path) -> tuple[str, str, bool]:
-    suffix = path.suffix.lower()
-    if suffix not in _SUPPORTED_EXTENSIONS:
-        raise ValueError(f"Unsupported contract file extension: {suffix or 'none'}")
-    if not path.is_file():
-        raise FileNotFoundError(str(path))
-
-    if suffix in {".txt", ".md"}:
-        return path.read_text(encoding="utf-8", errors="replace"), suffix.lstrip("."), False
-    if suffix == ".docx":
-        with zipfile.ZipFile(path) as archive:
-            return _xml_text(archive.read("word/document.xml")), "docx", False
-
-    from pypdf import PdfReader
-
-    reader = PdfReader(str(path))
-    extracted = "\n".join(page.extract_text() or "" for page in reader.pages)
-    return extracted, "pdf", not extracted.strip()
 
 
 def _detect_language(text: str) -> str:
     lowered = f" {text.casefold()} "
     turkish_markers = (
-        " madde ", " sözleşme ", " sozlesme ", " taraf ", " teslim ", " ödeme ", " odeme ", " bedel ", " tarihi ", " türk ",
+        " madde ",
+        " sÃ¶zleÅŸme ",
+        " sozlesme ",
+        " taraf ",
+        " teslim ",
+        " Ã¶deme ",
+        " odeme ",
+        " bedel ",
+        " tarihi ",
+        " tÃ¼rk ",
     )
     foreign_markers = (
-        " article ", " agreement ", " governed by ", " governing law ", " arbitration ", " shall ", " payment ", " english law ",
-        " vereinbarung ", " zahlung ", " deutsches recht ", " gerichtsstand ", " erfüllungsort ", " erfullungsort ", " contrat ", " droit applicable ", " paiement ",
-        " arbitrage ", " acuerdo ", " pago ", " ley aplicable ", " contratto ", " pagamento ", " legge applicabile ",
+        " article ",
+        " agreement ",
+        " governed by ",
+        " governing law ",
+        " arbitration ",
+        " shall ",
+        " payment ",
+        " english law ",
+        " vereinbarung ",
+        " zahlung ",
+        " deutsches recht ",
+        " gerichtsstand ",
+        " erfÃ¼llungsort ",
+        " erfullungsort ",
+        " contrat ",
+        " droit applicable ",
+        " paiement ",
+        " arbitrage ",
+        " acuerdo ",
+        " pago ",
+        " ley aplicable ",
+        " contratto ",
+        " pagamento ",
+        " legge applicabile ",
     )
     turkish_score = sum(marker in lowered for marker in turkish_markers)
     foreign_score = sum(marker in lowered for marker in foreign_markers)
@@ -64,14 +67,34 @@ def _foreign_element_signals(text: str, language: str) -> tuple[str, ...]:
     signals: list[str] = []
     if language in {"foreign", "mixed"}:
         signals.append(f"Language signal: {language}")
-    if re.search(r"\b(?:USD|EUR|GBP|CHF|JPY|CNY|CAD|AUD|SEK|NOK|DKK)\b|[$€£¥]", text, re.IGNORECASE):
+    if re.search(r"\b(?:USD|EUR|GBP|CHF|JPY|CNY|CAD|AUD|SEK|NOK|DKK)\b|[$â‚¬Â£Â¥]", text, re.IGNORECASE):
         signals.append("Foreign currency reference detected.")
     if any(
         token in lowered
         for token in (
-            "london", "england", "english law", "united kingdom", "germany", "deutschland", "berlin", "paris", "france",
-            "madrid", "spain", "rome", "italy", "netherlands", "belgium", "switzerland", "austria", "new york",
-            "delaware", "singapore", "dubai", "usa", "united states",
+            "london",
+            "england",
+            "english law",
+            "united kingdom",
+            "germany",
+            "deutschland",
+            "berlin",
+            "paris",
+            "france",
+            "madrid",
+            "spain",
+            "rome",
+            "italy",
+            "netherlands",
+            "belgium",
+            "switzerland",
+            "austria",
+            "new york",
+            "delaware",
+            "singapore",
+            "dubai",
+            "usa",
+            "united states",
         )
     ) or re.search(r"\b[A-Z]\d[A-Z][ -]?\d[A-Z]\d\b", text):
         signals.append("Foreign country or address reference detected.")
@@ -85,8 +108,18 @@ def _foreign_element_signals(text: str, language: str) -> tuple[str, ...]:
     if any(
         token in lowered
         for token in (
-            "outside turkey", "abroad", "overseas", "place of performance", "performed in", "delivery in", "shipped to",
-            "lieu d'execution", "lieu d’exécution", "lieferort", "erfüllungsort",
+            "outside turkey",
+            "abroad",
+            "overseas",
+            "place of performance",
+            "performed in",
+            "delivery in",
+            "shipped to",
+            "lieu d'execution",
+            "lieu dâ€™exÃ©cution",
+            "lieferort",
+            "erfüllungsort",
+            "erfÃ¼llungsort",
         )
     ):
         signals.append("Performance appears tied to a foreign location.")
@@ -143,17 +176,29 @@ def _extract_clauses(text: str) -> tuple[Clause, ...]:
     return (Clause(position=1, body=stripped),) if stripped else ()
 
 
-def extract_contract(*, text: str | None = None, file_path: Path | None = None) -> ContractIntake:
+def extract_contract(
+    *,
+    text: str | None = None,
+    file_path: Path | None = None,
+    ocr_provider: OcrProvider | None = None,
+) -> ContractIntake:
     if (text is None) == (file_path is None):
         raise ValueError("Exactly one of text or file_path must be provided.")
-    if text is not None:
-        raw_text, fmt, ocr_required = text, "text", False
-    else:
-        raw_text, fmt, ocr_required = _read_file(Path(file_path))
+
+    document = extract_document(DocumentInput(text=text, file_path=file_path), ocr_provider=ocr_provider)
+    raw_text, fmt, ocr_required = document.text, document.format, document.ocr_required
     if not raw_text or not raw_text.strip():
         if ocr_required:
-            return ContractIntake(text="", format=fmt, clauses=(), language="tr", foreign_element_signals=("Language undetermined because OCR is required.",), ocr_required=True)
+            return ContractIntake(
+                text="",
+                format=fmt,
+                clauses=(),
+                language="tr",
+                foreign_element_signals=("Language undetermined because OCR is required.", *document.warnings),
+                ocr_required=True,
+            )
         raise ValueError("Contract input is empty.")
+
     normalized = raw_text.strip()
     language = _detect_language(normalized)
     return ContractIntake(

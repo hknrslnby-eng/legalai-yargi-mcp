@@ -126,6 +126,33 @@ def test_extract_contract_reads_txt_and_md_from_local_files(tmp_path):
     assert "ARTICLE 2" in md_intake.text
 
 
+def test_extract_contract_accepts_tiff_via_injected_ocr_provider(tmp_path):
+    tif_path = tmp_path / "contract.tif"
+    tif_path.write_bytes(b"not-a-real-image")
+    tiff_path = tmp_path / "contract.TIFF"
+    tiff_path.write_bytes(b"not-a-real-image")
+
+    tif_intake = extract_contract(file_path=tif_path, ocr_provider=lambda _: "MADDE 3 - Süre\nYükümlülük 30 gündür.")
+    tiff_intake = extract_contract(file_path=tiff_path, ocr_provider=lambda _: "ARTICLE 4 - Delivery\nGoods ship to Berlin.")
+
+    assert tif_intake.format == "tif"
+    assert tif_intake.ocr_required is False
+    assert tif_intake.clauses[0].number == "3"
+    assert tiff_intake.format == "tiff"
+    assert tiff_intake.language == "foreign"
+
+
+def test_extract_contract_marks_ocr_required_when_image_has_no_available_ocr(tmp_path):
+    path = tmp_path / "contract.jpg"
+    path.write_bytes(b"not-a-real-image")
+
+    intake = extract_contract(file_path=path, ocr_provider=lambda _: None)
+
+    assert intake.text == ""
+    assert intake.ocr_required is True
+    assert any("OCR" in signal for signal in intake.foreign_element_signals)
+
+
 def test_extract_contract_rejects_unsupported_extension(tmp_path):
     path = tmp_path / "contract.rtf"
     path.write_text("{\\rtf1}", encoding="utf-8")
