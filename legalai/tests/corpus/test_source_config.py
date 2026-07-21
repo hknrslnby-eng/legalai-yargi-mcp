@@ -1,7 +1,13 @@
 from pathlib import Path
 
+import pytest
 import yaml
 
+from legalai.packages.corpus.sources.registry import (
+    default_source_registry,
+    load_source_metadata,
+    validate_source_metadata,
+)
 
 SOURCE_CONFIG_DIR = Path(__file__).parents[2] / "configs" / "sources"
 
@@ -40,3 +46,14 @@ def test_authority_registry_families_are_configured():
     }
 
     assert {"bam", "bim", "idare_mahkemeleri", "danistay", "dg_comp", "curia", "oecd_competition"} <= source_ids
+
+
+def test_source_configs_match_registry_authority_status_and_contexts():
+    validate_source_metadata(default_source_registry(), load_source_metadata(SOURCE_CONFIG_DIR))
+
+
+def test_source_metadata_validation_rejects_registry_drift():
+    source = _sources("institutions.yaml")[0] | {"authority_level": "mismatched"}
+
+    with pytest.raises(ValueError, match="authority_level"):
+        validate_source_metadata(default_source_registry(), [source])
