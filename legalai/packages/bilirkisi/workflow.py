@@ -16,6 +16,7 @@ from typing import Any, Callable, Iterable
 from xml.etree import ElementTree
 
 from legalai.packages.pii.outbound import mask_for_external
+from legalai.packages.documents import DocumentInput, extract_document
 from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
 from legalai.packages.shared.types import Document
 
@@ -189,15 +190,23 @@ def _read_file(path: Path, ocr_provider: OcrProvider | None = None) -> tuple[str
 
 
 def extract_report_text(*, text: str | None = None, file_path: str | Path | None = None, ocr_provider: OcrProvider | None = None) -> ExtractedReport:
-    if bool(text) == bool(file_path):
+    if (text is None) == (file_path is None):
         raise ValueError("Tam olarak text veya file_path verilmelidir.")
-    if text is not None:
-        raw, fmt, source_name, ocr, warnings = text, "text", "inline", False, []
-    else:
-        path = Path(file_path)  # type: ignore[arg-type]
-        raw, ocr, warnings = _read_file(path, ocr_provider)
-        fmt, source_name = path.suffix.lower().lstrip("."), path.name
-    return ExtractedReport(raw, _mask_text(raw), fmt, source_name, ocr, tuple(warnings))
+    path = Path(file_path) if file_path is not None else None
+    if path is not None and path.is_file() and path.stat().st_size > _MAX_REPORT_BYTES:
+        raise ValueError("Bilirkişi raporu 20 MB sınırını aşıyor.")
+    document = extract_document(
+        DocumentInput(text=text, file_path=path),
+        ocr_provider=ocr_provider,
+    )
+    return ExtractedReport(
+        document.text,
+        _mask_text(document.text),
+        document.format,
+        document.source_name,
+        document.ocr_required,
+        document.warnings,
+    )
 
 
 def _claim_lines(text: str) -> list[str]:
