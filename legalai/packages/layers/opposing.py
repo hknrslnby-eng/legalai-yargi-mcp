@@ -232,6 +232,8 @@ def _assistant_instructions(
     expert_lenses: list[str] | None = None,
     quality_profile: str = "auto",
     model_hint: str = "",
+    question: str = "",
+    documents: list[Any] | None = None,
 ) -> str:
     base = (
         "Bu sonuç nihai hukuki görüş değildir; nonbinding=true, yalnızca bağlayıcı olmayan araştırma/analiz taslağıdır. "
@@ -245,6 +247,8 @@ def _assistant_instructions(
         source_context="legal_analysis",
         quality_profile=quality_profile,
         model_hint=model_hint,
+        question=question,
+        documents=documents or (),
     )
     return "\n\n".join(item for item in (base, persona, reasoning) if item)
 
@@ -343,6 +347,8 @@ async def run_opposing(
             expert_lenses=selection.expert_lenses,
             quality_profile=quality_profile,
             model_hint=model_hint,
+            question=question,
+            documents=documents,
         ),
         confidence=min(temporal.confidence, 0.7),
         assumptions=assumptions,

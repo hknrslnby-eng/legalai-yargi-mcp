@@ -16,7 +16,9 @@ from typing import Any, Callable, Iterable
 from xml.etree import ElementTree
 
 from legalai.packages.pii.outbound import mask_for_external
-from legalai.packages.layers.quality_contract import build_quality_contract
+from legalai.packages.layers.quality_policy import build_quality_context
+from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
+from legalai.packages.shared.types import Document
 
 _MAX_REPORT_BYTES = 20 * 1024 * 1024
 _SUPPORTED = {".txt", ".md", ".html", ".htm", ".pdf", ".docx", ".xlsx", ".xls", ".png", ".jpg", ".jpeg", ".tif", ".tiff"}
@@ -332,7 +334,32 @@ async def analyze_report(
         "zincirini kur. Kaynak yoksa kesin görüş yazma; teknik uzman görüşü değildir, non-binding analiz "
         "ve araştırma brifidir."
     )
-    instructions += "\n\n" + build_quality_contract("auto")
+    source_documents = [
+        Document(
+            id=str(source.get("doc_id") or source.get("id") or ""),
+            body="",
+            source=str(source.get("source") or ""),
+            citation=str(source.get("citation") or ""),
+        )
+        for source in (legal_sources or [])
+        if source.get("doc_id") or source.get("id")
+    ]
+    source_ids = tuple(document.id for document in source_documents)
+    instructions += "\n\n" + build_reasoning_instructions(
+        ("hukuk",),
+        source_context="legal_analysis",
+        expert_lenses=(inference.domain,),
+        question=question,
+        documents=source_documents,
+        quality_profile="exhaustive",
+        model_hint="",
+    )
+    instructions += "\n\n" + build_quality_context(
+        ("hukuk",),
+        (inference.domain,),
+        source_ids,
+        quality_profile="exhaustive",
+    )
     if report.ocr_required:
         instructions += " OCR gerekli veya başarısız: teknik sonuç üretmeden önce belge metni yerel OCR ya da kullanıcı doğrulamasıyla tamamlanmalıdır."
     return BilirKisiAnalysis(report, question, inference.domain, tuple(claims), temporal, tuple(legal_sources or ()), True, True, instructions)

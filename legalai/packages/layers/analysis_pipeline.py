@@ -145,8 +145,8 @@ def build_assistant_instructions(
     base = (
         "Bu araç bir LLM DEĞİLDİR; sadece belge + analiz getirir. Kullanıcının "
         "sorusunu SEN (bu aracı çağıran asistan) cevapla. Kurallar: "
-        "(1) SADECE 'documents', 'ratios', 'dictums', 'dissents', "
-        "'argument_scores' alanlarındaki bilgiyi kullan, başka bilgi uydurma. "
+        "(1) SADECE 'documents', 'ratios', 'dictums', 'dissents', 'operational_context', "
+        "'argument_scores', 'strategy_options', 'temporal_context' ve 'evidence' alanlarındaki bilgiyi kullan, başka bilgi uydurma. "
         "(2) Cevabındaki HER iddiayı [#belge_id] biçiminde kaynak göster; "
         f"SADECE şu id'leri kullan: {ids_repr}. "
         "(3) Belgelerde soruya cevap yoksa bunu açıkça söyle. "
@@ -224,8 +224,12 @@ async def run_pipeline(
         jurisdiction_id=jurisdiction_hint,
         documents=list(documents) if documents else [],
         output_contract=output_contract or build_quality_contract(
-            quality_profile, model_hint=model_hint
+            quality_profile,
+            model_hint=model_hint,
+            source_ids=tuple(document.id for document in (documents or []) if document.id),
         ),
+        quality_profile=quality_profile,
+        model_hint=model_hint,
     )
 
     active_pipeline = pipeline or build_layered_pipeline(synthesize=synthesize)

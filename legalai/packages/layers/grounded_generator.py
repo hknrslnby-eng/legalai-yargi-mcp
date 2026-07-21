@@ -17,6 +17,7 @@ from legalai.packages.jurisdictions.loader import JurisdictionNotFoundError, loa
 from legalai.packages.jurisdictions.persona import compose_persona_instructions
 from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
 from legalai.packages.layers.operational_context import OperationalContextBuilder
+from legalai.packages.layers.quality_contract import build_quality_contract
 from legalai.packages.layers.pipeline import Context
 from legalai.packages.llm.router import LLMNotConfiguredError, llm_router
 from legalai.packages.shared.types import Document
@@ -93,6 +94,12 @@ class GroundedGenerator:
         self._task = task
 
     async def run(self, ctx: Context) -> Context:
+        source_ids = tuple(document.id for document in ctx.documents if document.id)
+        ctx.output_contract = build_quality_contract(
+            ctx.quality_profile,
+            model_hint=ctx.model_hint,
+            source_ids=source_ids,
+        )
         system = build_system_prompt(
             ctx.jurisdiction_id,
             jurisdiction_ids=ctx.jurisdiction_ids,
@@ -104,6 +111,8 @@ class GroundedGenerator:
                 ctx.question,
                 ctx.jurisdiction_ids,
             ),
+            quality_profile=ctx.quality_profile,
+            model_hint=ctx.model_hint,
         )
         user = build_user_prompt(ctx.question, ctx.documents, ctx.citation_retry_hint)
 

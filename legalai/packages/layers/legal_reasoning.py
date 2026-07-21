@@ -108,7 +108,11 @@ def build_reasoning_instructions(
             "",
             playbook.render(),
             "",
-            build_quality_contract(quality_profile, model_hint=model_hint),
+            build_quality_contract(
+                quality_profile,
+                model_hint=model_hint,
+                source_ids=tuple(source_ids),
+            ),
         ]
     )
     return "\n".join(lines)
