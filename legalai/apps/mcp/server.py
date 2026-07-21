@@ -34,6 +34,7 @@ from legalai.packages.layers.citation_validator import validate_citations
 from legalai.packages.layers.deep_research import run_deep_research
 from legalai.packages.layers.memorandum import MemorandumProfile, build_memorandum_instructions, memorandum_section_ids
 from legalai.packages.layers.opposing import run_opposing
+from legalai.packages.layers.pre_action_strategy import PreActionRequest, analyze_pre_action
 from legalai.packages.discovery.catalog import capability_catalog
 from legalai.packages.pii.gateway import PiiGateway
 from legalai.packages.shared.settings import settings
@@ -178,6 +179,28 @@ async def katmanli_analiz(
         model_hint=model_hint,
     )
     return result.to_dict()
+
+
+@app.tool(
+    name="socratlegal_onbilgi_ve_strateji",
+    description=(
+        "Tebligat, dava dilekçesi, ihtar, savunma talebi, iddianame veya benzeri süreç başlatıcı belgeyi "
+        "yerel olarak sınıflandırır; P0-P3 öncelikleri, eksik bilgi-belge-delil listesi, süre/merci riskleri "
+        "ve dava dışı/dava içi koşullu çözüm yolları üretir. Çıktı analysis-only ve non-binding'dir."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def socratlegal_onbilgi_ve_strateji(
+    document_text: Annotated[str | None, Field(description="Süreç başlatan belgenin yerel metni; file_path ile birlikte verilmemelidir.")] = None,
+    file_path: Annotated[str | None, Field(description="Belgenin yerel dosya yolu; ham dosya dışarı gönderilmez.")] = None,
+    mode: Annotated[str, Field(description="Triage, full_intake veya strategy modu.")] = "triage",
+    question: Annotated[str, Field(description="Kullanıcının belgeye karşı çözmek istediği hukuki sorun.")] = "",
+    jurisdiction_hint: Annotated[str | None, Field(description="İsteğe bağlı yargı türü, kurum veya hukuk alanı ipucu.")] = None,
+    event_dates: Annotated[list[str] | None, Field(description="Olay, belge, tebliğ, dava veya başvuru tarihleri.")] = None,
+) -> dict:
+    return analyze_pre_action(
+        PreActionRequest(document_text, file_path, mode, question, jurisdiction_hint, event_dates)
+    ).to_dict()
 
 
 @app.tool(

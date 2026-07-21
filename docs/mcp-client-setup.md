@@ -39,6 +39,10 @@ Baska Windows kullanicilari kendi mutlak yolunu yazmali. macOS/Linux karsiligi `
 
 ## Kullanici ozel modulleri nasil secer?
 
+## Süreç başlatan belgeyle ön-bilgi toplama
+
+Kullanıcı araç adını bilmek zorunda değildir. Tebligat, dava dilekçesi, ihtar, savunma talebi veya iddianame yükleyip “önce hangi bilgi-belge-delillere ihtiyacın olduğunu çıkar ve tüm çözüm yollarını karşılaştır” demesi yeterlidir. İstemci `socratlegal_onbilgi_ve_strateji` aracını çağırır; belirsiz belgelerde `mode=triage`, daha kapsamlı çalışmada `mode=full_intake` kullanılabilir.
+
 Kullanicinin arac adlarini ezberlemesi gerekmez. Host model, MCP baglantisinda arac aciklamalarini ve parametre semalarini gorur; kullanicinin dogal dildeki talebini uygun araca yonlendirir. Kullanici isterse istemcinin Tools/Prompts panelinden `legalai_yardim` aracini veya `legalai://capabilities` kaynagini acarak yalin, yonlendirilmis ve rafine ornekleri secebilir.
 
 Ornek dogal dil talepleri:

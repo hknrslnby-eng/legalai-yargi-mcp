@@ -28,6 +28,10 @@ Kurulumdan önce ne yapılacağını görmek için `-DryRun`, ekrandaki iki biti
 
 ## Manuel checkout yolu
 
+## Belge yüklendiğinde hangi yetenek kullanılır?
+
+Tebligat, ihtar, dava dilekçesi, savunma talebi veya iddianame gibi süreci tetikleyen bir belge için sohbete “önce eksik bilgi-belge-delil listesini çıkar, sonra dava dışı ve dava içi çözüm yollarını süre ve merci riskleriyle karşılaştır” yazın. SocratLegal bunu `socratlegal_onbilgi_ve_strateji` yeteneğine yönlendirir. Tüm sonuçlar koşullu, analysis-only ve non-binding araştırma taslağıdır.
+
 Geliştirici veya kaynak koddan çalışan kullanıcı repoyu indirip sistemine `uv` kurduktan sonra şunları çalıştırabilir:
 
 ```powershell
