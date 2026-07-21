@@ -26,12 +26,14 @@ class OfficialCollectionAdapter:
         authority_level: str,
         fetch_text: FetchText | None = None,
         license_note: str = "",
+        document_type: str = "official_document",
     ) -> None:
         self.source_id = source_id
         self.collection_urls = collection_urls
         self.source_kind = source_kind
         self.authority_level = authority_level
         self.license_note = license_note
+        self.document_type = document_type
         self._fetch_text = fetch_text
 
     async def _fetch(self, url: str) -> str:
@@ -45,6 +47,8 @@ class OfficialCollectionAdapter:
             return response.text
 
     async def search(self, query: str, limit: int) -> list[SourceSearchResult]:
+        if limit <= 0:
+            return []
         terms = [part.casefold() for part in query.split() if part.strip()]
         results: list[SourceSearchResult] = []
         seen: set[str] = set()
@@ -69,7 +73,7 @@ class OfficialCollectionAdapter:
                         source_url=url,
                         title=title,
                         metadata={
-                            "document_type": "official_document",
+                            "document_type": self.document_type,
                             "retrieval_mode": "live",
                             "source_kind": self.source_kind,
                             "authority_level": self.authority_level,
@@ -98,11 +102,12 @@ class CuriaOfficialAdapter(OfficialCollectionAdapter):
     def __init__(self, *, fetch_text: FetchText | None = None) -> None:
         super().__init__(
             source_id="curia",
-            collection_urls=("https://curia.europa.eu/site/jcms/d2_5166/en/legal-notice",),
+            collection_urls=("https://juris.curia.europa.eu/juris/documents.jsf",),
             source_kind="foreign_judicial_decision",
             authority_level="comparative_judicial_reference",
             fetch_text=fetch_text,
             license_note="CURIA resmi yayın koşulları korunur.",
+            document_type="judicial_decision",
         )
 
 
@@ -115,6 +120,7 @@ class OecdCompetitionAdapter(OfficialCollectionAdapter):
             authority_level="non_binding_policy_reference",
             fetch_text=fetch_text,
             license_note="OECD lisans ve atıf koşulları korunur.",
+            document_type="policy_report",
         )
 
 
@@ -127,6 +133,7 @@ class CompetitionReportAdapter(OfficialCollectionAdapter):
             authority_level="non_binding_economic_reference",
             fetch_text=fetch_text,
             license_note="Rapor yayımcısının lisans ve atıf koşulları korunur.",
+            document_type="market_report",
         )
 
 

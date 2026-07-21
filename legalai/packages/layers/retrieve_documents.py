@@ -92,8 +92,8 @@ class BamBedestenSearchBackend(BedestenSearchBackend):
         super().__init__(item_types=item_types or ["ISTINAFHUKUK"], source_id="bam")
 
 
-def build_bam_adapter() -> "_DocumentBackendAdapter":
-    return _DocumentBackendAdapter(BamBedestenSearchBackend(), source_id="bam")
+def build_bam_adapter(backend: DocumentSearchBackend | None = None) -> "_DocumentBackendAdapter":
+    return _DocumentBackendAdapter(backend or BamBedestenSearchBackend(), source_id="bam")
 
 
 class _LocalCorpusAdapter:

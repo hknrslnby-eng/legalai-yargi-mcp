@@ -1,6 +1,12 @@
 import pytest
 
-from legalai.packages.corpus.sources.international import OfficialCollectionAdapter
+from legalai.packages.corpus.sources.international import (
+    CompetitionReportAdapter,
+    CuriaOfficialAdapter,
+    DgCompOfficialAdapter,
+    OecdCompetitionAdapter,
+    OfficialCollectionAdapter,
+)
 
 
 @pytest.mark.asyncio
@@ -46,3 +52,48 @@ async def test_official_collection_adapter_surfaces_fetch_error():
 
     with pytest.raises(RuntimeError, match="source unavailable"):
         await adapter.search("competition", 5)
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("factory", "source_id", "document_type"),
+    [
+        (DgCompOfficialAdapter, "dg_comp", "official_document"),
+        (CuriaOfficialAdapter, "curia", "judicial_decision"),
+        (OecdCompetitionAdapter, "oecd_competition", "policy_report"),
+        (CompetitionReportAdapter, "competition_reports", "market_report"),
+    ],
+)
+async def test_concrete_international_adapters_keep_source_identity(factory, source_id, document_type):
+    pages = {
+        "https://source.test/collection": '<a href="/decision-1">Competition item</a>',
+        "https://source.test/decision-1": '<main>Source body.</main>',
+    }
+
+    async def fetch_text(url: str) -> str:
+        return pages[url]
+
+    adapter = factory(fetch_text=fetch_text)
+    adapter.collection_urls = ("https://source.test/collection",)
+
+    results = await adapter.search("competition", 1)
+
+    assert results[0].source_id == source_id
+    assert results[0].metadata["document_type"] == document_type
+    assert results[0].metadata["authority_level"]
+
+
+@pytest.mark.asyncio
+async def test_official_collection_adapter_limit_zero_returns_no_documents():
+    async def fetch_text(url: str) -> str:
+        raise AssertionError("fetch must not run for limit zero")
+
+    adapter = OfficialCollectionAdapter(
+        source_id="dg_comp",
+        collection_urls=("https://source.test/collection",),
+        source_kind="foreign_institution_decision",
+        authority_level="comparative_institution_reference",
+        fetch_text=fetch_text,
+    )
+
+    assert await adapter.search("competition", 0) == []

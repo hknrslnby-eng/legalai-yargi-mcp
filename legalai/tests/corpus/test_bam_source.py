@@ -2,7 +2,8 @@ from types import SimpleNamespace
 
 import pytest
 
-from legalai.packages.layers.retrieve_documents import BamBedestenSearchBackend
+from legalai.packages.layers.retrieve_documents import BamBedestenSearchBackend, build_bam_adapter
+from legalai.packages.shared.types import Document
 
 
 class _FakeClient:
@@ -43,3 +44,15 @@ async def test_bam_backend_sends_bam_item_type_and_normalizes_source():
     assert client.request.data.itemTypeList == ["ISTINAFHUKUK"]
     assert documents[0].source == "bam"
     assert documents[0].citation.startswith("BAM Hukuk Dairesi")
+
+
+@pytest.mark.asyncio
+async def test_bam_adapter_emits_live_source_provenance():
+    class _DocumentBackend:
+        async def search(self, query, limit):
+            return [Document(id="bam-1", body="metin", source="bam", citation="BAM 1")]
+
+    results = await build_bam_adapter(_DocumentBackend()).search("soru", 1)
+
+    assert results[0].source_id == "bam"
+    assert results[0].metadata["retrieval_mode"] == "live"
