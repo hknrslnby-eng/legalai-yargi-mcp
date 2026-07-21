@@ -112,3 +112,6 @@ Portable surum guncellemeleri `app` katmanini checksum dogrulayarak degistirir; 
 Yalnızca `legalai` MCP kaydı kurulduğunda `katmanli_analiz`, soru için Bedesten karar backend’inden Yargıtay/Danıştay belgelerini getirir ve katmanlı analizden geçirir. `derin_arastirma` alt soruları aynı akışa yönlendirir. `agresif_karsi_taraf` ise soru belgelerini aldıktan sonra ürettiği karşı argümanları da aynı backend’de ayrıca arar; dönen karşıt içtihatları künye, belge kimliği ve kısa alıntıyla bağlar.
 
 Bu akış için ayrı `yargi-mcp` server süreci veya hosting gerekmez. `yargi-mcp` yalnızca upstream’de bulunup henüz LegalAI araçlarına taşınmamış bağımsız araçları ayrıca kullanmak isteyenler için opsiyoneldir. Sözleşme inceleme mevcut üretim aracıdır: `socratlegal_sozlesme_incele` veya doğal dilde sözleşme inceleme talebi kullanılabilir. Due diligence ise yol haritasındaki ayrı bir ileri geliştirmedir ve bu kapsamda uygulanmış gibi sunulmaz.
+## Komut sözlüğü ve görseller
+
+İstemci `socratlegal_komut_sozlugu` aracını veya `socratlegal://commands` kaynağını okuyarak yetenekleri ve örnek doğal dil istemlerini gösterebilir. `/` menüsünün görünmesi IDE/host özelliğidir; sözlük her hostta kullanılabilir. Strateji yolları gibi ilişkilerde SocratLegal Mermaid ve tablo fallback'i sunabilir; grafik desteklemeyen hostta tablo/metin gösterilir.

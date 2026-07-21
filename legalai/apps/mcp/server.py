@@ -38,6 +38,8 @@ from legalai.packages.layers.pre_action_strategy import PreActionRequest, analyz
 from legalai.packages.petitions.models import PetitionRequest
 from legalai.packages.petitions.service import process_petition
 from legalai.packages.discovery.catalog import capability_catalog
+from legalai.packages.discovery.commands import command_dictionary
+from legalai.packages.discovery.visuals import visual_spec
 from legalai.packages.pii.gateway import PiiGateway
 from legalai.packages.shared.settings import settings
 from legalai.packages.shared.tenant import TenantContext, set_tenant
@@ -109,6 +111,26 @@ def _legalai_capabilities_resource() -> str:
 def legalai_capabilities_resource() -> str:
     """Directly callable facade for local tests and non-MCP integrations."""
     return _legalai_capabilities_resource.fn()
+
+
+@app.resource(
+    "socratlegal://commands",
+    name="socratlegal_commands",
+    description="SocratLegal doğal dil örnekleri, kararlı tool kimlikleri ve legacy alias sözlüğü.",
+    mime_type="application/json",
+)
+def _socratlegal_commands_resource() -> str:
+    return json.dumps(command_dictionary(), ensure_ascii=False, indent=2)
+
+
+@app.tool(name="socratlegal_komut_sozlugu", description="SocratLegal kullanılabilir yetenek, komut ve doğal dil örneklerini gösterir.")
+async def _socratlegal_command_dictionary_tool() -> dict:
+    return command_dictionary()
+
+
+@app.tool(name="legalai_komut_sozlugu", description="Geçiş uyumluluğu: SocratLegal komut sözlüğü.")
+async def _legacy_legalai_command_dictionary_tool() -> dict:
+    return command_dictionary()
 
 
 @app.prompt(

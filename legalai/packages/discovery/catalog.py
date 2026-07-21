@@ -33,6 +33,8 @@ def capability_catalog() -> dict[str, Any]:
             "socratlegal_corpus_durum": "corpus_durum",
             "socratlegal_corpus_belge_ekle": "corpus_belge_ekle",
             "socratlegal_corpus_sync": "corpus_sync",
+            "socratlegal_komut_sozlugu": "komut_sozlugu",
+            "legalai_komut_sozlugu": "komut_sozlugu",
         },
         "capabilities": [
             {
