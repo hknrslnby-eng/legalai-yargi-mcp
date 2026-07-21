@@ -16,7 +16,9 @@ from typing import Any, Callable, Iterable
 from xml.etree import ElementTree
 
 from legalai.packages.pii.outbound import mask_for_external
-from legalai.packages.layers.quality_contract import build_quality_contract
+from legalai.packages.documents import DocumentInput, extract_document
+from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
+from legalai.packages.shared.types import Document
 
 _MAX_REPORT_BYTES = 20 * 1024 * 1024
 _SUPPORTED = {".txt", ".md", ".html", ".htm", ".pdf", ".docx", ".xlsx", ".xls", ".png", ".jpg", ".jpeg", ".tif", ".tiff"}
@@ -188,15 +190,23 @@ def _read_file(path: Path, ocr_provider: OcrProvider | None = None) -> tuple[str
 
 
 def extract_report_text(*, text: str | None = None, file_path: str | Path | None = None, ocr_provider: OcrProvider | None = None) -> ExtractedReport:
-    if bool(text) == bool(file_path):
+    if (text is None) == (file_path is None):
         raise ValueError("Tam olarak text veya file_path verilmelidir.")
-    if text is not None:
-        raw, fmt, source_name, ocr, warnings = text, "text", "inline", False, []
-    else:
-        path = Path(file_path)  # type: ignore[arg-type]
-        raw, ocr, warnings = _read_file(path, ocr_provider)
-        fmt, source_name = path.suffix.lower().lstrip("."), path.name
-    return ExtractedReport(raw, _mask_text(raw), fmt, source_name, ocr, tuple(warnings))
+    path = Path(file_path) if file_path is not None else None
+    if path is not None and path.is_file() and path.stat().st_size > _MAX_REPORT_BYTES:
+        raise ValueError("Bilirkişi raporu 20 MB sınırını aşıyor.")
+    document = extract_document(
+        DocumentInput(text=text, file_path=path),
+        ocr_provider=ocr_provider,
+    )
+    return ExtractedReport(
+        document.text,
+        _mask_text(document.text),
+        document.format,
+        document.source_name,
+        document.ocr_required,
+        document.warnings,
+    )
 
 
 def _claim_lines(text: str) -> list[str]:
@@ -332,7 +342,25 @@ async def analyze_report(
         "zincirini kur. Kaynak yoksa kesin görüş yazma; teknik uzman görüşü değildir, non-binding analiz "
         "ve araştırma brifidir."
     )
-    instructions += "\n\n" + build_quality_contract("auto")
+    source_documents = [
+        Document(
+            id=str(source.get("doc_id") or source.get("id") or ""),
+            body="",
+            source=str(source.get("source") or ""),
+            citation=str(source.get("citation") or ""),
+        )
+        for source in (legal_sources or [])
+        if source.get("doc_id") or source.get("id")
+    ]
+    instructions += "\n\n" + build_reasoning_instructions(
+        ("hukuk",),
+        source_context="legal_analysis",
+        expert_lenses=(inference.domain,),
+        question=question,
+        documents=source_documents,
+        quality_profile="exhaustive",
+        model_hint="",
+    )
     if report.ocr_required:
         instructions += " OCR gerekli veya başarısız: teknik sonuç üretmeden önce belge metni yerel OCR ya da kullanıcı doğrulamasıyla tamamlanmalıdır."
     return BilirKisiAnalysis(report, question, inference.domain, tuple(claims), temporal, tuple(legal_sources or ()), True, True, instructions)

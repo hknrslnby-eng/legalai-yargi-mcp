@@ -34,6 +34,8 @@ from legalai.packages.layers.dissent_detector import DissentDetector
 from legalai.packages.layers.grounded_generator import GroundedGenerator
 from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
 from legalai.packages.layers.operational_context import OperationalContextBuilder
+from legalai.packages.layers.operational_cards import build_operational_cards
+from legalai.packages.layers.evidence_ledger import build_evidence_ledger, validate_evidence_ledger
 from legalai.packages.layers.pipeline import Context, Layer, Pipeline
 from legalai.packages.layers.qualify_issue import QualifyIssue
 from legalai.packages.layers.ratio_dictum import RatioDictumFilter
@@ -65,6 +67,7 @@ class AnalysisResult:
     assistant_instructions: str | None = None
     temporal_context: Any | None = None
     evidence: list[Any] = field(default_factory=list)
+    evidence_ledger: list[Any] = field(default_factory=list)
     deadline_risks: list[Any] = field(default_factory=list)
     forum_candidates: list[Any] = field(default_factory=list)
     strategy_options: list[Any] = field(default_factory=list)
@@ -95,6 +98,7 @@ class AnalysisResult:
             "trace": self.trace,
             "temporal_context": _jsonish(self.temporal_context),
             "evidence": [_jsonish(item) for item in (self.evidence or [])],
+            "evidence_ledger": [_jsonish(item) for item in (self.evidence_ledger or [])],
             "deadline_risks": [_jsonish(item) for item in (self.deadline_risks or [])],
             "forum_candidates": [_jsonish(item) for item in (self.forum_candidates or [])],
             "strategy_options": [_jsonish(item) for item in (self.strategy_options or [])],
@@ -135,16 +139,20 @@ def build_assistant_instructions(
     operational_context: Any | None = None,
     quality_profile: str = "auto",
     model_hint: str = "",
+    question: str = "",
+    documents: list[Document] | None = None,
 ) -> str:
     """`synthesize=False` modunda, host modele (bu aracı çağıran Cursor/
     Claude/ChatGPT/Antigravity vb. asistana) nihai cevabı NASIL yazması
     gerektiğini anlatan talimat. Bkz. modül docstring'i."""
     ids_repr = ", ".join(f"#{doc_id}" for doc_id in valid_doc_ids) or "(hiçbir belge bulunamadı)"
     base = (
+        "Host output may use: argument_scores, strategy_options, temporal_context, forum_candidates, deadline_risks, evidence. "
+        "Evidence ledger rule: pair each claim with a supported source ID, full citation and short quote; mark unsupported or empty-body sources instead of inventing them. "
         "Bu araç bir LLM DEĞİLDİR; sadece belge + analiz getirir. Kullanıcının "
         "sorusunu SEN (bu aracı çağıran asistan) cevapla. Kurallar: "
-        "(1) SADECE 'documents', 'ratios', 'dictums', 'dissents', "
-        "'argument_scores' alanlarındaki bilgiyi kullan, başka bilgi uydurma. "
+        "(1) SADECE 'documents', 'ratios', 'dictums', 'dissents', 'operational_context', "
+        "'argument_scores', 'strategy_options', 'temporal_context' ve 'evidence' alanlarındaki bilgiyi kullan, başka bilgi uydurma. "
         "(2) Cevabındaki HER iddiayı [#belge_id] biçiminde kaynak göster; "
         f"SADECE şu id'leri kullan: {ids_repr}. "
         "(3) Belgelerde soruya cevap yoksa bunu açıkça söyle. "
@@ -156,6 +164,8 @@ def build_assistant_instructions(
         jurisdiction_ids or (),
         source_context=source_context,
         operational_context=operational_context,
+        question=question,
+        documents=documents or (),
         quality_profile=quality_profile,
         model_hint=model_hint,
     )
@@ -220,8 +230,12 @@ async def run_pipeline(
         jurisdiction_id=jurisdiction_hint,
         documents=list(documents) if documents else [],
         output_contract=output_contract or build_quality_contract(
-            quality_profile, model_hint=model_hint
+            quality_profile,
+            model_hint=model_hint,
+            source_ids=tuple(document.id for document in (documents or []) if document.id),
         ),
+        quality_profile=quality_profile,
+        model_hint=model_hint,
     )
 
     active_pipeline = pipeline or build_layered_pipeline(synthesize=synthesize)
@@ -231,6 +245,23 @@ async def run_pipeline(
     if not jurisdiction_ids and result_ctx.jurisdiction_id:
         jurisdiction_ids = [result_ctx.jurisdiction_id]
     operational_context = OperationalContextBuilder().build(question, jurisdiction_ids)
+    ledger_claims = [
+        {
+            "id": f"document:{document.id}",
+            "text": document.body[:300],
+            "source_ids": [document.id],
+        }
+        for document in result_ctx.documents
+        if document.id
+    ]
+    evidence_ledger = build_evidence_ledger(ledger_claims, result_ctx.documents)
+    ledger_validation = validate_evidence_ledger(evidence_ledger)
+    operational_context_payload = operational_context.to_dict()
+    operational_context_payload["cards"] = [
+        _jsonish(card)
+        for card in build_operational_cards(question, jurisdiction_ids)
+    ]
+    operational_context_payload["evidence_ledger_validation"] = ledger_validation
 
     assistant_instructions = None
     if not synthesize and pipeline is None:
@@ -246,6 +277,8 @@ async def run_pipeline(
             operational_context=operational_context,
             quality_profile=quality_profile,
             model_hint=model_hint,
+            question=question,
+            documents=list(result_ctx.documents),
         )
         assistant_instructions += (
             " Ayrıca evidence alanındaki kaynak türü, tam künye ve kısa ilgili alıntıyı "
@@ -269,11 +302,12 @@ async def run_pipeline(
         assistant_instructions=assistant_instructions,
         temporal_context=await TemporalLegalContextBuilder().build(question),
         evidence=list(result_ctx.evidence),
+        evidence_ledger=list(evidence_ledger),
         deadline_risks=[],
         forum_candidates=list(result_ctx.forum_candidates),
         strategy_options=list(result_ctx.strategy_options),
         assumptions=[],
         missing_facts=[],
-        operational_context=operational_context.to_dict(),
+        operational_context=operational_context_payload,
         authority_gap=assess_authority_gap(result_ctx.documents, jurisdiction_ids),
     )

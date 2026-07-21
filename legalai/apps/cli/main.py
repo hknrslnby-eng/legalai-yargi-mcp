@@ -15,7 +15,7 @@ from legalai.packages.shared.settings import settings
 from legalai.packages.usage.store import UsageStore
 from legalai.packages.installer.ides import detect_ide_configs
 from legalai.packages.installer.models import InstallRequest
-from legalai.packages.installer.service import install_socratlegal
+from legalai.packages.installer.service import install_socratlegal, register_all_installed_ides
 from legalai.packages.installer.update import (
     UpdateError,
     apply_update,
@@ -104,6 +104,7 @@ def install(
     data_dir: Path | None = typer.Option(None, "--data-dir", help="Belgeler ve yerel corpus için ayrı veri klasörü"),
     dry_run: bool = typer.Option(False, "--dry-run", help="Dosyaya yazmadan ne yapılacağını göster"),
     repair: bool = typer.Option(False, "--repair", help="Bitişik iki JSON nesnesinden oluşan eski ayarı onarmayı dene"),
+    only_installed: bool = typer.Option(False, "--only-installed", help="--ide all ile yalnızca mevcut IDE yapılandırmalarını kaydet"),
 ) -> None:
     """SocratLegal'i seçilen IDE'lere tek komutla bağlar."""
     known = {item.ide_id: item for item in detect_ide_configs(
@@ -111,7 +112,7 @@ def install(
         appdata=Path.home() / "AppData" / "Roaming",
         project_dir=install_dir,
     )}
-    selected = list(known) if not ide or "all" in ide else ide
+    selected = [item for item, config in known.items() if config.exists] if (not ide or "all" in ide) and only_installed else list(known) if not ide or "all" in ide else ide
     unknown = [item for item in selected if item not in known]
     if unknown:
         raise typer.BadParameter(f"Bilinmeyen IDE: {', '.join(unknown)}", param_hint="--ide")
@@ -122,9 +123,10 @@ def install(
         portable_root=portable_root,
         dry_run=dry_run,
         repair=repair,
+        only_installed=only_installed,
     )
     try:
-        results = install_socratlegal(request, project_dir=install_dir)
+        results = register_all_installed_ides(request, project_dir=install_dir) if "all" in ide or not ide else install_socratlegal(request, project_dir=install_dir)
     except ValueError as error:
         raise typer.BadParameter(str(error)) from error
     for result in results:

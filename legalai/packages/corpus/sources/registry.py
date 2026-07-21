@@ -46,6 +46,7 @@ class SourceRegistry:
 
 def default_source_registry() -> SourceRegistry:
     return SourceRegistry([
+        SourceDescriptor("reklam_kurulu", "Reklam Kurulu kararları", "official_institution", 45, metadata={"institution": "Ticaret Bakanlığı Reklam Kurulu"}),
         SourceDescriptor("rekabet_kurumu", "Rekabet Kurumu kararları, mevzuat, kılavuz ve sektör raporları", "official_regulator", 10),
         SourceDescriptor("oecd_competition", "OECD rekabet kaynakları", "international_policy", 10),
         SourceDescriptor("eu_commission_competition", "AB Komisyonu rekabet kaynakları", "international_official", 10),

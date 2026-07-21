@@ -28,4 +28,5 @@ JURISDICTION_KEYWORDS: dict[str, list[str]] = {
     "rekabet": ["rekabet kurulu", "hâkim durum", "kartel", "birleşme devralma"],
     "kvkk": ["KVKK", "kişisel veri", "veri sorumlusu", "veri işleyen"],
     "kik": ["kamu ihale", "itirazen şikâyet", "ihale sözleşmesi"],
+    "reklam_kurulu": ["reklam kurulu", "ticari reklam", "aldatıcı reklam", "haksız ticari uygulama", "tüketici reklamı"],
 }

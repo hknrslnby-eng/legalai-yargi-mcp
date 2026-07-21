@@ -21,6 +21,7 @@ class InstallRequest:
     portable_root: Path | None
     dry_run: bool = False
     repair: bool = False
+    only_installed: bool = False
 
 
 @dataclass(frozen=True)

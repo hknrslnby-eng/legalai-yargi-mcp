@@ -158,6 +158,8 @@ def _build_host_orchestrated_instructions(
     jurisdiction_ids: list[str] | None = None,
     expert_lenses: list[str] | None = None,
     detail_level: str = "deep",
+    question: str = "",
+    documents: list[Any] | None = None,
 ) -> str:
     numbered = "\n".join(f"{i + 1}. {q}" for i, q in enumerate(subquestions))
     base = (
@@ -182,6 +184,8 @@ def _build_host_orchestrated_instructions(
     reasoning = build_reasoning_instructions(
         ids,
         source_context="competition_research" if "rekabet" in ids else "legal_analysis",
+        question=question,
+        documents=documents or (),
     )
     output_contract = build_memorandum_instructions(
         MemorandumProfile(detail_level=detail_level, include_strategy=True, max_source_quotes=5)
@@ -205,6 +209,7 @@ async def _run_host_orchestrated(question: str, depth: int, detail_level: str) -
             jurisdiction_ids=jurisdiction_ids,
             expert_lenses=selection.expert_lenses,
             detail_level=detail_level,
+            question=question,
         ),
         detail_level=detail_level,
     )
@@ -231,6 +236,8 @@ def _research_contract(question: str, detail_level: str) -> str:
     reasoning = build_reasoning_instructions(
         jurisdiction_ids,
         source_context="competition_research" if "rekabet" in jurisdiction_ids else "legal_analysis",
+        question=question,
+        documents=(),
     )
     output_contract = build_memorandum_instructions(
         MemorandumProfile(detail_level=detail_level, include_strategy=True, max_source_quotes=5)

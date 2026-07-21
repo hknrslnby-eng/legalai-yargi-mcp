@@ -39,6 +39,10 @@ Baska Windows kullanicilari kendi mutlak yolunu yazmali. macOS/Linux karsiligi `
 
 ## Kullanici ozel modulleri nasil secer?
 
+## Süreç başlatan belgeyle ön-bilgi toplama
+
+Kullanıcı araç adını bilmek zorunda değildir. Tebligat, dava dilekçesi, ihtar, savunma talebi veya iddianame yükleyip “önce hangi bilgi-belge-delillere ihtiyacın olduğunu çıkar ve tüm çözüm yollarını karşılaştır” demesi yeterlidir. İstemci `socratlegal_onbilgi_ve_strateji` aracını çağırır; belirsiz belgelerde `mode=triage`, daha kapsamlı çalışmada `mode=full_intake` kullanılabilir.
+
 Kullanicinin arac adlarini ezberlemesi gerekmez. Host model, MCP baglantisinda arac aciklamalarini ve parametre semalarini gorur; kullanicinin dogal dildeki talebini uygun araca yonlendirir. Kullanici isterse istemcinin Tools/Prompts panelinden `legalai_yardim` aracini veya `legalai://capabilities` kaynagini acarak yalin, yonlendirilmis ve rafine ornekleri secebilir.
 
 Ornek dogal dil talepleri:
@@ -108,3 +112,6 @@ Portable surum guncellemeleri `app` katmanini checksum dogrulayarak degistirir; 
 Yalnızca `legalai` MCP kaydı kurulduğunda `katmanli_analiz`, soru için Bedesten karar backend’inden Yargıtay/Danıştay belgelerini getirir ve katmanlı analizden geçirir. `derin_arastirma` alt soruları aynı akışa yönlendirir. `agresif_karsi_taraf` ise soru belgelerini aldıktan sonra ürettiği karşı argümanları da aynı backend’de ayrıca arar; dönen karşıt içtihatları künye, belge kimliği ve kısa alıntıyla bağlar.
 
 Bu akış için ayrı `yargi-mcp` server süreci veya hosting gerekmez. `yargi-mcp` yalnızca upstream’de bulunup henüz LegalAI araçlarına taşınmamış bağımsız araçları ayrıca kullanmak isteyenler için opsiyoneldir. Sözleşme inceleme mevcut üretim aracıdır: `socratlegal_sozlesme_incele` veya doğal dilde sözleşme inceleme talebi kullanılabilir. Due diligence ise yol haritasındaki ayrı bir ileri geliştirmedir ve bu kapsamda uygulanmış gibi sunulmaz.
+## Komut sözlüğü ve görseller
+
+İstemci `socratlegal_komut_sozlugu` aracını veya `socratlegal://commands` kaynağını okuyarak yetenekleri ve örnek doğal dil istemlerini gösterebilir. `/` menüsünün görünmesi IDE/host özelliğidir; sözlük her hostta kullanılabilir. Strateji yolları gibi ilişkilerde SocratLegal Mermaid ve tablo fallback'i sunabilir; grafik desteklemeyen hostta tablo/metin gösterilir.

@@ -34,7 +34,12 @@ from legalai.packages.layers.citation_validator import validate_citations
 from legalai.packages.layers.deep_research import run_deep_research
 from legalai.packages.layers.memorandum import MemorandumProfile, build_memorandum_instructions, memorandum_section_ids
 from legalai.packages.layers.opposing import run_opposing
+from legalai.packages.layers.pre_action_strategy import PreActionRequest, analyze_pre_action
+from legalai.packages.petitions.models import PetitionRequest
+from legalai.packages.petitions.service import process_petition
 from legalai.packages.discovery.catalog import capability_catalog
+from legalai.packages.discovery.commands import command_dictionary
+from legalai.packages.discovery.visuals import visual_spec
 from legalai.packages.pii.gateway import PiiGateway
 from legalai.packages.shared.settings import settings
 from legalai.packages.shared.tenant import TenantContext, set_tenant
@@ -108,6 +113,26 @@ def legalai_capabilities_resource() -> str:
     return _legalai_capabilities_resource.fn()
 
 
+@app.resource(
+    "socratlegal://commands",
+    name="socratlegal_commands",
+    description="SocratLegal doğal dil örnekleri, kararlı tool kimlikleri ve legacy alias sözlüğü.",
+    mime_type="application/json",
+)
+def _socratlegal_commands_resource() -> str:
+    return json.dumps(command_dictionary(), ensure_ascii=False, indent=2)
+
+
+@app.tool(name="socratlegal_komut_sozlugu", description="SocratLegal kullanılabilir yetenek, komut ve doğal dil örneklerini gösterir.")
+async def _socratlegal_command_dictionary_tool() -> dict:
+    return command_dictionary()
+
+
+@app.tool(name="legalai_komut_sozlugu", description="Geçiş uyumluluğu: SocratLegal komut sözlüğü.")
+async def _legacy_legalai_command_dictionary_tool() -> dict:
+    return command_dictionary()
+
+
 @app.prompt(
     name="agresif_karsi_taraf_promptu",
     description="Karşı taraf argümanları, karşıt içtihatlar ve geniş çözüm stratejisi için yönlendirilmiş prompt.",
@@ -178,6 +203,176 @@ async def katmanli_analiz(
         model_hint=model_hint,
     )
     return result.to_dict()
+
+
+@app.tool(
+    name="socratlegal_onbilgi_ve_strateji",
+    description=(
+        "Tebligat, dava dilekçesi, ihtar, savunma talebi, iddianame veya benzeri süreç başlatıcı belgeyi "
+        "yerel olarak sınıflandırır; P0-P3 öncelikleri, eksik bilgi-belge-delil listesi, süre/merci riskleri "
+        "ve dava dışı/dava içi koşullu çözüm yolları üretir. Çıktı analysis-only ve non-binding'dir."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def socratlegal_onbilgi_ve_strateji(
+    document_text: Annotated[str | None, Field(description="Süreç başlatan belgenin yerel metni; file_path ile birlikte verilmemelidir.")] = None,
+    file_path: Annotated[str | None, Field(description="Belgenin yerel dosya yolu; ham dosya dışarı gönderilmez.")] = None,
+    mode: Annotated[str, Field(description="Triage, full_intake veya strategy modu.")] = "triage",
+    question: Annotated[str, Field(description="Kullanıcının belgeye karşı çözmek istediği hukuki sorun.")] = "",
+    jurisdiction_hint: Annotated[str | None, Field(description="İsteğe bağlı yargı türü, kurum veya hukuk alanı ipucu.")] = None,
+    event_dates: Annotated[list[str] | None, Field(description="Olay, belge, tebliğ, dava veya başvuru tarihleri.")] = None,
+) -> dict:
+    return analyze_pre_action(
+        PreActionRequest(document_text, file_path, mode, question, jurisdiction_hint, event_dates)
+    ).to_dict()
+
+
+@app.tool(name="legalai_onbilgi_ve_strateji", description="Geçiş uyumluluğu: SocratLegal süreç başlatan belge ön-bilgi ve strateji.")
+async def _legacy_legalai_onbilgi_ve_strateji(
+    document_text: str | None = None,
+    file_path: str | None = None,
+    mode: str = "triage",
+    question: str = "",
+    jurisdiction_hint: str | None = None,
+    event_dates: list[str] | None = None,
+) -> dict:
+    return await socratlegal_onbilgi_ve_strateji.fn(document_text, file_path, mode, question, jurisdiction_hint, event_dates)
+
+
+async def _process_petition_tool(
+    operation: str,
+    petition_text: str | None,
+    question: str,
+    party_position: str,
+    jurisdiction_hint: str | None,
+    event_dates: list[str] | None,
+    source_documents: list[dict[str, object]] | None,
+    detail_level: str,
+    style_profile_id: str | None,
+    use_style_profile: bool,
+    style_profile_consent: bool,
+) -> dict:
+    result = process_petition(
+        PetitionRequest(
+            operation=operation,  # type: ignore[arg-type]
+            petition_text=petition_text,
+            question=question,
+            party_position=party_position,
+            jurisdiction_hint=jurisdiction_hint,
+            event_dates=event_dates,
+            source_documents=source_documents or [],
+            detail_level=detail_level,
+            style_profile_id=style_profile_id,
+            use_style_profile=use_style_profile,
+            style_profile_consent=style_profile_consent,
+        )
+    )
+    return result.to_dict()
+
+
+def _petition_description(operation: str) -> str:
+    labels = {"draft": "hazırlar", "review": "inceler", "shorten": "kısaltma önerileri üretir", "lengthen": "kaynaklı biçimde uzatma önerileri üretir"}
+    return (
+        f"SocratLegal genel dilekçeyi {labels[operation]}. Dava şartı, görev, kesin yetki, süre, delil ve talep sonucu "
+        "güvenlik başlıklarını korur; norm, içtihat ve doktrin için künye/kısa alıntı ister. Türkçe dil profesörü "
+        "perspektifi ve çapraz yargı etkileri uygulanır. Çıktı analysis-only ve non-binding'dir."
+    )
+
+
+@app.tool(name="socratlegal_dilekce_hazirla", description=_petition_description("draft"))
+async def _socratlegal_petition_draft_tool(
+    petition_text: Annotated[str | None, Field(description="Varsa mevcut dilekçe metni; yoksa taslak için boş bırakılabilir.")] = None,
+    question: Annotated[str, Field(description="Dilekçenin konusu, hukuki sorusu ve istenen sonuç.")] = "",
+    party_position: Annotated[str, Field(description="Temsil edilen tarafın sıfatı ve hukuki pozisyonu.")] = "",
+    jurisdiction_hint: JurisdictionHint = None,
+    event_dates: Annotated[list[str] | None, Field(description="Olay, tebliğ, dava ve yürürlük açısından önemli tarihler.")] = None,
+    source_documents: Annotated[list[dict[str, object]] | None, Field(description="İzin verilen kaynak kayıtları: id, citation ve kısa quote alanları.")] = None,
+    detail_level: Annotated[str, Field(description="Çıktı ayrıntısı: brief, standard, deep veya exhaustive.")] = "deep",
+    style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
+    use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
+    style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
+) -> dict:
+    return await _process_petition_tool("draft", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
+
+
+@app.tool(name="socratlegal_dilekce_incele", description=_petition_description("review"))
+async def _socratlegal_petition_review_tool(
+    petition_text: Annotated[str, Field(description="İncelenecek mevcut dilekçe metni.")],
+    question: Annotated[str, Field(description="İncelemede cevaplanması istenen hukuki/stratejik soru.")] = "",
+    party_position: Annotated[str, Field(description="Temsil edilen tarafın sıfatı ve hukuki pozisyonu.")] = "",
+    jurisdiction_hint: JurisdictionHint = None,
+    event_dates: Annotated[list[str] | None, Field(description="Olay, tebliğ, dava ve yürürlük açısından önemli tarihler.")] = None,
+    source_documents: Annotated[list[dict[str, object]] | None, Field(description="İzin verilen kaynak kayıtları: id, citation ve kısa quote alanları.")] = None,
+    detail_level: Annotated[str, Field(description="Çıktı ayrıntısı: brief, standard, deep veya exhaustive.")] = "deep",
+    style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
+    use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
+    style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
+) -> dict:
+    return await _process_petition_tool("review", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
+
+
+@app.tool(name="socratlegal_dilekce_kisalt", description=_petition_description("shorten"))
+async def _socratlegal_petition_shorten_tool(
+    petition_text: Annotated[str, Field(description="Kısaltılması istenen mevcut dilekçe metni.")],
+    question: Annotated[str, Field(description="Kısaltma hedefi; örn. sayfa/kelime sınırı veya okunabilirlik.")] = "",
+    party_position: Annotated[str, Field(description="Temsil edilen tarafın sıfatı ve hukuki pozisyonu.")] = "",
+    jurisdiction_hint: JurisdictionHint = None,
+    event_dates: Annotated[list[str] | None, Field(description="Olay, tebliğ, dava ve yürürlük açısından önemli tarihler.")] = None,
+    source_documents: Annotated[list[dict[str, object]] | None, Field(description="İzin verilen kaynak kayıtları: id, citation ve kısa quote alanları.")] = None,
+    detail_level: Annotated[str, Field(description="Çıktı ayrıntısı: brief, standard, deep veya exhaustive.")] = "standard",
+    style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
+    use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
+    style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
+) -> dict:
+    return await _process_petition_tool("shorten", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
+
+
+@app.tool(name="socratlegal_dilekce_uzat", description=_petition_description("lengthen"))
+async def _socratlegal_petition_lengthen_tool(
+    petition_text: Annotated[str, Field(description="Uzatılması istenen mevcut dilekçe metni.")],
+    question: Annotated[str, Field(description="Uzatma hedefi; yeni vakıa eklenmemesi ve kaynaklı detaylandırma talimatı.")] = "",
+    party_position: Annotated[str, Field(description="Temsil edilen tarafın sıfatı ve hukuki pozisyonu.")] = "",
+    jurisdiction_hint: JurisdictionHint = None,
+    event_dates: Annotated[list[str] | None, Field(description="Olay, tebliğ, dava ve yürürlük açısından önemli tarihler.")] = None,
+    source_documents: Annotated[list[dict[str, object]] | None, Field(description="İzin verilen kaynak kayıtları: id, citation ve kısa quote alanları.")] = None,
+    detail_level: Annotated[str, Field(description="Çıktı ayrıntısı: brief, standard, deep veya exhaustive.")] = "deep",
+    style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
+    use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
+    style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
+) -> dict:
+    return await _process_petition_tool("lengthen", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
+
+
+@app.tool(name="legalai_dilekce_hazirla", description="Geçiş uyumluluğu: SocratLegal genel dilekçe taslağı.")
+async def _legacy_legalai_petition_draft_tool(
+    petition_text: str | None = None, question: str = "", party_position: str = "", jurisdiction_hint: str | None = None,
+    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "deep",
+) -> dict:
+    return await _socratlegal_petition_draft_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+
+
+@app.tool(name="legalai_dilekce_incele", description="Geçiş uyumluluğu: SocratLegal genel dilekçe incelemesi.")
+async def _legacy_legalai_petition_review_tool(
+    petition_text: str, question: str = "", party_position: str = "", jurisdiction_hint: str | None = None,
+    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "deep",
+) -> dict:
+    return await _socratlegal_petition_review_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+
+
+@app.tool(name="legalai_dilekce_kisalt", description="Geçiş uyumluluğu: SocratLegal güvenli dilekçe kısaltma.")
+async def _legacy_legalai_petition_shorten_tool(
+    petition_text: str, question: str = "", party_position: str = "", jurisdiction_hint: str | None = None,
+    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "standard",
+) -> dict:
+    return await _socratlegal_petition_shorten_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+
+
+@app.tool(name="legalai_dilekce_uzat", description="Geçiş uyumluluğu: SocratLegal kaynaklı dilekçe uzatma.")
+async def _legacy_legalai_petition_lengthen_tool(
+    petition_text: str, question: str = "", party_position: str = "", jurisdiction_hint: str | None = None,
+    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "deep",
+) -> dict:
+    return await _socratlegal_petition_lengthen_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
 
 
 @app.tool(

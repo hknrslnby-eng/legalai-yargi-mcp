@@ -34,6 +34,8 @@ class Context:
     strategy_options: list[Any] = field(default_factory=list)
     forum_candidates: list[Any] = field(default_factory=list)
     output_contract: str | None = None
+    quality_profile: str = "auto"
+    model_hint: str = ""
 
 
 class Layer(Protocol):

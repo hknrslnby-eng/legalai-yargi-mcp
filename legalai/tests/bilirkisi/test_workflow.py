@@ -49,6 +49,21 @@ def test_extract_report_text_uses_injected_ocr_provider_for_image_reports(tmp_pa
     assert "teknik bulgu" in result.text
 
 
+def test_extract_report_text_accepts_tiff_extensions_case_insensitively(tmp_path):
+    tif_path = tmp_path / "rapor.tif"
+    tif_path.write_bytes(b"fake-image")
+    tiff_path = tmp_path / "RAPOR.TIFF"
+    tiff_path.write_bytes(b"fake-image")
+
+    tif = extract_report_text(file_path=tif_path, ocr_provider=lambda _: "TIF içeriği.")
+    tiff = extract_report_text(file_path=tiff_path, ocr_provider=lambda _: "TIFF içeriği.")
+
+    assert tif.format == "tif"
+    assert tif.text == "TIF içeriği."
+    assert tiff.format == "tiff"
+    assert tiff.text == "TIFF içeriği."
+
+
 def test_extract_report_text_reports_ocr_requirement_when_no_engine_is_available(tmp_path):
     path = tmp_path / "rapor.jpg"
     path.write_bytes(b"not-a-real-image")
