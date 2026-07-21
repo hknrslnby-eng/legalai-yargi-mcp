@@ -57,3 +57,12 @@ def test_source_metadata_validation_rejects_registry_drift():
 
     with pytest.raises(ValueError, match="authority_level"):
         validate_source_metadata(default_source_registry(), [source])
+
+
+def test_source_metadata_validation_rejects_missing_status():
+    source = next(item for item in _sources("institutions.yaml") if item["source_id"] == "bim")
+    source = dict(source)
+    source.pop("status")
+
+    with pytest.raises(ValueError, match="status"):
+        validate_source_metadata(default_source_registry(), [source])

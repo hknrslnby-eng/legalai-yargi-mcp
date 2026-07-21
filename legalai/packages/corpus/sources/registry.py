@@ -126,8 +126,10 @@ def validate_source_metadata(
         descriptor = registry.get(source_id)
         if descriptor is None:
             raise ValueError(f"Registry'de bulunmayan kaynak metadata'sı: {source_id}")
+        if "status" not in entry:
+            raise ValueError(f"Kaynak metadata status alanı eksik: {source_id}.status")
         checks = {
-            "status": (entry.get("status", descriptor.status), descriptor.status),
+            "status": (entry["status"], descriptor.status),
             "authority_level": (entry.get("authority_level"), descriptor.authority_level),
         }
         for field_name, (actual, expected) in checks.items():

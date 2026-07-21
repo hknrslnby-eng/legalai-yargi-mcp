@@ -1,5 +1,6 @@
 sources:
   - source_id: competition_reports
+    status: corpus_only
     label: "Rekabet, piyasa ve sektör raporları"
     source_kind: economic_report
     authority_level: non_binding_economic_reference
@@ -10,6 +11,7 @@ sources:
     citation_required: true
     precedential: false
   - source_id: institution_reports
+    status: corpus_only
     label: "Kamu kurumlarının faaliyet ve sektör raporları"
     source_kind: institution_report
     authority_level: non_binding_economic_reference

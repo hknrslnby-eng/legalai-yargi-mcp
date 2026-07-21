@@ -1,5 +1,6 @@
 sources:
   - source_id: rekabet_kurumu
+    status: live_ready
     label: "Rekabet Kurulu kararları ve mevzuatı"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -8,6 +9,7 @@ sources:
     publisher_class: public_institution
     license_note: "Resmi kurum yayını; erişim ve yeniden kullanım koşulları ayrıca doğrulanır."
   - source_id: eu_commission_competition
+    status: live_ready
     label: "Avrupa Komisyonu / DG COMP"
     source_kind: foreign_institution_decision
     authority_level: comparative_institution_reference
@@ -16,6 +18,7 @@ sources:
     publisher_class: supranational_institution
     license_note: "Avrupa Komisyonu yayını; resmi lisans ve kullanım koşulları korunur."
   - source_id: dg_comp
+    status: live_ready
     label: "Avrupa Komisyonu DG COMP karar, politika ve raporları"
     source_kind: foreign_institution_decision
     authority_level: comparative_institution_reference
@@ -24,6 +27,7 @@ sources:
     publisher_class: supranational_institution
     license_note: "Resmi DG COMP yayını; tam metin saklama lisans koşullarına tabidir."
   - source_id: eu_court_competition
+    status: live_ready
     label: "ABAD ve Genel Mahkeme rekabet kararları"
     source_kind: foreign_judicial_decision
     authority_level: comparative_judicial_reference
@@ -32,6 +36,7 @@ sources:
     publisher_class: supranational_court
     license_note: "Resmi yargı yayını; tam metin saklama lisans koşullarına tabidir."
   - source_id: curia
+    status: live_ready
     label: "CURIA / ABAD ve Genel Mahkeme kararları"
     source_kind: foreign_judicial_decision
     authority_level: comparative_judicial_reference
@@ -40,6 +45,7 @@ sources:
     publisher_class: supranational_court
     license_note: "CURIA resmi yayını; tam metin saklama lisans koşullarına tabidir."
   - source_id: eur_lex_competition
+    status: corpus_only
     label: "EUR-Lex rekabet mevzuatı ve resmi yayınlar"
     source_kind: foreign_legislation
     authority_level: comparative_legislation
@@ -48,6 +54,7 @@ sources:
     publisher_class: supranational_institution
     license_note: "EUR-Lex resmi yayını; lisans ve yeniden kullanım koşulları korunur."
   - source_id: oecd_competition
+    status: live_ready
     label: "OECD rekabet tavsiyeleri, raporları ve yuvarlak masa çalışmaları"
     source_kind: policy_reference
     authority_level: non_binding_policy_reference

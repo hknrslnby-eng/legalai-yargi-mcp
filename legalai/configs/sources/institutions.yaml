@@ -1,5 +1,6 @@
 sources:
   - source_id: kvkk
+    status: live_ready
     label: "KVKK Kurul/ilke kararları ve rehberler"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -8,6 +9,7 @@ sources:
     publisher_class: public_institution
     license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: kik
+    status: live_ready
     label: "Kamu İhale Kurulu kararları ve düzenlemeleri"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -16,6 +18,7 @@ sources:
     publisher_class: public_institution
     license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: tihek
+    status: live_ready
     label: "TİHEK kararları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -24,6 +27,7 @@ sources:
     publisher_class: public_institution
     license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: kdk
+    status: live_ready
     label: "Kamu Denetçiliği Kurumu kararları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -32,6 +36,7 @@ sources:
     publisher_class: public_institution
     license_note: "Tavsiye niteliği ve resmi yayın koşulları açıkça belirtilir."
   - source_id: bddk
+    status: live_ready
     label: "BDDK kararları ve düzenlemeleri"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -40,6 +45,7 @@ sources:
     publisher_class: public_institution
     license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: spk
+    status: live_ready
     label: "SPK kararları ve düzenlemeleri"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -48,6 +54,7 @@ sources:
     publisher_class: public_institution
     license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: rtuk
+    status: live_ready
     label: "RTÜK kararları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -56,6 +63,7 @@ sources:
     publisher_class: public_institution
     license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: epdk
+    status: live_ready
     label: "EPDK kararları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -64,6 +72,7 @@ sources:
     publisher_class: public_institution
     license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: btk
+    status: live_ready
     label: "BTK kararları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -72,6 +81,7 @@ sources:
     publisher_class: public_institution
     license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: kgk
+    status: live_ready
     label: "KGK kararları ve standartları"
     source_kind: institution_decision
     authority_level: domestic_institution_decision
@@ -80,6 +90,7 @@ sources:
     publisher_class: public_institution
     license_note: "Resmi kurum yayını; atıf ve erişim koşulları korunur."
   - source_id: bam
+    status: live_ready
     label: "Bölge Adliye Mahkemeleri kararları"
     source_kind: judicial_decision
     authority_level: domestic_judicial_reference
@@ -88,6 +99,7 @@ sources:
     publisher_class: public_judiciary
     license_note: "Resmi yargı yayını; tam metin saklama ve yeniden kullanım koşulları doğrulanır."
   - source_id: bim
+    status: verification_pending
     label: "Bölge İdare Mahkemeleri kararları"
     source_kind: judicial_decision
     authority_level: domestic_judicial_reference
@@ -96,6 +108,7 @@ sources:
     publisher_class: public_judiciary
     license_note: "Canlı doğrulama bekleniyor; tam metin saklama koşulları doğrulanır."
   - source_id: idare_mahkemeleri
+    status: live_ready
     label: "Birinci derece idare mahkemeleri kararları"
     source_kind: judicial_decision
     authority_level: domestic_judicial_reference
@@ -104,6 +117,7 @@ sources:
     publisher_class: public_judiciary
     license_note: "Resmi yargı yayını; tam metin saklama koşulları doğrulanır."
   - source_id: danistay
+    status: live_ready
     label: "Danıştay kararları"
     source_kind: judicial_decision
     authority_level: domestic_high_court_reference

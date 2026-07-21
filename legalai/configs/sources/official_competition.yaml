@@ -1,17 +1,20 @@
 sources:
   - source_id: rekabet_kurumu_mevzuat
+    status: corpus_only
     label: "Rekabet Kurumu official regulations, guides and sector reports"
     source_kind: official_guidance
     authority_level: domestic_official_guidance
     allowed_contexts: [legal_analysis, competition_research, regulatory_analysis]
     full_text_storage: allowed
   - source_id: rekabet_authority_sector_reports
+    status: corpus_only
     label: "Rekabet Kurumu sector review reports"
     source_kind: official_research_report
     authority_level: domestic_official_research
     allowed_contexts: [legal_analysis, competition_research, doctrine_research]
     full_text_storage: allowed
   - source_id: eur_lex_competition
+    status: corpus_only
     label: "EUR-Lex competition legislation and official publications"
     source_kind: foreign_legislation
     authority_level: comparative_legislation
