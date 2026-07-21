@@ -90,6 +90,15 @@ def capability_catalog() -> dict[str, Any]:
                 "example_prompt": "Dilekçeyi kaynaklı, tutarlı ve duru Türkçeyle incele; dava şartı, görev, kesin yetki, süre, delil ve talep sonucunu koru.",
             },
             {
+                "id": "reklam_kurulu",
+                "label": "Reklam Kurulu corpus ve persona",
+                "use_when": "Ticari reklam, aldatıcı reklam, haksız ticari uygulama veya tüketici reklamı sinyali algılandığında.",
+                "levels": ["kurul kararı araması", "tüketici ve idare bağlantısı", "reklam sektörü operasyonu + kaynaklı çapraz analiz"],
+                "inputs": ["reklam metni/kampanyası", "ürün veya hizmet", "mecrası", "hedef tüketici ve tarih"],
+                "output": "Reklam Kurulu kararları, tüketici/idare/ceza etkileri ve reklamcılık sektörü işleyişiyle etiketlenmiş kaynaklı araştırma taslağı.",
+                "example_prompt": "Bu reklamı Reklam Kurulu kararları, tüketici hukuku, idari yaptırım ve reklamcılık sektörü uygulamasıyla incele.",
+            },
+            {
                 "id": "hukuki_mutalaa",
                 "label": "Hukukî mütalaa",
                 "use_when": "Bir hukuki sorunun yönetici özeti, ayrıntılı muhakemesi, birleştirici değerlendirmesi, sonucu ve kaynakçası birlikte istendiğinde.",

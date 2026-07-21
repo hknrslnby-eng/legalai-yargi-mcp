@@ -135,6 +135,36 @@ class OfficialHtmlCollectionAdapter:
         return results
 
 
+class ReklamKuruluOfficialAdapter(OfficialHtmlCollectionAdapter):
+    """Official Ministry of Trade Reklam Kurulu decision collection."""
+
+    DEFAULT_COLLECTION_URLS = (
+        "https://ticaret.gov.tr/tuketici/ticari-reklamlar/reklam-kurulu-kararlari",
+    )
+
+    def __init__(self, *, fetch_text: Any | None = None, collection_urls: tuple[str, ...] | None = None) -> None:
+        super().__init__(
+            source_id="reklam_kurulu",
+            collection_urls=collection_urls or self.DEFAULT_COLLECTION_URLS,
+            fetch_text=fetch_text,
+        )
+
+    async def search(self, query: str, limit: int) -> list[SourceSearchResult]:
+        results = await super().search(query, limit)
+        return [
+            SourceSearchResult(
+                item.id,
+                item.body,
+                item.source_id,
+                item.citation,
+                item.source_url,
+                item.title,
+                {**item.metadata, "institution": "Reklam Kurulu", "document_type": "decision"},
+            )
+            for item in results
+        ]
+
+
 @dataclass(frozen=True)
 class ConfiguredSource:
     source_id: str
@@ -213,6 +243,12 @@ def build_default_priority_adapters() -> tuple[Any, ...]:
                 ),
             ),
             ("tihek", "ayrımcılık", "eşitlik", "insan hakları"),
+        )
+    )
+    adapters.append(
+        KeywordGatedAdapter(
+            ReklamKuruluOfficialAdapter(),
+            ("reklam", "ticari reklam", "reklam kurulu", "aldatıcı", "aldatici", "tüketici", "haksız ticari uygulama"),
         )
     )
     return tuple(adapters)
