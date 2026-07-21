@@ -34,6 +34,7 @@ from legalai.packages.layers.dissent_detector import DissentDetector
 from legalai.packages.layers.grounded_generator import GroundedGenerator
 from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
 from legalai.packages.layers.operational_context import OperationalContextBuilder
+from legalai.packages.layers.operational_cards import build_operational_cards
 from legalai.packages.layers.pipeline import Context, Layer, Pipeline
 from legalai.packages.layers.qualify_issue import QualifyIssue
 from legalai.packages.layers.ratio_dictum import RatioDictumFilter
@@ -143,6 +144,8 @@ def build_assistant_instructions(
     gerektiğini anlatan talimat. Bkz. modül docstring'i."""
     ids_repr = ", ".join(f"#{doc_id}" for doc_id in valid_doc_ids) or "(hiçbir belge bulunamadı)"
     base = (
+        "Host output may use: argument_scores, strategy_options, temporal_context, forum_candidates, deadline_risks, evidence. "
+        "Evidence ledger rule: pair each claim with a supported source ID, full citation and short quote; mark unsupported or empty-body sources instead of inventing them. "
         "Bu araç bir LLM DEĞİLDİR; sadece belge + analiz getirir. Kullanıcının "
         "sorusunu SEN (bu aracı çağıran asistan) cevapla. Kurallar: "
         "(1) SADECE 'documents', 'ratios', 'dictums', 'dissents', 'operational_context', "
@@ -239,6 +242,11 @@ async def run_pipeline(
     if not jurisdiction_ids and result_ctx.jurisdiction_id:
         jurisdiction_ids = [result_ctx.jurisdiction_id]
     operational_context = OperationalContextBuilder().build(question, jurisdiction_ids)
+    operational_context_payload = operational_context.to_dict()
+    operational_context_payload["cards"] = [
+        _jsonish(card)
+        for card in build_operational_cards(question, jurisdiction_ids)
+    ]
 
     assistant_instructions = None
     if not synthesize and pipeline is None:
@@ -284,6 +292,6 @@ async def run_pipeline(
         strategy_options=list(result_ctx.strategy_options),
         assumptions=[],
         missing_facts=[],
-        operational_context=operational_context.to_dict(),
+        operational_context=operational_context_payload,
         authority_gap=assess_authority_gap(result_ctx.documents, jurisdiction_ids),
     )

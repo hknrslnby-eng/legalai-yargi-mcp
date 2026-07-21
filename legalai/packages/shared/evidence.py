@@ -52,6 +52,32 @@ class EvidenceBlock:
 
 
 @dataclass
+class EvidenceRecord:
+    claim_id: str
+    source_id: str
+    source_type: str
+    full_citation: str
+    short_quote: str = ""
+    page: str = ""
+    paragraph: str = ""
+    pin: str = ""
+    authority_level: str = ""
+    ratio_or_dictum: str = ""
+    temporal_note: str = ""
+    relevance: str = "medium"
+    supported: bool = False
+    analysis_only: bool = True
+    non_binding: bool = True
+
+    def __post_init__(self) -> None:
+        self.analysis_only = True
+        self.non_binding = True
+
+    def to_dict(self) -> dict[str, Any]:
+        return _serialize(self)
+
+
+@dataclass
 class LegalAnalysisEnvelope:
     """Her yüzeyde zorunlu olan araştırma taslağı/güvenlik zarfı."""
 
