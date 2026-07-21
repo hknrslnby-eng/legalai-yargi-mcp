@@ -53,7 +53,7 @@ def build_operational_cards(
     if not (crypto or market or technical):
         fact_label = "doğrulama gerekli"
 
-    domain_text = "Kripto/IBAN akışındaki aktörler ve aracı hesaplar"
+    domain_text = "Aktörler, üçüncü kişiler ve olayın doğrulanması gereken karar noktaları"
     if market:
         domain_text = "Sözleşme, dağıtım/bayi ve pazar aktörleri"
     if technical:

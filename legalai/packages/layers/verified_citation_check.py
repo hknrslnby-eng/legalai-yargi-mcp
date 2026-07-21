@@ -11,6 +11,7 @@ from __future__ import annotations
 import re
 
 from legalai.packages.layers.grounded_generator import GroundedGenerator
+from legalai.packages.layers.evidence_ledger import build_evidence_ledger, validate_evidence_ledger
 from legalai.packages.layers.pipeline import Context
 
 _CITATION_RE = re.compile(r"\[#([^\]\s]+)\]")
@@ -51,7 +52,15 @@ class VerifiedCitationCheck:
 
             if not invalid:
                 ctx.citations = citations
+                ledger = build_evidence_ledger(
+                    [
+                        {"id": f"citation:{citation}", "text": citation, "source_ids": [citation]}
+                        for citation in citations
+                    ],
+                    ctx.documents,
+                )
                 ctx.trace.append({"layer": self.name, "attempts": attempts, "valid": True})
+                ctx.trace.append({"layer": self.name, "evidence_ledger": validate_evidence_ledger(ledger)})
                 return ctx
 
             if attempts >= self._max_retries:
