@@ -135,6 +135,8 @@ def build_assistant_instructions(
     operational_context: Any | None = None,
     quality_profile: str = "auto",
     model_hint: str = "",
+    question: str = "",
+    documents: list[Document] | None = None,
 ) -> str:
     """`synthesize=False` modunda, host modele (bu aracı çağıran Cursor/
     Claude/ChatGPT/Antigravity vb. asistana) nihai cevabı NASIL yazması
@@ -156,6 +158,8 @@ def build_assistant_instructions(
         jurisdiction_ids or (),
         source_context=source_context,
         operational_context=operational_context,
+        question=question,
+        documents=documents or (),
         quality_profile=quality_profile,
         model_hint=model_hint,
     )
@@ -246,6 +250,8 @@ async def run_pipeline(
             operational_context=operational_context,
             quality_profile=quality_profile,
             model_hint=model_hint,
+            question=question,
+            documents=list(result_ctx.documents),
         )
         assistant_instructions += (
             " Ayrıca evidence alanındaki kaynak türü, tam künye ve kısa ilgili alıntıyı "

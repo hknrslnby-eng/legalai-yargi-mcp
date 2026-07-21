@@ -16,6 +16,7 @@ from collections.abc import Sequence
 from legalai.packages.jurisdictions.loader import JurisdictionNotFoundError, load_profile
 from legalai.packages.jurisdictions.persona import compose_persona_instructions
 from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
+from legalai.packages.layers.operational_context import OperationalContextBuilder
 from legalai.packages.layers.pipeline import Context
 from legalai.packages.llm.router import LLMNotConfiguredError, llm_router
 from legalai.packages.shared.types import Document
@@ -46,10 +47,24 @@ def build_system_prompt(
     jurisdiction_ids: Sequence[str] = (),
     expert_lenses: Sequence[str] = (),
     output_contract: str | None = None,
+    question: str = "",
+    documents: Sequence[Document] = (),
+    operational_context=None,
+    quality_profile: str = "auto",
+    model_hint: str = "",
 ) -> str:
     ids = list(dict.fromkeys([*jurisdiction_ids, *( [jurisdiction_id] if jurisdiction_id else [])]))
     persona = compose_persona_instructions(ids, expert_lenses)
-    reasoning = build_reasoning_instructions(ids, source_context="legal_analysis")
+    reasoning = build_reasoning_instructions(
+        ids,
+        source_context="legal_analysis",
+        expert_lenses=expert_lenses,
+        question=question,
+        documents=documents,
+        operational_context=operational_context,
+        quality_profile=quality_profile,
+        model_hint=model_hint,
+    )
     sections = [_SYSTEM_TEMPLATE]
     if persona:
         sections.append(persona)
@@ -83,6 +98,12 @@ class GroundedGenerator:
             jurisdiction_ids=ctx.jurisdiction_ids,
             expert_lenses=ctx.expert_lenses,
             output_contract=ctx.output_contract,
+            question=ctx.question,
+            documents=ctx.documents,
+            operational_context=OperationalContextBuilder().build(
+                ctx.question,
+                ctx.jurisdiction_ids,
+            ),
         )
         user = build_user_prompt(ctx.question, ctx.documents, ctx.citation_retry_hint)
 

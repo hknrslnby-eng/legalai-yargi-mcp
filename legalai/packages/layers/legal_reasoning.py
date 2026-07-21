@@ -5,6 +5,8 @@ from collections.abc import Sequence
 
 from legalai.packages.layers.operational_context import OperationalContext
 from legalai.packages.layers.quality_contract import build_quality_contract
+from legalai.packages.layers.quality_policy import build_quality_context
+from legalai.packages.layers.cross_domain_inquiry import build_cross_domain_inquiry
 from legalai.packages.layers.reasoning_playbook import (
     REASONING_PLAYBOOK,
     ReasoningPlaybook,
@@ -30,6 +32,8 @@ def build_reasoning_instructions(
     *,
     expert_lenses: Sequence[str] = (),
     operational_context: OperationalContext | None = None,
+    question: str = "",
+    documents: Sequence[object] = (),
     playbook: ReasoningPlaybook = REASONING_PLAYBOOK,
     quality_profile: str = "auto",
     model_hint: str = "",
@@ -45,6 +49,20 @@ def build_reasoning_instructions(
     source_labels = ", ".join(policy.label for policy in policies) or "uygun kaynak politikası"
     source_authorities = ", ".join(
         f"{policy.label} ({policy.authority_level})" for policy in policies
+    )
+    source_ids = [getattr(document, "id", "") for document in documents]
+    quality_context = build_quality_context(
+        jurisdiction_ids,
+        expert_lenses,
+        source_ids,
+        operational_context=operational_context,
+        quality_profile=quality_profile,
+        model_hint=model_hint,
+    )
+    cross_domain = build_cross_domain_inquiry(
+        question,
+        jurisdiction_ids,
+        documents=documents,
     )
     context_lines = (
         "Operasyonel bağlam: somut vakıa yerine geçmeyen, açıkça etiketlenmiş hipotezler ve doğrulama ihtiyaçlarıdır."
@@ -83,6 +101,10 @@ def build_reasoning_instructions(
             "İçtihat, mevzuat ve doktrin için tam künye ve doğrulanabilir atıf ver; yalnızca gerçekten erişilen metinden kısa ilgili alıntı kullan.",
             "Doktrin, yabancı kararlar ve OECD kaynakları non-binding yardımcı kaynaklardır; bağlayıcı hukuk kuralı gibi yazılamaz.",
             "Çıktı analysis-only ve non-binding bir değerlendirmedir; kesin görüş, garanti veya hukuki danışmanlık iddiası değildir.",
+            "",
+            quality_context,
+            "",
+            cross_domain.render(),
             "",
             playbook.render(),
             "",
