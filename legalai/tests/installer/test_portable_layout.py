@@ -11,6 +11,14 @@ def test_portable_layout_has_cross_platform_launchers() -> None:
         assert (ROOT / name).exists(), name
 
 
+def test_windows_installer_supports_source_and_packaged_roots() -> None:
+    script = (ROOT / "scripts/install.ps1").read_text(encoding="utf-8")
+
+    assert 'Join-Path $PSScriptRoot "app"' in script
+    assert "Resolve-Path $PSScriptRoot" in script
+    assert 'Join-Path $PSScriptRoot ".."' in script
+
+
 def test_portable_manifest_pins_runtime_and_excludes_user_state() -> None:
     manifest = json.loads((ROOT / "scripts/portable-manifest.json").read_text(encoding="utf-8"))
     assert manifest["product"] == "SocratLegal"
