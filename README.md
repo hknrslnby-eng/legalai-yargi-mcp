@@ -2,19 +2,9 @@
 
 SocratLegal, hukuk araştırması ve hukuki metin hazırlığı için yerel çalışan bir MCP yazılımıdır. Bir IDE'nin sohbet ekranından doğal Türkçe veya desteklenen diğer dillerde soru sorabilirsiniz. Çıktılar araştırma ve taslak niteliğindedir; bağlayıcı hukuki görüş değildir.
 
-## Yerel cihaza kurulum: Windows x64 portable paket
-
-1. GitHub Releases sayfasından `windows-x64` ZIP paketini indirin (https://github.com/hknrslnby-eng/legalai-yargi-mcp/releases/tag/v0.2.5)
-2. ZIP'i yazma izniniz olan bir klasöre açın.
-3. Terminal kullanmak istemiyorsanız ana klasördeki `install.ps1` dosyasına sağ tıklayıp **PowerShell ile çalıştır** seçeneğini kullanın.
-4. Kurulacak istemciyi seçin. Örneğin `.install.ps1 -Ide cursor` yalnızca Cursor'a ekleme yapar. `-Ide all -OnlyInstalled` bilgisayarda zaten bulunan destekli istemcileri seçer.
-5. IDE'yi yeniden başlatın ve sohbete `SocratLegal yardım` yazın.
-
-Bu sürümde hazır portable paket yalnızca 64 bit Windows içindir. macOS/Linux için portable paket sözü verilmez. Bu sistemlerde kaynak kod kurulumu kullanılabilir.
-
-Yeni portable sürümleri tarayıcıdan elle aramak yerine, portable klasöründeki `update.cmd` dosyasına çift tıklayarak kullanıcı onaylı, HTTPS ve SHA-256 kontrollü güncelleme yapabilirsiniz. `config`, `data`, API anahtarları ve yerel corpus korunur.
-
 ## Kaynak kodla kurulum
+
+Portable/ZIP kurulum bu sürümde son kullanıcıya sunulmuyor. Desteklenen kurulum yolu, projeyi kaynak kod olarak indirip yerel Python ortamında çalıştırmaktır.
 
 Python 3.11 veya üstü ve `uv` gerekir:
 
@@ -40,11 +30,9 @@ IDE ayarında URL girilmez. Yerel sunucunun komutu, argümanları ve klasörü k
 
 API anahtarı kullanmak zorunlu değildir. IDE'nin kendi Claude, GPT veya Gemini aboneliği varsa host model bu abonelikle çalışabilir.
 
-Portable yöntemde kurulumdan sonra `config\.env` dosyasını açın. Örneğin OpenAI kullanacaksanız `OPENAI_API_KEY=` satırının sağına kendi anahtarınızı yazın. Kaynak kod yönteminde aynı iş için repo kökündeki `.env` dosyası kullanılır. Anahtarı tırnak içine almayın, başına/sonuna boşluk koymayın ve bu dosyayı GitHub'a göndermeyin.
+Kaynak kod kurulumunda API anahtarları repo kökündeki `.env` dosyasına yazılır. Anahtarı tırnak içine almayın, başına/sonuna boşluk koymayın ve bu dosyayı GitHub'a göndermeyin.
 
 `legalai.env.example` boş bir örnektir. Anthropic, OpenAI, OpenRouter, DeepSeek, Kimi, GLM, Gemini, Grok/xAI, Composer, Hugging Face, GitHub Copilot ve başka önde gelen sağlayıcılar için alanlar bulunur. Bir alanın bulunması o sağlayıcının kurulu sürümde etkin olduğu anlamına gelmez; yalnızca gerçekten desteklenen ve seçilen sağlayıcı çalışır.
-
-Portable paket kullanmayan ve repoyu kaynak kod olarak kuran kullanıcılar API anahtarlarını repo kökündeki `.env` dosyasına yazar.
 
 Önce örnek dosyayı kopyalayın:
 
@@ -106,7 +94,7 @@ Türkçe yanında İngilizce, Fransızca, Almanca, Rusça, Arapça, İspanyolca 
 
 Corpus kurulmadan da yapılandırılmış canlı adapter'ların erişebildiği kaynaklarda arama yapılabilir. Kaynağın yanında `live_ready`, `corpus_only`, `verification_pending` veya `disabled` durumu gösterilir. Yeni resmi belgeler canlı adapter ile alınabilir veya kullanıcı tarafından maskelenmiş/kamuya açık biçimde corpus'a eklenebilir. Canlı erişim yoksa sistem bunu sonuçta saklamaz; corpus'ta olmayan güncel karar kesinlikle varmış gibi sunulmaz.
 
-SocratLegal upstream servisin kapanmasına dayanmaz; yerel kod, yerel corpus ve yapılandırılmış adapter'lar fork içinde bulunur. Upstream'de yeni bir değişiklik otomatik olarak fork'a veya kullanıcının portable paketine gelmez. Yeni fork release'i açıkça indirilir; `data`, `config` ve IDE kayıtları korunur.
+SocratLegal upstream servisin kapanmasına dayanmaz; yerel kod, yerel corpus ve yapılandırılmış adapter'lar fork içinde bulunur. Upstream'deki yeni değişiklikler bu fork'a otomatik gelmez; maintainer tarafından incelenip merge edilmeli, test edilmeli ve kaynak kod kurulumunda `git pull` ve `uv sync --frozen` ile alınmalıdır.
 
 Due diligence bu sürümde aktif bir üretim yeteneği olarak sunulmaz.
 
@@ -130,7 +118,7 @@ Slash ifadeleri kullanıcının hangi yetenek veya uzmanlık bakışını istedi
 | `/alinti_dogrula` | `alinti_dogrula` | Taslakta kullanılan kaynak ve belge atıflarını kontrol eder. | Aktif yetenek |
 | `/pii_maskele` | `pii_maskele` | Dış çağrıdan önce kişisel verilerin yerelde maskelenmesini sağlar. | Aktif yetenek |
 | `/corpus` | Corpus durum, belge ekleme ve sync araçları | Yerel corpus durumunu gösterir, belge ekler ve izinli kaynakları corpus'a alır. | Aktif MCP araç grubu |
-| `/guncelleme` | `socratlegal_guncelleme_kontrol` | Yeni portable sürüm metadata’sını kontrol eder; otomatik kurulum yapmaz. | Aktif MCP aracı |
+| `/guncelleme` | `socratlegal_guncelleme_kontrol` | Sürüm metadata’sını kontrol eder; kaynak kod kurulumunda gerçek güncelleme `git pull` ve `uv sync --frozen` ile yapılır. | Aktif MCP aracı |
 | `/teknik_lens` | Teknik ve operasyonel katman | Maden, siber olay, üretim, dağıtım, IBAN/kripto ve benzeri maddi süreçleri ilgili teknik uzman bakışıyla inceler. | Aktif yönlendirme lensi |
 | `/capraz_sorgu` | Kaynak yönlendirme ve `socratlegal_kaynak_ara` | Keyword beklemeden, bağlamla ilgili kurum, mahkeme, corpus ve uluslararası kaynakları birlikte değerlendirir. | Aktif yönlendirme lensi |
 | `/rekabet` | Rekabet persona ve competition intake | Hukukun yanında iktisat, işletme, pazar payı, rakipler, tedarikçiler, müşteriler, zincir, giriş engelleri ve sektör raporlarını inceler. | Aktif yönlendirme lensi |
@@ -141,6 +129,12 @@ Slash ifadeleri kullanıcının hangi yetenek veya uzmanlık bakışını istedi
 
 ## Sistem gereksinimleri ve güvenlik
 
-Portable Windows x64 için yazma izni olan bir klasör ve internet bağlantısı (bağımlılıkların ilk indirilmesi için) yeterlidir. Kaynak kod yönteminde Python 3.11+ ve `uv` gerekir. API anahtarları kullanıcıya aittir; ücret, kota ve sağlayıcı veri politikası sağlayıcıya göre değişir. Tüm sonuçlar `analysis_only` ve `non_binding` niteliğindedir.
+Kaynak kod kurulumu için Python 3.11+ ve `uv` gerekir. Proje klasörü, yazma izni ve bağımlılıkların ilk indirilmesi için internet bağlantısı yeterlidir. API anahtarları kullanıcıya aittir; ücret, kota ve sağlayıcı veri politikası sağlayıcıya göre değişir. Tüm sonuçlar `analysis_only` ve `non_binding` niteliğindedir.
 
-Lisans ve fork atıfları için [LICENSE](LICENSE) ve [NOTICE.md](NOTICE.md) dosyalarına bakın. Kurulum ayrıntıları için [portable rehberini](docs/socratlegal-user-install.md), IDE ayarları için [MCP istemci rehberini](docs/mcp-client-setup.md) okuyun.
+## Kaynak ve telif
+
+Bu fork, Said Sürücü'ye (GitHub: `saidsurucu`) ait [Yargı MCP](https://github.com/saidsurucu/yargi-mcp) projesi üzerine kuruludur. Upstream kaynak kodun telif hakkı ve MIT lisans koşulları korunur; upstream kodun telifi bu fork tarafından devralınmış veya değiştirilmiş değildir.
+
+Bu fork'a Hakan Arslanbay tarafından eklenen ve değiştirilen bölümler [LICENSE](LICENSE) ve [NOTICE.md](NOTICE.md) dosyalarında belirtilen fork atfına tabidir. Upstream ve üçüncü taraf materyallerin lisans ve atıf koşulları korunmalıdır.
+
+Lisans ve fork atıfları için [LICENSE](LICENSE) ve [NOTICE.md](NOTICE.md) dosyalarına bakın. Kurulum ayrıntıları için [kullanıcı kurulum rehberini](docs/socratlegal-user-install.md), IDE ayarları için [MCP istemci rehberini](docs/mcp-client-setup.md) okuyun.

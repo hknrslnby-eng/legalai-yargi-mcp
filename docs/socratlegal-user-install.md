@@ -2,43 +2,49 @@
 
 SocratLegal ayrı bir web sitesi, hosting veya sürekli açık bir sunucu gerektirmez. Kullanıcının bilgisayarında çalışan yerel STDIO MCP sunucusudur.
 
-## Önerilen yol: portable paket
+## Kurulum durumu
 
-1. GitHub deposunun **Releases** sayfasından `windows-x64` ZIP paketini indirin. Bu sürümde resmî portable paket yalnızca 64 bit Windows içindir; macOS/Linux portable paketi vaat edilmez.
-2. Paketi yazma izniniz olan bir klasöre çıkartın; örneğin `C:\Users\Siz\SocratLegal`.
-3. Windows'ta `install.ps1` dosyasını çalıştırın.
-4. IDE'yi yeniden başlatın veya MCP sunucularını yeniden yükleyin.
-5. Sohbete `SocratLegal sağlık kontrolü yap` yazın.
+Portable kurulum bu sürümde kullanıcıya sunulmuyor; ZIP akışı da son kullanıcı için desteklenmiyor. Bu rehber, desteklenen kaynak kod kurulumunu anlatır.
 
-Portable pakette Windows x64 için gerekli `uv.exe` çalıştırıcısı bulunur. Bu nedenle sistemde ayrıca Python, uv veya GitHub CLI kurulması beklenmez. İlk çalıştırmada uv, `uv.lock` bağımlılıklarını kendi önbelleğine indirebilir; bu hosting kurulması değildir.
+## Gerekenler
 
-Kurulum betiği desteklenen istemcileri gösterir; hepsini zorunlu olarak kurmaz. `-Ide cursor` gibi bir seçim yalnızca seçilen istemciye kayıt ekler. `-Ide all -OnlyInstalled` ise bilgisayarda zaten bulunan destekli istemcileri seçer.
+Python 3.11 veya üstü, `uv`, Git ve projeyi indirebileceğiniz bir klasör gerekir. Bağımlılıkların ilk indirilmesi için internet bağlantısı da gereklidir.
 
-Windows örneği:
+- Python: https://www.python.org/downloads/
+- uv: https://docs.astral.sh/uv/getting-started/installation/
 
-```powershell
-.\install.ps1 -Ide cursor
-```
+## Kurulum
 
-## API anahtarı nereye yazılır?
-
-Kurulumdan sonra portable klasöründe `config\.env` dosyası oluşturulur. Bu dosyayı Not Defteri ile açıp kullanmak istediğiniz sağlayıcının karşısındaki boş yere anahtarı yapıştırın; örneğin `OPENAI_API_KEY=` satırının sağına anahtarı yazın. Tırnak işareti eklemeyin, anahtarı başına veya sonuna boşluk koymadan tek satırda tutun ve dosyayı kaydedin. Anahtarları GitHub'a, ekran görüntüsüne veya destek mesajına koymayın. Anahtar vermeden de host IDE'nin kendi aboneliğiyle yerel MCP araçlarını kullanabilirsiniz.
-
-`legalai.env.example` içindeki sağlayıcı satırları boş örnektir. Dosyada çok sayıda sağlayıcı adı bulunması, hepsinin aynı anda etkin olduğu anlamına gelmez; kurulu sürüm yalnızca desteklediği ve seçilen sağlayıcıyı kullanır. Kullanıcıya ait anahtarlar portable güncellemede `config` klasöründe korunur.
-
-Birden fazla istemci için:
+Projeyi GitHub'dan indirin ve proje klasörüne geçin:
 
 ```powershell
-.\install.ps1 -Ide cursor -Ide codex -Ide antigravity
+git clone https://github.com/hknrslnby-eng/legalai-yargi-mcp.git
+cd legalai-yargi-mcp
+uv sync --frozen --dev
 ```
 
-Kurulumdan önce ne yapılacağını görmek için `-DryRun`, ekrandaki iki bitişik JSON nesnesinden oluşan eski ayarı onarmayı denemek için `-Repair` kullanılır.
+## API anahtarları
 
-## Manuel checkout yolu
+Repo kökündeki `.env` dosyasını oluşturmak için örnek dosyayı kopyalayın:
 
-Bu yol geliştirici veya kaynak kodla çalışmak isteyen kullanıcı içindir. Bilgisayarda Python 3.11 veya üstü ve `uv` bulunmalıdır. Repo klasöründe `uv sync --frozen --dev` çalıştırılır; ardından `uv run socratlegal install --install-dir . --ide cursor` komutu seçilen IDE'ye yerel MCP kaydını ekler. Cursor, Codex, Claude Desktop, Antigravity ve VS Code için ayrı kayıt seçilebilir; `--ide all` hepsini aday olarak tarar, `--only-installed` yalnızca mevcut olanları kaydeder. IDE'de URL girilmez: komut, argümanlar ve çalışma klasörü yerel olarak yazılır.
+```powershell
+Copy-Item .\legalai.env.example .\.env
+notepad .\.env
+```
 
-Bu yöntemde API anahtarı repo kökündeki `.env` dosyasına yazılır. Portable yöntemde ise `config\.env` kullanılır. İki yöntemde de `.env` dosyası repoya gönderilmemelidir.
+İlgili sağlayıcının satırındaki `=` işaretinden sonra kendi API anahtarınızı yazın. Tırnak işareti veya başta/sonda boşluk kullanmayın. Anahtarı GitHub'a, ekran görüntüsüne veya destek mesajına koymayın. `LEGALAI_LLM_PROVIDER=auto` seçeneği, bulunan ve görev için desteklenen sağlayıcıyı seçer. API anahtarı vermeden de IDE'nin kendi aboneliğiyle yerel MCP araçları kullanılabilir.
+
+`legalai.env.example` içindeki sağlayıcı satırları boş örnektir; hepsinin aynı anda etkin olduğu anlamına gelmez.
+
+## IDE'ye bağlama
+
+Repo kökünde aşağıdaki komut seçtiğiniz istemciye yerel MCP kaydını ekler:
+
+```powershell
+uv run socratlegal install --install-dir . --ide cursor
+```
+
+Desteklenen istemciler Cursor, Codex, Claude Desktop, Antigravity ve VS Code'dur. `--ide all --only-installed` bilgisayarda zaten bulunan destekli istemcilere kayıt ekler; hepsini zorunlu olarak kurmaz. IDE ayarında URL girilmez: komut, argümanlar ve çalışma klasörü yerel olarak yazılır. Mevcut MCP kayıtları korunur.
 
 ## Belge yüklendiğinde hangi yetenek kullanılır?
 
@@ -48,42 +54,21 @@ Tebligat, ihtar, dava dilekçesi, savunma talebi veya iddianame gibi süreci tet
 
 Kullanıcı isterse kendi örnek dilekçelerinden yalnızca başlık, atıf biçimi, ton ve argüman sırası gibi yapısal sinyaller çıkarılabilir. Ham örnekler, kişisel veriler veya örnek metinler GPT/Claude/Codex genel eğitimine gönderilmez; profil yerel türetilmiş metadata'dır. Profilin bir işlemde uygulanması için `style_profile_consent=true` açık kullanıcı onayı gerekir. Profil temizlendiğinde türetilmiş yerel metadata da kaldırılmalıdır; hukuki kaynak ve güvenlik başlıkları üslup profili tarafından değiştirilemez.
 
-Geliştirici veya kaynak koddan çalışan kullanıcı repoyu indirip sistemine `uv` kurduktan sonra şunları çalıştırabilir:
-
-```powershell
-uv sync --frozen --dev
-uv run socratlegal install --install-dir "C:\SocratLegal" --ide cursor
-```
-
-Bu yol Python ve uv gerektirir; normal kullanıcı için portable paket tercih edilir. GitHub repo adresi bir MCP `url` endpoint'i değildir. Hosting kurulmadığı için IDE ayarında `url` yerine yerel `command`, `args` ve `cwd` kaydı kullanılır.
+GitHub repo adresi bir MCP `url` endpoint'i değildir. Hosting kurulmadığı için IDE ayarında `url` yerine yerel `command`, `args` ve `cwd` kaydı kullanılır.
 
 ## Güncellemeler
 
-### Windows'ta tek tıklamayla güncelleme
-
-Portable klasöründeki `update.cmd` dosyası güvenli güncelleme yardımcısıdır. IDE'leri ve SocratLegal sunucusunu kapatın, `update.cmd` dosyasına çift tıklayın ve yeni sürüm sorusunu onaylayın. Program manifesti ve ZIP arşivini HTTPS üzerinden alır, SHA-256 değerini doğrular ve yalnızca `app` klasörünü günceller. `config`, `data`, API anahtarları, belgeler ve yerel corpus korunur; başarısız başlangıç kontrolünde `app.previous` yedeğine dönülebilir. Bu akış sessiz veya izinsiz arka plan kurulumu yapmaz.
-
-Upstream depoda veya bu fork'ta yeni adapter, kurum/kurul bağlantısı ya da backend kodu eklenirse bu değişiklik portable kullanıcılara kendiliğinden gelmez; kullanıcı yeni fork release'ini indirip checksum kontrolünden sonra uygulamalıdır. Yeni bir corpus veritabanı dosyası release paketine otomatik olarak eklenmez ve mevcut kullanıcı verisinin üzerine yazılmaz. Yeni sürümde yeni canlı adapter veya corpus kaynağı kodu varsa, kullanıcı güncellemeden sonra ilgili corpus sync işlemini açıkça çalıştırarak yeni kaynakları yerel corpus'a alır.
-
-Yeni özellikler yayınlandığında aynı portable paketin yeni sürümü indirilir. Uygulama güncellemesi `data` klasörünü, yerel corpus'u, belgeleri ve API anahtarlarını paketten silmez. Yeni sürüm önce geçici alanda açılır, SHA-256 doğrulanır, sonra `app.previous` yedeği bırakılarak devreye alınır. Başlangıç kontrolü başarısız olursa önceki sürüme dönülür.
-
-Güncelleme kontrolü yalnızca sürüm metadata'sını okur ve varsayılan olarak 24 saatte bir yapılır; kullanıcı belgelerinin metni gönderilmez.
-
-Yeni kurulumlarda ayrı bir manifest indirmeden GitHub Releases metadata'sı kontrol edilebilir:
+Yeni fork commitlerini almak için proje klasöründe:
 
 ```powershell
-.\runtime\uv.exe run --directory .\app socratlegal update check --platform-tag windows-x64
+git fetch origin
+git pull --ff-only
+uv sync --frozen
 ```
 
-Bu `update check` komutu yalnızca yeni sürüm olup olmadığını ve ilgili release bağlantısını gösterir; arşivi otomatik indirmez veya kurmaz. Kullanıcının tarayıcıdan ZIP aramasına gerek kalmadan güncelleme yapması için portable klasöründeki `update.cmd` dosyası kullanılır. İleri kullanıcılar yeni portable paketi Releases sayfasından açıkça indirip checksum'ı doğruladıktan sonra `update apply` komutunu da kullanabilir. İnternet erişimi istenmiyorsa mevcut `--manifest-file` seçeneğiyle yerel metadata kullanılabilir.
+Bu işlem yerel kodu ve Python bağımlılıklarını günceller; `.env` dosyanız korunur. Upstream'deki değişiklikler bu fork'a otomatik gelmez. Yeni adapter, kurum/kurul bağlantısı veya backend değişikliği önce fork maintainer'ı tarafından incelenip merge edilmeli ve test edilmelidir. Yeni bir corpus kaynağı bağlanırsa gerektiğinde ayrıca `uv run socratlegal corpus sync ...` çalıştırılır.
 
-```powershell
-.\runtime\uv.exe run --directory .\app socratlegal update check --manifest-file .\release-manifest-windows-x64.json
-.\runtime\uv.exe run --directory .\app socratlegal update apply --archive .\socratlegal-NEW-windows-x64.zip --manifest-file .\release-manifest-windows-x64.json --active-app .\app
-.\runtime\uv.exe run --directory .\app socratlegal update rollback --active-app .\app
-```
-
-Güncelleme sırasında IDE JSON/TOML dosyaları yeniden yazılmaz; IDE'deki MCP kaydı aynı kalır.
+IDE'deki MCP kaydı aynı kalır; yeni bir cihaz veya yeni bir IDE için IDE'ye bağlama komutunu tekrar çalıştırmanız yeterlidir.
 
 ## Kullanıcı hangi özelliği seçer?
 
@@ -106,6 +91,13 @@ Kalite profili istemci tarafından seçilebilir: `auto` (model adına göre uyar
 Taranmış PDF veya görüntü bilirkişi raporlarında yerel OCR eklentisi kurulmuşsa PDF sayfaları da yerelde metne çevrilir. OCR motoru yoksa araç `ocr_required` uyarısı verir; okunmamış sayfalardan teknik veya hukuki sonuç üretmez. Kaynak kod kurulumunda `uv sync --extra ocr` ile Python bileşenleri kurulmalı, Windows'ta ayrıca Tesseract ve `tur` dil verisi bulunmalıdır.
 
 Tüm sonuçlar bağlayıcı hukuki görüş değil, kaynaklı ve ihtimalli analizdir. Kişisel veriler dış çağrıdan önce maskelenir; IDE'nin kendi veri politikası ayrıca incelenmelidir.
-## Tüm kurulu IDE'lere tek portable kayıt
 
-Portable klasöründeki kurulum betiği mevcut desteklenen istemcileri tespit eder. Windows'ta `scripts\\install.ps1 -Ide all -OnlyInstalled`, macOS/Linux'ta `scripts/install.sh --only-installed` komutları yalnızca mevcut Cursor, Antigravity, VS Code, Claude ve Codex kayıtlarına ekleme yapar; bulunmayan istemciler `skipped` olarak raporlanır. Sonradan yeni bir IDE kurarsanız aynı betiği tekrar çalıştırmanız yeterlidir; portable paketi yeniden indirmeniz gerekmez. Mevcut sunucular korunur ve değişiklikten önce yedek alınır.
+## Tüm kurulu IDE'lere kaynak koddan kayıt
+
+Repo kökünde aşağıdaki komutu çalıştırın:
+
+```powershell
+uv run socratlegal install --install-dir . --ide all --only-installed
+```
+
+Komut yalnızca bilgisayarda bulunan destekli istemcilere kayıt ekler; bulunmayan istemcileri atlar. Mevcut sunucu kayıtları korunur.
