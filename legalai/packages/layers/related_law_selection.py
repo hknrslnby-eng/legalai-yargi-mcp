@@ -27,6 +27,7 @@ def _normalize(value: str) -> str:
         .replace("ü", "u")
         .replace("ö", "o")
         .replace("ç", "c")
+        .replace("-", "_")
     )
 
 
