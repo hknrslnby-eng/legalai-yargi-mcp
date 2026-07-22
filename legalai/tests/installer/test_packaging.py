@@ -12,10 +12,14 @@ def test_package_excludes_user_state_and_includes_runtime(tmp_path: Path) -> Non
     (source / "legalai").mkdir()
     (source / "runtime").mkdir()
     (source / "data").mkdir()
+    (source / "tmp").mkdir()
+    (source / ".pytest_cache").mkdir()
     (source / "app" / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
     (source / "legalai" / "__init__.py").write_text('__version__ = "0.2.5"\n', encoding="utf-8")
     (source / "runtime" / "uv.exe").write_bytes(b"runtime")
     (source / "data" / "private.db").write_bytes(b"private")
+    (source / "tmp" / "private.txt").write_text("temporary", encoding="utf-8")
+    (source / ".pytest_cache" / "cache.txt").write_text("temporary", encoding="utf-8")
     (source / ".env").write_text("SECRET=do-not-package", encoding="utf-8")
 
     archive = build_portable_archive(source, output, platform_tag="windows-x64", version="0.1.0")
@@ -27,7 +31,10 @@ def test_package_excludes_user_state_and_includes_runtime(tmp_path: Path) -> Non
     assert "app/pyproject.toml" in names
     assert '__version__ = "0.2.5"' in runtime_version
     assert "runtime/uv.exe" in names
-    assert not any(name.startswith("data/") or name == ".env" for name in names)
+    assert not any(
+        name.startswith(("data/", "tmp/", ".pytest_cache/")) or name == ".env"
+        for name in names
+    )
 
 
 def test_package_can_create_tar_gz_for_unix(tmp_path: Path) -> None:

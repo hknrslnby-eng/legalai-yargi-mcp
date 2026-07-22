@@ -12,7 +12,10 @@ import zipfile
 from pathlib import Path
 
 
-EXCLUDED_NAMES = {".venv", ".env", "data", "logs", ".git", ".cursor", ".codex", ".superpowers", "__pycache__"}
+EXCLUDED_NAMES = {
+    ".venv", ".env", "data", "logs", "tmp", ".pytest_cache", ".mypy_cache", ".ruff_cache",
+    ".git", ".cursor", ".codex", ".superpowers", "__pycache__",
+}
 EXCLUDED_PATTERNS = ("*.sqlite", "*.db", "*.jsonl", "*.pyc")
 ROOT_ASSETS = {"install.ps1", "install.sh", "start.cmd", "start.sh", "portable-manifest.json"}
 
