@@ -44,3 +44,15 @@ def test_portable_user_state_has_separate_config_and_data(tmp_path: Path) -> Non
     assert "STORAGE_ROOT=../data" in env_path.read_text(encoding="utf-8")
     env_path.write_text("OPENAI_API_KEY=user-key\n", encoding="utf-8")
     assert prepare_env_file(bundle).read_text(encoding="utf-8") == "OPENAI_API_KEY=user-key\n"
+
+
+def test_direct_portable_launchers_use_external_config_file() -> None:
+    windows_launcher = (ROOT / "scripts" / "start.cmd").read_text(encoding="utf-8")
+    unix_launcher = (ROOT / "scripts" / "start.sh").read_text(encoding="utf-8")
+
+    assert "SOCRATLEGAL_ENV_FILE" in windows_launcher
+    assert "config\\.env" in windows_launcher
+    assert 'if exist "%HERE%app"' in windows_launcher
+    assert "SOCRATLEGAL_ENV_FILE" in unix_launcher
+    assert "config/.env" in unix_launcher
+    assert 'if [ -d "$SCRIPT_DIR/app" ]' in unix_launcher

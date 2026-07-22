@@ -9,9 +9,11 @@ def test_package_excludes_user_state_and_includes_runtime(tmp_path: Path) -> Non
     source = tmp_path / "source"
     output = tmp_path / "dist"
     (source / "app").mkdir(parents=True)
+    (source / "legalai").mkdir()
     (source / "runtime").mkdir()
     (source / "data").mkdir()
     (source / "app" / "pyproject.toml").write_text("[project]\nname='x'\n", encoding="utf-8")
+    (source / "legalai" / "__init__.py").write_text('__version__ = "0.2.5"\n', encoding="utf-8")
     (source / "runtime" / "uv.exe").write_bytes(b"runtime")
     (source / "data" / "private.db").write_bytes(b"private")
     (source / ".env").write_text("SECRET=do-not-package", encoding="utf-8")
@@ -21,7 +23,9 @@ def test_package_excludes_user_state_and_includes_runtime(tmp_path: Path) -> Non
     assert archive.exists()
     with zipfile.ZipFile(archive) as handle:
         names = set(handle.namelist())
+        runtime_version = handle.read("legalai/__init__.py").decode("utf-8")
     assert "app/pyproject.toml" in names
+    assert '__version__ = "0.2.5"' in runtime_version
     assert "runtime/uv.exe" in names
     assert not any(name.startswith("data/") or name == ".env" for name in names)
 
@@ -69,3 +73,12 @@ def test_release_manifest_contains_archive_checksum(tmp_path: Path) -> None:
 
     assert manifest["archive_name"] == archive.name
     assert len(manifest["sha256"]) == 64
+
+
+def test_release_workflow_guards_version_before_packaging() -> None:
+    root = Path(__file__).resolve().parents[3]
+    workflow = (root / ".github" / "workflows" / "portable-release.yml").read_text(encoding="utf-8")
+
+    assert "check_release_version.py" in workflow
+    assert "legalai/tests/installer legalai/tests/apps" in workflow
+    assert workflow.index("check_release_version.py") < workflow.index("package_portable.py")
