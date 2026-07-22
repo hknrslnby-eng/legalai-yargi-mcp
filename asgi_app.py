@@ -62,7 +62,7 @@ custom_middleware = [
 app = FastAPI(
     title="Yargı MCP Server",
     description="MCP server for Turkish legal databases",
-    version="0.1.0",
+    version="0.2.3",
     middleware=custom_middleware,
     default_response_class=UTF8JSONResponse,
     redirect_slashes=False,
@@ -75,7 +75,7 @@ async def health_check():
     return {
         "status": "healthy",
         "service": "Yargı MCP Server",
-        "version": "0.1.0",
+        "version": "0.2.3",
         "tools_count": len(mcp_server._tool_manager._tools),
     }
 

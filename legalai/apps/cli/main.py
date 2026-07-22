@@ -43,7 +43,7 @@ def update_check(
     manifest_url: str | None = typer.Option(None, "--manifest-url", help="Release manifest metadata URL'si"),
     platform_tag: str | None = typer.Option(None, "--platform-tag", help="windows-x64, macos-arm64 veya linux-x64"),
     state_path: Path = typer.Option(Path.home() / ".socratlegal" / "update-check.json", "--state-path"),
-    current_version: str = typer.Option("0.2.2", "--current-version"),
+    current_version: str = typer.Option("0.2.3", "--current-version"),
 ) -> None:
     """Yalnızca sürüm metadata'sını kontrol eder; arşiv indirme/kurma yapmaz."""
     if manifest_file and manifest_url:
