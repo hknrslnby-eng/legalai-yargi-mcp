@@ -59,6 +59,10 @@ Bu yol Python ve uv gerektirir; normal kullanıcı için portable paket tercih e
 
 ## Güncellemeler
 
+### Windows'ta tek tıklamayla güncelleme
+
+Portable klasöründeki `update.cmd` dosyası güvenli güncelleme yardımcısıdır. IDE'leri ve SocratLegal sunucusunu kapatın, `update.cmd` dosyasına çift tıklayın ve yeni sürüm sorusunu onaylayın. Program manifesti ve ZIP arşivini HTTPS üzerinden alır, SHA-256 değerini doğrular ve yalnızca `app` klasörünü günceller. `config`, `data`, API anahtarları, belgeler ve yerel corpus korunur; başarısız başlangıç kontrolünde `app.previous` yedeğine dönülebilir. Bu akış sessiz veya izinsiz arka plan kurulumu yapmaz.
+
 Upstream depoda veya bu fork'ta yeni adapter, kurum/kurul bağlantısı ya da backend kodu eklenirse bu değişiklik portable kullanıcılara kendiliğinden gelmez; kullanıcı yeni fork release'ini indirip checksum kontrolünden sonra uygulamalıdır. Yeni bir corpus veritabanı dosyası release paketine otomatik olarak eklenmez ve mevcut kullanıcı verisinin üzerine yazılmaz. Yeni sürümde yeni canlı adapter veya corpus kaynağı kodu varsa, kullanıcı güncellemeden sonra ilgili corpus sync işlemini açıkça çalıştırarak yeni kaynakları yerel corpus'a alır.
 
 Yeni özellikler yayınlandığında aynı portable paketin yeni sürümü indirilir. Uygulama güncellemesi `data` klasörünü, yerel corpus'u, belgeleri ve API anahtarlarını paketten silmez. Yeni sürüm önce geçici alanda açılır, SHA-256 doğrulanır, sonra `app.previous` yedeği bırakılarak devreye alınır. Başlangıç kontrolü başarısız olursa önceki sürüme dönülür.
@@ -71,7 +75,7 @@ Yeni kurulumlarda ayrı bir manifest indirmeden GitHub Releases metadata'sı kon
 .\runtime\uv.exe run --directory .\app socratlegal update check --platform-tag windows-x64
 ```
 
-Bu komut yalnızca yeni sürüm olup olmadığını ve ilgili release bağlantısını gösterir. Arşiv otomatik olarak indirilmez veya kurulmaz. Kullanıcı yeni portable paketi Releases sayfasından açıkça indirip checksum'ı doğruladıktan sonra `update apply` komutunu çalıştırır. İnternet erişimi istenmiyorsa mevcut `--manifest-file` seçeneğiyle yerel metadata kullanılabilir.
+Bu `update check` komutu yalnızca yeni sürüm olup olmadığını ve ilgili release bağlantısını gösterir; arşivi otomatik indirmez veya kurmaz. Kullanıcının tarayıcıdan ZIP aramasına gerek kalmadan güncelleme yapması için portable klasöründeki `update.cmd` dosyası kullanılır. İleri kullanıcılar yeni portable paketi Releases sayfasından açıkça indirip checksum'ı doğruladıktan sonra `update apply` komutunu da kullanabilir. İnternet erişimi istenmiyorsa mevcut `--manifest-file` seçeneğiyle yerel metadata kullanılabilir.
 
 ```powershell
 .\runtime\uv.exe run --directory .\app socratlegal update check --manifest-file .\release-manifest-windows-x64.json
