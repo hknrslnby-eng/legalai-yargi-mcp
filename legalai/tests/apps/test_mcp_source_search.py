@@ -9,7 +9,7 @@ class _FakeSourceBackend:
 
     async def search_plan(self, plan, limit):
         self.seen_plan = plan
-        if any(item.source_id == "bim" for item in plan.skipped):
+        if any(item.source_id == "bim" for item in plan.skipped) and not any(item.source_id == "rekabet_kurumu" for item in plan.subqueries):
             return [], {"local_corpus": "available", "bim": "skipped:verification_pending"}, []
         return [Document("source-1", "Resmi karar metni", "rekabet_kurumu", "RK 2026/1", "https://source/1", {"provenance": [{"source_id": "rekabet_kurumu"}]})], {
             "local_corpus": "available",
