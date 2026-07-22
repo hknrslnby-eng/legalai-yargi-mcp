@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import date
+from datetime import date, datetime, timezone
 from pathlib import Path
 
 import aiosqlite
@@ -98,6 +98,19 @@ class CorpusStore:
 
     async def upsert_document(self, document: CorpusDocument, *, revision: CorpusRevision | None = None, citations: list[CorpusCitation] | None = None) -> None:
         await self._ensure()
+        metadata = {
+            **document.metadata,
+            "source_id": document.source_id,
+            "document_id": document.document_id,
+            "content_hash": document.content_hash,
+            "url": document.url,
+            "citation": document.citation,
+            "retrieval_mode": document.metadata.get("retrieval_mode", "corpus"),
+            "storage_policy": document.metadata.get("storage_policy", "full_text"),
+            "license_note": document.metadata.get("license_note", ""),
+            "fetched_at": document.metadata.get("fetched_at") or (revision.fetched_at if revision else None) or datetime.now(timezone.utc).isoformat(),
+            "version": document.metadata.get("version") or (revision.revision_label if revision else ""),
+        }
         async with aiosqlite.connect(self.path) as db:
             await db.execute(
                 """INSERT INTO corpus_documents(document_id,source_id,title,document_type,institution,body,published_on,effective_from,effective_to,url,citation,metadata_json)
@@ -106,12 +119,12 @@ class CorpusStore:
                 effective_from=excluded.effective_from,effective_to=excluded.effective_to,url=excluded.url,citation=excluded.citation,metadata_json=excluded.metadata_json""",
                 (document.document_id, document.source_id, document.title, document.document_type, document.institution, document.body,
                  document.published_on.isoformat() if document.published_on else None, document.effective_from.isoformat() if document.effective_from else None,
-                 document.effective_to.isoformat() if document.effective_to else None, document.url, document.citation, json.dumps(document.metadata, ensure_ascii=False)),
+                 document.effective_to.isoformat() if document.effective_to else None, document.url, document.citation, json.dumps(metadata, ensure_ascii=False)),
             )
             if revision:
                 await db.execute(
                     "INSERT OR IGNORE INTO corpus_revisions(document_id,content,content_hash,revision_label,fetched_at) VALUES(?,?,?,?,?)",
-                    (revision.document_id, revision.content, revision.content_hash, revision.revision_label, revision.fetched_at),
+                    (revision.document_id, revision.content, revision.content_hash, revision.revision_label, revision.fetched_at or metadata["fetched_at"]),
                 )
             await db.execute("DELETE FROM corpus_chunks WHERE document_id=?", (document.document_id,))
             await db.execute("DELETE FROM corpus_fts WHERE document_id=?", (document.document_id,))

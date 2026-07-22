@@ -3,7 +3,8 @@
 import pytest
 
 from legalai.packages.layers.pipeline import Context
-from legalai.packages.layers.retrieve_documents import RetrieveDocuments
+from legalai.packages.corpus.federated import FederatedDocument, FederatedSearchResult
+from legalai.packages.layers.retrieve_documents import FederatedDocumentSearchBackend, RetrieveDocuments
 from legalai.packages.shared.types import Document
 
 
@@ -20,6 +21,17 @@ class _FakeBackend:
         if self._error:
             raise self._error
         return self._documents
+
+
+class _PlanRetriever:
+    async def search_plan(self, plan, limit):
+        self.plan = plan
+        self.limit = limit
+        return FederatedSearchResult(
+            documents=(FederatedDocument("p1", "plan sonucu", "rekabet_kurumu", "RK", "", "", {}, ()),),
+            errors=[],
+            availability={"local_corpus": "available", "rekabet_kurumu": "available"},
+        )
 
 
 @pytest.mark.asyncio
@@ -55,3 +67,23 @@ async def test_retrieve_documents_records_error_without_crashing_pipeline():
 
     assert result.documents == []
     assert any(t.get("layer") == "retrieve_documents" and "error" in t for t in result.trace)
+
+
+@pytest.mark.asyncio
+async def test_retrieve_documents_uses_context_plan_for_federated_backend():
+    retriever = _PlanRetriever()
+    backend = FederatedDocumentSearchBackend(retriever=retriever)
+    ctx = Context(
+        tenant_id="test",
+        question="Fiyatlama ve dagitim zinciri",
+        mode="layered",
+        jurisdiction_ids=["rekabet"],
+        expert_lenses=["iktisat"],
+    )
+
+    result = await RetrieveDocuments(backend=backend, limit=7).run(ctx)
+
+    assert retriever.limit == 7
+    assert "rekabet_kurumu" in {item.source_id for item in retriever.plan.subqueries}
+    assert result.source_availability["rekabet_kurumu"] == "available"
+    assert result.documents[0].source == "rekabet_kurumu"

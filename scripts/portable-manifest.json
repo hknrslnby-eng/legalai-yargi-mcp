@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "product": "SocratLegal",
+  "supported_platforms": ["windows-x64"],
   "runtime": {
     "name": "uv",
     "version": "0.11.28",

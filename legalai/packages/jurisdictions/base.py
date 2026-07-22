@@ -23,6 +23,8 @@ class JurisdictionProfile:
     response_tone: str = ""
     disclaimer_required: bool = False
     expert_lenses: list[str] = field(default_factory=list)
+    related_law_domains: dict[str, list[str]] = field(default_factory=dict)
+    comparative_lenses: list[str] = field(default_factory=list)
     analysis_focus: list[str] = field(default_factory=list)
     raw: dict[str, Any] = field(default_factory=dict)   # ham YAML — override sınıfları için
 
@@ -44,6 +46,8 @@ class JurisdictionProfile:
             response_tone=data.get("response_tone", ""),
             disclaimer_required=bool(data.get("disclaimer_required", False)),
             expert_lenses=list(data.get("expert_lenses", [])),
+            related_law_domains={key: list(value or []) for key, value in dict(data.get("related_law_domains", {})).items()},
+            comparative_lenses=list(data.get("comparative_lenses", [])),
             analysis_focus=list(data.get("analysis_focus", [])),
             raw=data,
         )

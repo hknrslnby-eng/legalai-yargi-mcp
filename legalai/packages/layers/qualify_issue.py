@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from legalai.packages.jurisdictions.keywords import JURISDICTION_KEYWORDS
 from legalai.packages.jurisdictions.selection import guess_jurisdictions
+from legalai.packages.layers.related_law_selection import select_related_law_domains
 from legalai.packages.layers.pipeline import Context
 
 
@@ -37,12 +38,35 @@ class QualifyIssue:
         if ctx.jurisdiction_id:
             if not ctx.jurisdiction_ids:
                 ctx.jurisdiction_ids = [ctx.jurisdiction_id]
+            related = select_related_law_domains(
+                question=ctx.question,
+                primary_domain=ctx.jurisdiction_id,
+                supporting_domains=ctx.jurisdiction_ids[1:],
+                expert_lenses=ctx.expert_lenses,
+            )
+            ctx.expert_lenses = list(dict.fromkeys([*ctx.expert_lenses, *related.supporting]))
+            ctx.trace.append({
+                "layer": self.name,
+                "related_law_supporting": list(related.supporting),
+                "related_law_reasons": list(related.reasons),
+                "related_law_excluded": list(related.excluded),
+            })
             return ctx
 
         selection = guess_jurisdictions(ctx.question)
         ctx.jurisdiction_id = selection.primary
         ctx.jurisdiction_ids = [selection.primary, *selection.supporting]
-        ctx.expert_lenses = selection.expert_lenses
+        ctx.expert_lenses = list(dict.fromkeys([
+            *selection.expert_lenses,
+            *(selection.related_law.supporting if selection.related_law else ()),
+        ]))
         ctx.jurisdiction_confidence = selection.confidence
         ctx.jurisdiction_scores = selection.scores
+        if selection.related_law:
+            ctx.trace.append({
+                "layer": self.name,
+                "related_law_supporting": list(selection.related_law.supporting),
+                "related_law_reasons": list(selection.related_law.reasons),
+                "related_law_excluded": list(selection.related_law.excluded),
+            })
         return ctx

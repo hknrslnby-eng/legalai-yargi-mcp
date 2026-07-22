@@ -277,6 +277,25 @@ def apply_update(
             shutil.rmtree(stage_parent, ignore_errors=True)
 
 
+def update_app_preserving_user_state(bundle_root: Path, archive: Path) -> None:
+    """Apply the Windows portable app update while leaving config/data intact."""
+
+    bundle_root = Path(bundle_root).resolve()
+    archive = Path(archive).resolve()
+    manifest_candidates = (
+        bundle_root / "release-manifest-windows-x64.json",
+        archive.with_name("release-manifest-windows-x64.json"),
+    )
+    manifest_path = next((candidate for candidate in manifest_candidates if candidate.exists()), None)
+    if manifest_path is None:
+        raise UpdateError("Windows x64 release manifesti bulunamadı.")
+    try:
+        manifest = load_release_manifest(json.loads(manifest_path.read_text(encoding="utf-8")))
+    except (OSError, json.JSONDecodeError, TypeError, ValueError, UpdateError) as error:
+        raise UpdateError(f"Release manifesti okunamadı: {error}") from error
+    apply_update(archive, bundle_root / "app", manifest)
+
+
 def rollback_update(active_app: Path) -> None:
     active_app = Path(active_app)
     previous = active_app.with_name(f"{active_app.name}.previous")

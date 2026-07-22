@@ -14,12 +14,14 @@ var olan belgeleri ezmez.
 from __future__ import annotations
 
 import logging
-from typing import Protocol
+from typing import Any, Protocol
 
 from legalai.packages.layers.pipeline import Context
 from legalai.packages.corpus.federated import FederatedRetriever, SourceSearchResult
 from legalai.packages.corpus.store import CorpusStore
 from legalai.packages.corpus.sources.official import build_default_priority_adapters
+from legalai.packages.corpus.sources.international import build_international_adapters
+from legalai.packages.layers.source_routing import SourceQueryPlan, build_source_query_plan
 from legalai.packages.pii.outbound import mask_for_external
 from legalai.packages.shared.settings import settings
 from legalai.packages.shared.types import Document
@@ -39,8 +41,9 @@ class BedestenSearchBackend:
     çökmez ama neden belgesiz kaldığı izlenebilir kalır.
     """
 
-    def __init__(self, item_types: list[str] | None = None) -> None:
+    def __init__(self, item_types: list[str] | None = None, source_id: str | None = None) -> None:
         self._item_types = item_types or ["YARGITAYKARARI", "DANISTAYKARAR"]
+        self._source_id = source_id
         self._client = None  # lazy — testlerde ağ bağımlılığı tetiklenmesin
 
     def _get_client(self):
@@ -77,11 +80,22 @@ class BedestenSearchBackend:
                 Document(
                     id=entry.documentId,
                     body=markdown.markdown_content or "",
-                    source=entry.itemType.name.lower(),
+                    source=self._source_id or entry.itemType.name.lower(),
                     citation=citation,
                 )
             )
         return documents
+
+
+class BamBedestenSearchBackend(BedestenSearchBackend):
+    """Bedesten adapter restricted to verified BAM civil decisions."""
+
+    def __init__(self, item_types: list[str] | None = None) -> None:
+        super().__init__(item_types=item_types or ["ISTINAFHUKUK"], source_id="bam")
+
+
+def build_bam_adapter(backend: DocumentSearchBackend | None = None) -> "_DocumentBackendAdapter":
+    return _DocumentBackendAdapter(backend or BamBedestenSearchBackend(), source_id="bam")
 
 
 class _LocalCorpusAdapter:
@@ -141,11 +155,24 @@ class FederatedDocumentSearchBackend:
         store = CorpusStore(settings.corpus_db_path)
         self._retriever = FederatedRetriever(
             local=_LocalCorpusAdapter(store),
-            live=(_DocumentBackendAdapter(BedestenSearchBackend()), *build_default_priority_adapters()),
+            live=(
+                _DocumentBackendAdapter(BedestenSearchBackend()),
+                build_bam_adapter(),
+                *build_default_priority_adapters(),
+                *build_international_adapters(),
+            ),
         )
 
     async def search(self, query: str, limit: int) -> list[Document]:
         result = await self._retriever.search(query, limit)
+        return self._documents_from_result(result)
+
+    async def search_plan(self, plan: SourceQueryPlan, limit: int) -> tuple[list[Document], dict[str, str], list[dict[str, str]]]:
+        result = await self._retriever.search_plan(plan, limit)
+        return self._documents_from_result(result), result.availability, [error.__dict__ for error in result.errors]
+
+    @staticmethod
+    def _documents_from_result(result: Any) -> list[Document]:
         return [
             Document(
                 id=document.id,
@@ -184,7 +211,16 @@ class RetrieveDocuments:
             return ctx
 
         try:
-            ctx.documents = await self._backend.search(ctx.question, self._limit)
+            if isinstance(self._backend, FederatedDocumentSearchBackend):
+                plan = build_source_query_plan(
+                    question=ctx.question,
+                    jurisdiction_ids=ctx.jurisdiction_ids or ([ctx.jurisdiction_id] if ctx.jurisdiction_id else []),
+                    expert_lenses=ctx.expert_lenses,
+                )
+                ctx.source_query_plan = plan
+                ctx.documents, ctx.source_availability, ctx.source_errors = await self._backend.search_plan(plan, self._limit)
+            else:
+                ctx.documents = await self._backend.search(ctx.question, self._limit)
         except Exception as exc:  # ağ/parse hatası — belgesiz devam, üst katman not düşer
             logger.warning("RetrieveDocuments: arama başarısız: %s", exc)
             ctx.trace.append({"layer": self.name, "error": str(exc)})

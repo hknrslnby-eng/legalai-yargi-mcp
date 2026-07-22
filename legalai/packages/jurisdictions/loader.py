@@ -21,7 +21,12 @@ def load_profile(jid: str) -> JurisdictionProfile:
     if not yaml_path.exists():
         raise JurisdictionNotFoundError(f"Jurisdiction profile bulunamadı: '{jid}' ({yaml_path})")
 
-    data = yaml.safe_load(yaml_path.read_text(encoding="utf-8"))
+    data = yaml.safe_load(yaml_path.read_text(encoding="utf-8")) or {}
+    related_domains = data.get("related_law_domains", {})
+    if not isinstance(related_domains, dict) or any(
+        not isinstance(values, list) for values in related_domains.values()
+    ):
+        raise ValueError(f"related_law_domains listeleri geçersiz: {yaml_path}")
     base = JurisdictionProfile.from_dict(data)
 
     try:

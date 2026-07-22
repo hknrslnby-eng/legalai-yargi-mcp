@@ -11,6 +11,7 @@ from legalai.packages.jurisdictions.selection import guess_jurisdictions
 from legalai.packages.layers.forum_analyzer import ForumAndDeadlineAnalyzer
 from legalai.packages.jurisdictions.persona import compose_persona_instructions
 from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
+from legalai.packages.layers.operational_context import OperationalContextBuilder
 from legalai.packages.layers.legal_source_backend import IntegratedLegalSourceBackend
 from legalai.packages.layers.strategy_planner import StrategicPath, StrategicPathPlanner
 from legalai.packages.layers.temporal_context import (
@@ -73,6 +74,7 @@ class OpposingResult:
     assumptions: list[str] = field(default_factory=list)
     missing_facts: list[str] = field(default_factory=list)
     source_scope: SourceScope = "targeted"
+    operational_context: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -96,6 +98,7 @@ class OpposingResult:
             "assumptions": self.assumptions,
             "missing_facts": self.missing_facts,
             "source_scope": self.source_scope,
+            "operational_context": self.operational_context,
         }
 
 
@@ -306,6 +309,7 @@ async def run_opposing(
     ))
     if not jurisdiction_ids:
         jurisdiction_ids = ["hukuk"]
+    operational_context = OperationalContextBuilder().build(question, jurisdiction_ids, documents=documents)
     try:
         profile = load_profile(jurisdiction_hint or "hukuk")
     except JurisdictionNotFoundError:
@@ -326,7 +330,7 @@ async def run_opposing(
             counters, source_scope, selected_source_ids, limit=3
         )
     evidence = _rebutting_evidence(counters, documents) + list(rebutting)
-    missing_facts = list(temporal.missing_facts)
+    missing_facts = list(dict.fromkeys([*temporal.missing_facts, *operational_context.unknowns]))
     assumptions = list(temporal.assumptions)
     assumptions.extend(retrieval_errors)
     assumptions.extend(rebutting_search.errors)
@@ -354,6 +358,7 @@ async def run_opposing(
         assumptions=assumptions,
         missing_facts=missing_facts,
         source_scope=source_scope,
+        operational_context=operational_context.to_dict(),
     )
     result.weak_points = _weak_points(result.to_dict())
     if synthesize and llm_client:

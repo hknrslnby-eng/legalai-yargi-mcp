@@ -29,6 +29,8 @@ def test_portable_launch_uses_bundled_uv() -> None:
     assert spec.command.replace("\\", "/").endswith("runtime/uv.exe") or spec.command.replace("\\", "/").endswith("runtime/uv")
     assert spec.args == ("run", "--directory", str(Path("C:/SocratLegal/app")), "socratlegal-mcp")
     assert spec.cwd == str(Path("C:/SocratLegal/app"))
+    assert spec.env is not None
+    assert spec.env["SOCRATLEGAL_ENV_FILE"].replace("\\", "/") == "C:/SocratLegal/config/.env"
 
 
 def test_install_result_has_stable_shape() -> None:

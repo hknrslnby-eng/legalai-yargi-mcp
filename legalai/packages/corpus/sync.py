@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import asdict
-from datetime import date
+from dataclasses import asdict, replace
+from datetime import date, datetime, timezone
 import re
 from typing import Any, Iterable
 
@@ -35,10 +35,22 @@ class CorpusSyncService:
         for document in documents:
             if document.source_id != source_id:
                 raise ValueError(f"Belge kaynağı {document.source_id}, istenen kaynak {source_id} değil")
+            fetched_at = datetime.now(timezone.utc).isoformat()
+            enriched = replace(document, metadata={
+                **document.metadata,
+                "source_id": source_id,
+                "document_id": document.document_id,
+                "content_hash": document.content_hash,
+                "retrieval_mode": document.metadata.get("retrieval_mode", "corpus_ingest"),
+                "storage_policy": document.metadata.get("storage_policy", "full_text"),
+                "license_note": document.metadata.get("license_note", ""),
+                "fetched_at": fetched_at,
+                "version": document.metadata.get("version", date.today().isoformat()),
+            })
             await self.store.upsert_document(
-                document,
-                revision=CorpusRevision(document.document_id, document.body, document.content_hash, revision_label=date.today().isoformat()),
-                citations=[CorpusCitation(document.document_id, document.citation, document.body[:500], document.url)] if document.citation else [],
+                enriched,
+                revision=CorpusRevision(enriched.document_id, enriched.body, enriched.content_hash, revision_label=date.today().isoformat(), fetched_at=fetched_at),
+                citations=[CorpusCitation(enriched.document_id, enriched.citation, enriched.body[:500], enriched.url)] if enriched.citation else [],
             )
             count += 1
         await self.store.set_source_availability(source_id, status="available", detail=f"{count} belge işlendi")
@@ -70,7 +82,14 @@ class CorpusSyncService:
                 body=result.body,
                 url=result.source_url,
                 citation=result.citation,
-                metadata={**result.metadata, "retrieval_mode": "live_sync"},
+                metadata={
+                    **result.metadata,
+                    "source_id": source_id,
+                    "document_id": result.id,
+                    "retrieval_mode": "live_sync",
+                    "storage_policy": result.metadata.get("storage_policy", "full_text"),
+                    "license_note": result.metadata.get("license_note", ""),
+                },
             )
             for result in results
         ]

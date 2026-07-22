@@ -41,3 +41,28 @@ async def test_sync_from_adapter_masks_query_before_live_search_and_persists_res
 
     assert "12345678901" not in adapter.received_query
     assert report["documents_ingested"] == 1
+
+
+@pytest.mark.asyncio
+async def test_ingest_persists_provenance_metadata_and_previous_content_hashes(tmp_path):
+    store = CorpusStore(tmp_path / "socratlegal.db")
+    service = CorpusSyncService(store=store)
+    first = CorpusDocument(
+        document_id="versioned-1", source_id="rekabet_kurumu", title="Karar", document_type="decision",
+        institution="Rekabet Kurumu", body="Ilk metin", citation="RK 1",
+        metadata={"license_note": "Atif gerekli.", "storage_policy": "metadata_or_excerpt_only"},
+    )
+    second = CorpusDocument(
+        document_id="versioned-1", source_id="rekabet_kurumu", title="Karar", document_type="decision",
+        institution="Rekabet Kurumu", body="Guncel metin", citation="RK 1",
+        metadata={"license_note": "Atif gerekli.", "storage_policy": "metadata_or_excerpt_only"},
+    )
+
+    await service.ingest("rekabet_kurumu", [first])
+    await service.ingest("rekabet_kurumu", [second])
+
+    assert await store.count("corpus_revisions") == 2
+    hit = (await store.search("Guncel", 1))[0]
+    assert hit.document.metadata["content_hash"] == second.content_hash
+    assert hit.document.metadata["license_note"] == "Atif gerekli."
+    assert hit.document.metadata["storage_policy"] == "metadata_or_excerpt_only"

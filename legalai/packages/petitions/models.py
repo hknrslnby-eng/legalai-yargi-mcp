@@ -7,6 +7,14 @@ PetitionOperation = Literal["draft", "review", "shorten", "lengthen"]
 
 
 @dataclass(frozen=True)
+class CitationChange:
+    citation_id: str
+    action: Literal["retained", "shortened", "moved", "removed"]
+    reason: str
+    user_approved: bool
+
+
+@dataclass(frozen=True)
 class PetitionRequest:
     operation: PetitionOperation
     petition_text: str | None
@@ -19,6 +27,11 @@ class PetitionRequest:
     style_profile_id: str | None = None
     use_style_profile: bool = False
     style_profile_consent: bool = False
+    citation_policy: str = "retain"
+    citation_removal_approved: bool = False
+    operational_context: dict[str, Any] | None = None
+    missing_facts: list[str] = field(default_factory=list)
+    output_language: str = "tr"
 
 
 @dataclass
@@ -40,12 +53,15 @@ class PetitionResult:
     operational_context: dict[str, Any] = field(default_factory=dict)
     temporal_context: dict[str, Any] = field(default_factory=dict)
     missing_facts: list[str] = field(default_factory=list)
+    citation_change_report: list[CitationChange] = field(default_factory=list)
+    output_language: str = "tr"
     analysis_only: bool = True
     non_binding: bool = True
 
     def to_dict(self) -> dict[str, Any]:
         payload = self.__dict__.copy()
         payload["protected_topics"] = sorted(self.protected_topics)
+        payload["citation_change_report"] = [item.__dict__ for item in self.citation_change_report]
         payload["analysis_only"] = True
         payload["non_binding"] = True
         return payload

@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from legalai.packages.jurisdictions.keywords import JURISDICTION_KEYWORDS
+from legalai.packages.layers.related_law_selection import RelatedLawSelection, select_related_law_domains
 
 
 _LENS_KEYWORDS: dict[str, tuple[str, ...]] = {
@@ -32,6 +33,7 @@ class JurisdictionSelection:
     confidence: float = 0.0
     assumptions: list[str] = field(default_factory=list)
     scores: dict[str, int] = field(default_factory=dict)
+    related_law: RelatedLawSelection | None = None
 
 
 def _score_question(question: str) -> dict[str, int]:
@@ -56,11 +58,13 @@ def guess_jurisdictions(question: str) -> JurisdictionSelection:
     scores = _score_question(question)
     lenses = _detect_lenses(question)
     if not scores:
-        return JurisdictionSelection(
+        result = JurisdictionSelection(
             primary="diger",
             expert_lenses=lenses,
             assumptions=["Soruda belirli bir hukuk alanı güvenle tespit edilemedi."],
         )
+        result.related_law = select_related_law_domains(question=question, primary_domain=result.primary, expert_lenses=lenses)
+        return result
 
     primary = max(scores, key=lambda jid: scores[jid])
     top_score = scores[primary]
@@ -69,10 +73,17 @@ def guess_jurisdictions(question: str) -> JurisdictionSelection:
         if jid != primary and score >= max(1, top_score - 1)
     ]
     confidence = top_score / sum(scores.values())
-    return JurisdictionSelection(
+    result = JurisdictionSelection(
         primary=primary,
         supporting=supporting,
         expert_lenses=lenses,
         confidence=round(confidence, 3),
         scores=scores,
     )
+    result.related_law = select_related_law_domains(
+        question=question,
+        primary_domain=primary,
+        supporting_domains=supporting,
+        expert_lenses=lenses,
+    )
+    return result

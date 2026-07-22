@@ -6,6 +6,11 @@ from typing import Any
 
 def command_dictionary() -> dict[str, Any]:
     commands = {
+        "kaynak_ara": {
+            "tool": "socratlegal_kaynak_ara",
+            "aliases": ["legalai_kaynak_ara"],
+            "example_prompt": "Soruyu bağlama göre yerel corpus ve canlı resmi kaynaklarda çapraz ara; planı, provenance ve erişilebilirlik durumunu göster.",
+        },
         "yardim": {
             "tool": "socratlegal_yardim",
             "aliases": ["legalai_yardim"],

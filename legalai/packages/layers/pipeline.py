@@ -36,6 +36,26 @@ class Context:
     output_contract: str | None = None
     quality_profile: str = "auto"
     model_hint: str = ""
+    source_query_plan: Any | None = None
+    source_availability: dict[str, str] = field(default_factory=dict)
+    source_errors: list[dict[str, Any]] = field(default_factory=list)
+    missing_facts: list[str] = field(default_factory=list)
+    operational_context: Any | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        plan = self.source_query_plan
+        return {
+            "tenant_id": self.tenant_id,
+            "question": self.question,
+            "mode": self.mode,
+            "jurisdiction_ids": list(self.jurisdiction_ids),
+            "expert_lenses": list(self.expert_lenses),
+            "source_query_plan": plan.to_dict() if hasattr(plan, "to_dict") else plan,
+            "source_availability": dict(self.source_availability),
+            "source_errors": list(self.source_errors),
+            "missing_facts": list(self.missing_facts),
+            "operational_context": self.operational_context.to_dict() if hasattr(self.operational_context, "to_dict") else self.operational_context,
+        }
 
 
 class Layer(Protocol):

@@ -22,6 +22,7 @@ class ReasoningPlaybook:
             [
                 "Gizlilik uyumlu muhakeme politikası:",
                 *[f"{index}. {stage}" for index, stage in enumerate(self.stages, 1)],
+                "Rekabet baglaminda hukuki incelemeyi pazar, pay-hacim-ciro, rakip/tedarikci/musteri, zincir, giris engeli, fiyatlama, duzenleme ve sektor raporu verileriyle birlikte test et; bilinmeyenleri veri talebi olarak goster.",
                 "Operasyonel bağlamı kesin olgu değil, açıkça etiketlenmiş hipotez veya doğrulama ihtiyacı olarak sun.",
                 "Erişilmeyen mevzuat, içtihat, doktrin veya alıntı için künye uydurma.",
             ]

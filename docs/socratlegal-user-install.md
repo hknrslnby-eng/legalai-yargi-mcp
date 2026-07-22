@@ -4,19 +4,27 @@ SocratLegal ayrı bir web sitesi, hosting veya sürekli açık bir sunucu gerekt
 
 ## Önerilen yol: portable paket
 
-1. GitHub deposunun **Releases** sayfasından işletim sisteminize uygun ZIP veya `tar.gz` paketini indirin.
-2. Paketi yazma izniniz olan bir klasöre çıkartın; örneğin Windows'ta `C:\Users\Siz\SocratLegal`.
-3. Windows'ta `install.ps1`, macOS/Linux'ta `install.sh` dosyasını çalıştırın.
+1. GitHub deposunun **Releases** sayfasından `windows-x64` ZIP paketini indirin. Bu sürümde resmî portable paket yalnızca 64 bit Windows içindir; macOS/Linux portable paketi vaat edilmez.
+2. Paketi yazma izniniz olan bir klasöre çıkartın; örneğin `C:\Users\Siz\SocratLegal`.
+3. Windows'ta `install.ps1` dosyasını çalıştırın.
 4. IDE'yi yeniden başlatın veya MCP sunucularını yeniden yükleyin.
 5. Sohbete `SocratLegal sağlık kontrolü yap` yazın.
 
-Portable pakette platforma uygun `uv` çalıştırıcısı bulunur. Bu nedenle sistemde ayrıca Python, uv veya GitHub CLI kurulması beklenmez. İlk çalıştırmada uv, `uv.lock` bağımlılıklarını kendi önbelleğine indirebilir; bu hosting kurulması değildir.
+Portable pakette Windows x64 için gerekli `uv.exe` çalıştırıcısı bulunur. Bu nedenle sistemde ayrıca Python, uv veya GitHub CLI kurulması beklenmez. İlk çalıştırmada uv, `uv.lock` bağımlılıklarını kendi önbelleğine indirebilir; bu hosting kurulması değildir.
+
+Kurulum betiği desteklenen istemcileri gösterir; hepsini zorunlu olarak kurmaz. `-Ide cursor` gibi bir seçim yalnızca seçilen istemciye kayıt ekler. `-Ide all -OnlyInstalled` ise bilgisayarda zaten bulunan destekli istemcileri seçer.
 
 Windows örneği:
 
 ```powershell
 .\install.ps1 -Ide cursor
 ```
+
+## API anahtarı nereye yazılır?
+
+Kurulumdan sonra portable klasöründe `config\.env` dosyası oluşturulur. Bu dosyayı Not Defteri ile açıp kullanmak istediğiniz sağlayıcının karşısındaki boş yere anahtarı yapıştırın; örneğin `OPENAI_API_KEY=` satırının sağına anahtarı yazın. Tırnak işareti eklemeyin, anahtarı başına veya sonuna boşluk koymadan tek satırda tutun ve dosyayı kaydedin. Anahtarları GitHub'a, ekran görüntüsüne veya destek mesajına koymayın. Anahtar vermeden de host IDE'nin kendi aboneliğiyle yerel MCP araçlarını kullanabilirsiniz.
+
+`legalai.env.example` içindeki sağlayıcı satırları boş örnektir. Dosyada çok sayıda sağlayıcı adı bulunması, hepsinin aynı anda etkin olduğu anlamına gelmez; kurulu sürüm yalnızca desteklediği ve seçilen sağlayıcıyı kullanır. Kullanıcıya ait anahtarlar portable güncellemede `config` klasöründe korunur.
 
 Birden fazla istemci için:
 
@@ -27,6 +35,10 @@ Birden fazla istemci için:
 Kurulumdan önce ne yapılacağını görmek için `-DryRun`, ekrandaki iki bitişik JSON nesnesinden oluşan eski ayarı onarmayı denemek için `-Repair` kullanılır.
 
 ## Manuel checkout yolu
+
+Bu yol geliştirici veya kaynak kodla çalışmak isteyen kullanıcı içindir. Bilgisayarda Python 3.11 veya üstü ve `uv` bulunmalıdır. Repo klasöründe `uv sync --frozen --dev` çalıştırılır; ardından `uv run socratlegal install --install-dir . --ide cursor` komutu seçilen IDE'ye yerel MCP kaydını ekler. Cursor, Codex, Claude Desktop, Antigravity ve VS Code için ayrı kayıt seçilebilir; `--ide all` hepsini aday olarak tarar, `--only-installed` yalnızca mevcut olanları kaydeder. IDE'de URL girilmez: komut, argümanlar ve çalışma klasörü yerel olarak yazılır.
+
+Bu yöntemde API anahtarı repo kökündeki `.env` dosyasına yazılır. Portable yöntemde ise `config\.env` kullanılır. İki yöntemde de `.env` dosyası repoya gönderilmemelidir.
 
 ## Belge yüklendiğinde hangi yetenek kullanılır?
 

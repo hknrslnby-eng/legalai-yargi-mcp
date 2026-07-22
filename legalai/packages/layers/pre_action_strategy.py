@@ -13,6 +13,8 @@ from typing import Any
 
 from legalai.packages.documents.intake import DocumentInput, extract_document
 from legalai.packages.layers.operational_cards import build_operational_cards
+from legalai.packages.layers.competition_intake import build_competition_intake
+from legalai.packages.layers.operational_context import OperationalContextBuilder
 
 
 @dataclass(frozen=True)
@@ -41,6 +43,7 @@ class PreActionResult:
     assumptions: list[str] = field(default_factory=list)
     missing_facts: list[str] = field(default_factory=list)
     operational_cards: list[dict[str, Any]] = field(default_factory=list)
+    operational_context: dict[str, Any] = field(default_factory=dict)
     evidence_ledger: list[dict[str, Any]] = field(default_factory=list)
     source_name: str = "inline"
     warnings: list[str] = field(default_factory=list)
@@ -66,6 +69,16 @@ def analyze_pre_action(request: PreActionRequest) -> PreActionResult:
 
     missing = _missing_facts(trigger, dates, normalized, full)
     questions = _questions(trigger, full)
+    if _is_competition_context(normalized, request.jurisdiction_hint):
+        intake = build_competition_intake(question=request.question or text)
+        missing.extend(f"[{item.key}] {item.question}" for item in intake.requested_facts)
+        questions.extend({
+            "id": f"COMP_{item.key}",
+            "priority": item.priority,
+            "question": item.question,
+            "rationale": item.rationale,
+            "sensitive_data_warning": item.sensitive_data_warning,
+        } for item in intake.requested_facts)
     documents = _documents(trigger, full)
     preservation = _preservation(trigger, normalized)
     priorities = _priorities(urgent, trigger)
@@ -76,6 +89,7 @@ def analyze_pre_action(request: PreActionRequest) -> PreActionResult:
         [item["domain"] for item in domains],
         (text,),
     )
+    operational_context = OperationalContextBuilder().build(request.question or text, [item["domain"] for item in domains])
     ledger = [
         {
             "claim_id": "document_text",
@@ -109,6 +123,7 @@ def analyze_pre_action(request: PreActionRequest) -> PreActionResult:
         assumptions=assumptions,
         missing_facts=missing,
         operational_cards=[asdict(card) for card in cards],
+        operational_context=operational_context.to_dict(),
         evidence_ledger=ledger,
         source_name=source_name,
         warnings=list(warnings),
@@ -142,6 +157,13 @@ def _normalize(value: str) -> str:
 
 def _has_any(text: str, terms: tuple[str, ...]) -> bool:
     return any(term in text for term in terms)
+
+
+def _is_competition_context(text: str, hint: str | None) -> bool:
+    normalized_hint = _normalize(hint or "")
+    return normalized_hint == "rekabet" or _has_any(text, (
+        "rekabet", "fiyatlama", "pazar payi", "hakim durum", "kartel", "dagitim zinciri", "birlesme devralma",
+    ))
 
 
 def _classify(text: str) -> str:

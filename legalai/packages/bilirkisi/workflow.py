@@ -18,6 +18,7 @@ from xml.etree import ElementTree
 from legalai.packages.pii.outbound import mask_for_external
 from legalai.packages.documents import DocumentInput, extract_document
 from legalai.packages.layers.legal_reasoning import build_reasoning_instructions
+from legalai.packages.layers.operational_context import OperationalContextBuilder
 from legalai.packages.shared.types import Document
 
 _MAX_REPORT_BYTES = 20 * 1024 * 1024
@@ -73,6 +74,7 @@ class BilirKisiAnalysis:
     production_enabled: bool = True
     non_binding: bool = True
     assistant_instructions: str = ""
+    operational_context: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -92,6 +94,7 @@ class PetitionDraft:
     missing_evidence: tuple[str, ...]
     legal_sources: tuple[dict[str, Any], ...]
     non_binding: bool = True
+    operational_context: dict[str, Any] = field(default_factory=dict)
 
 
 def _mask_text(text: str) -> str:
@@ -363,7 +366,13 @@ async def analyze_report(
     )
     if report.ocr_required:
         instructions += " OCR gerekli veya başarısız: teknik sonuç üretmeden önce belge metni yerel OCR ya da kullanıcı doğrulamasıyla tamamlanmalıdır."
-    return BilirKisiAnalysis(report, question, inference.domain, tuple(claims), temporal, tuple(legal_sources or ()), True, True, instructions)
+    operational_context = OperationalContextBuilder().build(
+        question or report.text, ["hukuk"], documents=source_documents,
+    )
+    return BilirKisiAnalysis(
+        report, question, inference.domain, tuple(claims), temporal, tuple(legal_sources or ()),
+        True, True, instructions, operational_context.to_dict(),
+    )
 
 
 def build_petition_draft(analysis: BilirKisiAnalysis, *, court: str = "") -> PetitionDraft:
@@ -380,4 +389,4 @@ def build_petition_draft(analysis: BilirKisiAnalysis, *, court: str = "") -> Pet
     )
     missing = tuple(dict.fromkeys(item for objection in objections for item in objection.missing_evidence))
     title = f"{court + ' - ' if court else ''}Bilirkişi raporuna itiraz taslağı"
-    return PetitionDraft(title, objections, missing, analysis.legal_sources, True)
+    return PetitionDraft(title, objections, missing, analysis.legal_sources, True, analysis.operational_context)

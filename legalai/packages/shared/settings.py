@@ -3,11 +3,13 @@ Bkz. FORK-KAPSAMLI-PLAN.md §2.4. Kod içinde asla `os.environ["..."]`
 kullanılmaz; her zaman `settings.xxx` üstünden gidilir."""
 from __future__ import annotations
 
+import os
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    model_config = SettingsConfigDict(env_file=os.environ.get("SOCRATLEGAL_ENV_FILE", ".env"), extra="ignore")
 
     tenant_id: str = "local"
     tenant_name: str = "Local"
