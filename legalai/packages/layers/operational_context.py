@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass
 from typing import Any
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+from legalai.packages.layers.operational_lenses import OperationalFinding, build_operational_findings
 
 
 def _normalized(value: str) -> str:
@@ -26,11 +27,24 @@ class OperationalContext:
     items: tuple[dict[str, str], ...] = ()
     safety_note: str = "Bu operasyonel çerçeve kesin olgu değildir; somut delil ile doğrulanmalıdır."
 
+    findings: tuple[OperationalFinding, ...] = ()
+
     def to_dict(self) -> dict[str, Any]:
         payload = asdict(self)
         payload["hypotheses"] = list(self.hypotheses)
         payload["unknowns"] = list(self.unknowns)
         payload["items"] = [dict(item) for item in self.items]
+        payload["findings"] = [
+            {
+                "domain": item.domain,
+                "label": item.label,
+                "statement": item.statement,
+                "evidence_status": item.evidence_status,
+                "legal_impacts": list(item.legal_impacts),
+                "confidence": item.confidence,
+            }
+            for item in self.findings
+        ]
         return payload
 
 
@@ -38,10 +52,14 @@ class OperationalContextBuilder:
     """Infer only cautious, reviewable operational context from the prompt."""
 
     def build(
-        self, question: str, jurisdiction_ids: Sequence[str] = ()
+        self, question: str, jurisdiction_ids: Sequence[str] = (),
+        known_facts: Mapping[str, Any] | None = None, documents: Sequence[Any] = (),
     ) -> OperationalContext:
         normalized = _normalized(question or "")
         jurisdictions = {_normalized(value) for value in jurisdiction_ids}
+        findings, _operational_unknowns = build_operational_findings(
+            question=question, known_facts=known_facts, jurisdiction_ids=jurisdiction_ids, documents=documents,
+        )
         crypto_signal = any(
             token in normalized
             for token in ("kripto", "cuzdan", "blockchain", "sanal para", "stablecoin")
@@ -64,6 +82,7 @@ class OperationalContextBuilder:
                 hypotheses=hypotheses,
                 unknowns=unknowns,
                 items=items,
+                findings=findings,
             )
 
         if "rekabet" in normalized or "dagitim" in normalized or "tedarik" in normalized:
@@ -81,6 +100,7 @@ class OperationalContextBuilder:
                 hypotheses=hypotheses,
                 unknowns=unknowns,
                 items=items,
+                findings=findings,
             )
 
         note = (
@@ -89,5 +109,6 @@ class OperationalContextBuilder:
         return OperationalContext(
             domain=None,
             unknowns=(note,),
+            findings=findings,
             items=({"label": "doğrulama gerekli", "text": note},),
         )

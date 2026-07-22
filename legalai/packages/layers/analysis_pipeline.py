@@ -247,7 +247,10 @@ async def run_pipeline(
     jurisdiction_ids = list(result_ctx.jurisdiction_ids)
     if not jurisdiction_ids and result_ctx.jurisdiction_id:
         jurisdiction_ids = [result_ctx.jurisdiction_id]
-    operational_context = OperationalContextBuilder().build(question, jurisdiction_ids)
+    operational_context = OperationalContextBuilder().build(
+        question, jurisdiction_ids, documents=result_ctx.documents,
+    )
+    result_ctx.operational_context = operational_context
     competition_intake = None
     if "rekabet" in jurisdiction_ids:
         competition_intake = build_competition_intake(question=question)

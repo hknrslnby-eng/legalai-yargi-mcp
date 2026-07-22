@@ -40,6 +40,7 @@ class Context:
     source_availability: dict[str, str] = field(default_factory=dict)
     source_errors: list[dict[str, Any]] = field(default_factory=list)
     missing_facts: list[str] = field(default_factory=list)
+    operational_context: Any | None = None
 
     def to_dict(self) -> dict[str, Any]:
         plan = self.source_query_plan
@@ -53,6 +54,7 @@ class Context:
             "source_availability": dict(self.source_availability),
             "source_errors": list(self.source_errors),
             "missing_facts": list(self.missing_facts),
+            "operational_context": self.operational_context.to_dict() if hasattr(self.operational_context, "to_dict") else self.operational_context,
         }
 
 
