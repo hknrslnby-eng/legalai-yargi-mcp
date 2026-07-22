@@ -8,6 +8,7 @@ from datetime import timedelta
 
 import typer
 
+from legalai import __version__
 from legalai.packages.layers.analysis_pipeline import run_pipeline
 from legalai.packages.corpus.sources.official import build_default_priority_adapters
 from legalai.packages.corpus.sync import CorpusSyncService
@@ -43,7 +44,7 @@ def update_check(
     manifest_url: str | None = typer.Option(None, "--manifest-url", help="Release manifest metadata URL'si"),
     platform_tag: str | None = typer.Option(None, "--platform-tag", help="windows-x64, macos-arm64 veya linux-x64"),
     state_path: Path = typer.Option(Path.home() / ".socratlegal" / "update-check.json", "--state-path"),
-    current_version: str = typer.Option("0.2.3", "--current-version"),
+    current_version: str = typer.Option(__version__, "--current-version"),
 ) -> None:
     """Yalnızca sürüm metadata'sını kontrol eder; arşiv indirme/kurma yapmaz."""
     if manifest_file and manifest_url:

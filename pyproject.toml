@@ -1,6 +1,6 @@
 [project]
 name = "yargi-mcp"
-version = "0.2.3"
+dynamic = ["version"]
 description = "MCP Server For Turkish Legal Databases"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -72,6 +72,9 @@ socratlegal = "legalai.apps.cli.main:main"
 
 [tool.setuptools]
 py-modules = ["mcp_server_main", "asgi_app"]
+
+[tool.setuptools.dynamic]
+version = {attr = "legalai.__version__"}
 
 [tool.setuptools.packages.find]
 include = ["*_mcp_module", "semantic_search", "legalai*"]
