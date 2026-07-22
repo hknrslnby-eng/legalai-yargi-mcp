@@ -45,6 +45,7 @@ from legalai.packages.layers.select_jurisdiction_profile import SelectJurisdicti
 from legalai.packages.layers.verified_citation_check import VerifiedCitationCheck
 from legalai.packages.layers.temporal_context import TemporalLegalContextBuilder
 from legalai.packages.layers.quality_contract import build_quality_contract
+from legalai.packages.layers.competition_intake import build_competition_intake
 from legalai.packages.shared.tenant import current_tenant
 from legalai.packages.shared.types import Document
 
@@ -79,6 +80,7 @@ class AnalysisResult:
     source_scope: str = "targeted"
     operational_context: dict[str, Any] = field(default_factory=dict)
     authority_gap: Any | None = None
+    competition_intake: Any | None = None
 
     def to_dict(self) -> dict[str, Any]:
         payload = {
@@ -110,6 +112,7 @@ class AnalysisResult:
             "source_scope": self.source_scope,
             "operational_context": _jsonish(self.operational_context),
             "authority_gap": _jsonish(self.authority_gap),
+            "competition_intake": _jsonish(self.competition_intake),
         }
         if self.assistant_instructions is not None:
             payload["assistant_instructions"] = self.assistant_instructions
@@ -245,6 +248,13 @@ async def run_pipeline(
     if not jurisdiction_ids and result_ctx.jurisdiction_id:
         jurisdiction_ids = [result_ctx.jurisdiction_id]
     operational_context = OperationalContextBuilder().build(question, jurisdiction_ids)
+    competition_intake = None
+    if "rekabet" in jurisdiction_ids:
+        competition_intake = build_competition_intake(question=question)
+        result_ctx.missing_facts = [
+            f"[{item.key}] {item.question}"
+            for item in competition_intake.requested_facts
+        ]
     ledger_claims = [
         {
             "id": f"document:{document.id}",
@@ -309,7 +319,8 @@ async def run_pipeline(
         forum_candidates=list(result_ctx.forum_candidates),
         strategy_options=list(result_ctx.strategy_options),
         assumptions=[],
-        missing_facts=[],
         operational_context=operational_context_payload,
         authority_gap=assess_authority_gap(result_ctx.documents, jurisdiction_ids),
+        missing_facts=list(result_ctx.missing_facts),
+        competition_intake=competition_intake,
     )

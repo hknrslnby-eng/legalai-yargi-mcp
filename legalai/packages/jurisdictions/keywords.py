@@ -41,3 +41,8 @@ JURISDICTION_KEYWORDS["kvkk"].extend([
     "veri ihlali", "veri sızıntısı", "siber saldırı", "NIS-1", "NIS-2",
     "yetkisiz erişim", "fidye yazılımı", "kişisel veri güvenliği",
 ])
+
+JURISDICTION_KEYWORDS["rekabet"].extend([
+    "fiyatlama", "pazar payı", "pazar payi", "ilgili ürün pazarı", "ilgili urun pazari",
+    "dışlayıcı", "dislayici", "dağıtım zinciri", "dagitim zinciri", "münhasır dağıtım",
+])

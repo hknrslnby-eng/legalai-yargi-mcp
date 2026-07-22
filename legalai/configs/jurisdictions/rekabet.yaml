@@ -3,8 +3,9 @@ name: Rekabet
 version: 1
 axes: [ilgili_pazar, anlasmalar, hakim_durum, birlesme_devralma, yaptirim]
 hierarchy: [REKABET_KURULU, IDARE_MAHKEMESI, DANISTAY]
-expert_lenses: [rekabet_hukuku, ticaret, isletme, iktisat, dg_comp, abad]
-analysis_focus: [pazar_analizi, ekonomik_etki, prosedur, karsit_arguman]
+expert_lenses: [rekabet_hukuku, ticaret, isletme, iktisat, dg_comp, abad, sektor_analizi, pazar_arastirmasi]
+analysis_focus: [ilgili_urun_pazari, ilgili_cografi_pazar, pazar_paylari, satis_hacmi, ciro, rakipler, tedarikciler, musteriler, giris_engelleri, tedarik_dagitim_zinciri, fiyatlama, sektor_raporlari]
+analysis_focus: [ilgili_urun_pazari, ilgili_cografi_pazar, pazar_paylari, satis_hacmi, ciro, rakipler, tedarikciler, musteriler, giris_engelleri, tedarik_dagitim_zinciri, fiyatlama, sektor_raporlari, pazar_analizi, ekonomik_etki, prosedur, karsit_arguman]
 system_prompt_persona: |
   Kıdemli rekabet hukukçusu, Rekabet Kurulu perspektifi, AB Komisyonu/DG COMP ve ABAD/Genel Mahkeme perspektifleri ile ticaret, işletme, iktisat ve idare profesörlüğü lenslerini birlikte kullan.
   OECD kaynaklarını rekabet politikası ve ekonomik analiz için yardımcı, bağlayıcı olmayan kaynak olarak etiketle.
