@@ -5,6 +5,7 @@ from dataclasses import dataclass
 
 from legalai.packages.layers.quality_contract import build_quality_contract
 from legalai.packages.layers.competition_intake import IntakeQuestion
+from legalai.packages.layers.translation_contract import TranslationRequest, build_translation_instructions
 
 
 MEMORANDUM_SECTIONS: tuple[str, ...] = (
@@ -30,12 +31,14 @@ class MemorandumProfile:
     include_strategy: bool = True
     include_research_gaps: bool = True
     max_source_quotes: int = 3
+    output_language: str = "tr"
 
     def __post_init__(self) -> None:
         if self.detail_level not in {"brief", "standard", "deep", "exhaustive"}:
             raise ValueError("detail_level brief, standard, deep veya exhaustive olmalıdır.")
         if self.max_source_quotes < 0:
             raise ValueError("max_source_quotes negatif olamaz.")
+        TranslationRequest("tr", self.output_language, "source_to_output")
 
 
 def build_memorandum_instructions(
@@ -47,6 +50,7 @@ def build_memorandum_instructions(
     operational_context: dict[str, object] | None = None,
     missing_facts: tuple[IntakeQuestion, ...] | list[object] = (),
     citation_policy: str = "retain",
+    output_language: str = "tr",
 ) -> str:
     """Return a model-neutral, non-chain-of-thought output contract."""
     profile = profile or MemorandumProfile()
@@ -92,6 +96,8 @@ def build_memorandum_instructions(
         f"Kullanılabilecek kaynak kimlikleri: {valid_ids}. Her hukuki iddiayı mümkün olduğunca bu kimliklerle bağla.\n"
         "Çıktı analysis-only ve non-binding bir araştırma/mütalaa taslağıdır; kesin hukuki görüş veya garanti değildir.\n"
         + build_quality_contract(quality_profile, model_hint=model_hint, source_ids=source_ids)
+        + "\n"
+        + build_translation_instructions(TranslationRequest("tr", output_language, "source_to_output"))
     )
 
 

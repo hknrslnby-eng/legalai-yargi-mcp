@@ -9,6 +9,8 @@ def capability_catalog() -> dict[str, Any]:
         "brand": "SocratLegal",
         "server_name": "SocratLegal MCP Server",
         "legacy_brand": "LegalAI",
+        "supported_output_languages": ["tr", "en", "fr", "de", "ru", "ar", "es", "zh"],
+        "translation_policy": "Hukuki düzyazı çevrilir; resmi kurum/mahkeme adları, karar ve mevzuat kimlikleri ile provenance korunur. Sertifikalı çeviri iddiası yoktur.",
         "active_public_tools": {
             "socratlegal_katmanli_analiz": "katmanli_analiz",
             "socratlegal_kaynak_ara": "kaynak_ara",

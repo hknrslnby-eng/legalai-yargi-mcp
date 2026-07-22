@@ -31,6 +31,7 @@ class PetitionRequest:
     citation_removal_approved: bool = False
     operational_context: dict[str, Any] | None = None
     missing_facts: list[str] = field(default_factory=list)
+    output_language: str = "tr"
 
 
 @dataclass
@@ -53,6 +54,7 @@ class PetitionResult:
     temporal_context: dict[str, Any] = field(default_factory=dict)
     missing_facts: list[str] = field(default_factory=list)
     citation_change_report: list[CitationChange] = field(default_factory=list)
+    output_language: str = "tr"
     analysis_only: bool = True
     non_binding: bool = True
 

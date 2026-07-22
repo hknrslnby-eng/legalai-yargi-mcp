@@ -8,6 +8,7 @@ from typing import Any
 from .models import CitationChange, PetitionRequest, PetitionResult
 from .quality import build_petition_quality
 from legalai.packages.shared.evidence import EvidenceRecord
+from legalai.packages.layers.translation_contract import TranslationRequest, build_translation_instructions
 
 _PROTECTED = {
     "dava şartı": ("dava şartı", "dava sarti"),
@@ -32,6 +33,7 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
         raise ValueError("citation_policy retain veya remove olmalıdır.")
     if request.citation_policy == "remove" and not request.citation_removal_approved:
         raise PermissionError("İçtihat/kaynak alıntılarının kaldırılması için açık kullanıcı onayı gerekir.")
+    TranslationRequest("tr", request.output_language, "source_to_output")
     quality = build_petition_quality(
         request.question,
         request.jurisdiction_hint,
@@ -122,6 +124,7 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
         missing_facts=[*request.missing_facts, *_missing_facts(request, text)],
         citation_change_report=citation_report,
         operational_context=request.operational_context or operational.to_dict(),
+        output_language=request.output_language,
     )
 
 

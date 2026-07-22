@@ -254,6 +254,7 @@ async def _process_petition_tool(
     style_profile_id: str | None,
     use_style_profile: bool,
     style_profile_consent: bool,
+    output_language: str,
 ) -> dict:
     result = process_petition(
         PetitionRequest(
@@ -268,6 +269,7 @@ async def _process_petition_tool(
             style_profile_id=style_profile_id,
             use_style_profile=use_style_profile,
             style_profile_consent=style_profile_consent,
+            output_language=output_language,
         )
     )
     return result.to_dict()
@@ -294,8 +296,9 @@ async def _socratlegal_petition_draft_tool(
     style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
     use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
     style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
+    output_language: Annotated[str, Field(description="Output language: tr, en, fr, de, ru, ar, es or zh.")] = "tr",
 ) -> dict:
-    return await _process_petition_tool("draft", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
+    return await _process_petition_tool("draft", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent, output_language)
 
 
 @app.tool(name="socratlegal_dilekce_incele", description=_petition_description("review"))
@@ -310,8 +313,9 @@ async def _socratlegal_petition_review_tool(
     style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
     use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
     style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
+    output_language: Annotated[str, Field(description="Output language: tr, en, fr, de, ru, ar, es or zh.")] = "tr",
 ) -> dict:
-    return await _process_petition_tool("review", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
+    return await _process_petition_tool("review", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent, output_language)
 
 
 @app.tool(name="socratlegal_dilekce_kisalt", description=_petition_description("shorten"))
@@ -326,8 +330,9 @@ async def _socratlegal_petition_shorten_tool(
     style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
     use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
     style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
+    output_language: Annotated[str, Field(description="Output language: tr, en, fr, de, ru, ar, es or zh.")] = "tr",
 ) -> dict:
-    return await _process_petition_tool("shorten", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
+    return await _process_petition_tool("shorten", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent, output_language)
 
 
 @app.tool(name="socratlegal_dilekce_uzat", description=_petition_description("lengthen"))
@@ -342,40 +347,41 @@ async def _socratlegal_petition_lengthen_tool(
     style_profile_id: Annotated[str | None, Field(description="İsteğe bağlı yerel üslup profil kimliği.")] = None,
     use_style_profile: Annotated[bool, Field(description="Yerel üslup profilini uygulamayı iste.")] = False,
     style_profile_consent: Annotated[bool, Field(description="Üslup profilinin bu işlemde kullanılmasına açık kullanıcı onayı.")] = False,
+    output_language: Annotated[str, Field(description="Output language: tr, en, fr, de, ru, ar, es or zh.")] = "tr",
 ) -> dict:
-    return await _process_petition_tool("lengthen", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent)
+    return await _process_petition_tool("lengthen", petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, style_profile_id, use_style_profile, style_profile_consent, output_language)
 
 
 @app.tool(name="legalai_dilekce_hazirla", description="Geçiş uyumluluğu: SocratLegal genel dilekçe taslağı.")
 async def _legacy_legalai_petition_draft_tool(
     petition_text: str | None = None, question: str = "", party_position: str = "", jurisdiction_hint: str | None = None,
-    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "deep",
+    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "deep", output_language: str = "tr",
 ) -> dict:
-    return await _socratlegal_petition_draft_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+    return await _socratlegal_petition_draft_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, output_language=output_language)
 
 
 @app.tool(name="legalai_dilekce_incele", description="Geçiş uyumluluğu: SocratLegal genel dilekçe incelemesi.")
 async def _legacy_legalai_petition_review_tool(
     petition_text: str, question: str = "", party_position: str = "", jurisdiction_hint: str | None = None,
-    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "deep",
+    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "deep", output_language: str = "tr",
 ) -> dict:
-    return await _socratlegal_petition_review_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+    return await _socratlegal_petition_review_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, output_language=output_language)
 
 
 @app.tool(name="legalai_dilekce_kisalt", description="Geçiş uyumluluğu: SocratLegal güvenli dilekçe kısaltma.")
 async def _legacy_legalai_petition_shorten_tool(
     petition_text: str, question: str = "", party_position: str = "", jurisdiction_hint: str | None = None,
-    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "standard",
+    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "standard", output_language: str = "tr",
 ) -> dict:
-    return await _socratlegal_petition_shorten_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+    return await _socratlegal_petition_shorten_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, output_language=output_language)
 
 
 @app.tool(name="legalai_dilekce_uzat", description="Geçiş uyumluluğu: SocratLegal kaynaklı dilekçe uzatma.")
 async def _legacy_legalai_petition_lengthen_tool(
     petition_text: str, question: str = "", party_position: str = "", jurisdiction_hint: str | None = None,
-    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "deep",
+    event_dates: list[str] | None = None, source_documents: list[dict[str, object]] | None = None, detail_level: str = "deep", output_language: str = "tr",
 ) -> dict:
-    return await _socratlegal_petition_lengthen_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level)
+    return await _socratlegal_petition_lengthen_tool.fn(petition_text, question, party_position, jurisdiction_hint, event_dates, source_documents, detail_level, output_language=output_language)
 
 
 @app.tool(
@@ -857,11 +863,13 @@ async def _socratlegal_legal_opinion_tool(
     quality_profile: Annotated[str, Field(description="Model kalite profili: auto, fast, balanced, frontier veya exhaustive.")] = "auto",
     model_hint: Annotated[str, Field(description="İsteğe bağlı model adı; yalnızca kalite ayarı için ipucudur.")] = "",
     server_side_synthesis: Annotated[bool, Field(description="İsteğe bağlı API anahtarıyla sunucu sentezi çalışsın mı?")] = False,
+    output_language: Annotated[str, Field(description="Çıktı dili: tr, en, fr, de, ru, ar, es veya zh.")] = "tr",
 ) -> dict:
     profile = MemorandumProfile(
         detail_level=detail_level,
         include_strategy=include_strategy,
         max_source_quotes=max_source_quotes,
+        output_language=output_language,
     )
     output_contract = build_memorandum_instructions(
         profile,
@@ -887,6 +895,7 @@ async def _socratlegal_legal_opinion_tool(
         operational_context=payload.get("operational_context"),
         missing_facts=payload.get("missing_facts", []),
         citation_policy="retain",
+        output_language=output_language,
     )
     payload["assistant_instructions"] = "\n\n".join(
         item for item in (payload.get("assistant_instructions"), memo_instructions) if item
@@ -907,6 +916,7 @@ async def _legacy_legalai_legal_opinion_tool(
     quality_profile: str = "auto",
     model_hint: str = "",
     server_side_synthesis: bool = False,
+    output_language: str = "tr",
 ) -> dict:
     return await _socratlegal_legal_opinion_tool.fn(
         question=question,
@@ -917,6 +927,7 @@ async def _legacy_legalai_legal_opinion_tool(
         quality_profile=quality_profile,
         model_hint=model_hint,
         server_side_synthesis=server_side_synthesis,
+        output_language=output_language,
     )
 
 
