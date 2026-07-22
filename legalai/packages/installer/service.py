@@ -8,7 +8,7 @@ from .config_merge import merge_codex_toml_config, merge_json_config, merge_vsco
 from .ides import get_ide_config
 from .ides import detect_ide_configs
 from .models import InstallRequest, InstallResult, McpLaunchSpec
-from .paths import build_checkout_launch_spec, build_portable_launch_spec
+from .paths import build_checkout_launch_spec, build_portable_launch_spec, prepare_env_file
 
 
 def _default_home(home: Path | None) -> Path:
@@ -48,6 +48,8 @@ def install_socratlegal(
         if request.portable_root is not None
         else build_checkout_launch_spec(request.install_dir)
     )
+    if request.portable_root is not None:
+        prepare_env_file(request.portable_root)
     results: list[InstallResult] = []
     for ide_id in request.ide_ids:
         config = get_ide_config(ide_id, home=home, appdata=appdata, project_dir=project_dir)

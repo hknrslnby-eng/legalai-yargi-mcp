@@ -15,6 +15,7 @@ from legalai.packages.installer.update import (
     fetch_release_manifest,
     load_release_manifest,
     rollback_update,
+    update_app_preserving_user_state,
 )
 from legalai.packages.installer.versioning import compare_versions
 from legalai.apps.cli.main import app
@@ -86,6 +87,26 @@ def test_apply_update_verifies_checksum_and_preserves_data(tmp_path: Path) -> No
     assert (active_app / "new.txt").read_text(encoding="utf-8") == "new"
     assert (data / "private.db").read_text(encoding="utf-8") == "keep"
     assert (tmp_path / "app.previous" / "old.txt").exists()
+
+
+def test_bundle_update_preserves_config_and_data(tmp_path: Path) -> None:
+    bundle = tmp_path / "portable"
+    (bundle / "app").mkdir(parents=True)
+    (bundle / "config").mkdir()
+    (bundle / "data").mkdir()
+    (bundle / "config" / ".env").write_text("OPENAI_API_KEY=user-key\n", encoding="utf-8")
+    (bundle / "data" / "private.db").write_text("keep", encoding="utf-8")
+    archive = tmp_path / "socratlegal-1.1.0-windows-x64.zip"
+    with zipfile.ZipFile(archive, "w") as handle:
+        handle.writestr("app/new.txt", "new")
+    manifest = _manifest(archive)
+    (bundle / "release-manifest-windows-x64.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+    update_app_preserving_user_state(bundle, archive)
+
+    assert (bundle / "app" / "new.txt").read_text(encoding="utf-8") == "new"
+    assert (bundle / "config" / ".env").read_text(encoding="utf-8") == "OPENAI_API_KEY=user-key\n"
+    assert (bundle / "data" / "private.db").read_text(encoding="utf-8") == "keep"
 
 
 def test_failed_startup_validation_rolls_back(tmp_path: Path) -> None:

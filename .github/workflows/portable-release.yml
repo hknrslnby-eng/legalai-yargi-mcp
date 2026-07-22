@@ -13,21 +13,11 @@ jobs:
     name: ${{ matrix.platform_tag }}
     runs-on: ${{ matrix.os }}
     strategy:
-      fail-fast: false
       matrix:
         include:
           - os: windows-latest
             platform_tag: windows-x64
             runtime_archive: uv-x86_64-pc-windows-msvc.zip
-          - os: macos-14
-            platform_tag: macos-arm64
-            runtime_archive: uv-aarch64-apple-darwin.tar.gz
-          - os: macos-13
-            platform_tag: macos-x64
-            runtime_archive: uv-x86_64-apple-darwin.tar.gz
-          - os: ubuntu-latest
-            platform_tag: linux-x64
-            runtime_archive: uv-x86_64-unknown-linux-gnu.tar.gz
 
     steps:
       - uses: actions/checkout@v4
@@ -45,29 +35,12 @@ jobs:
           Expand-Archive runtime-download/uv.zip -DestinationPath runtime-download/extracted -Force
           $uv = Get-ChildItem runtime-download/extracted -Recurse -Filter uv.exe | Select-Object -First 1
           Copy-Item $uv.FullName runtime-download/uv.exe
-      - name: Download bundled uv (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        env:
-          UV_VERSION: "0.11.28"
-        run: |
-          mkdir -p runtime-download/extracted
-          curl --fail --location "https://github.com/astral-sh/uv/releases/download/${UV_VERSION}/${{ matrix.runtime_archive }}" --output runtime-download/uv.tar.gz
-          tar -xzf runtime-download/uv.tar.gz -C runtime-download/extracted
-          cp "$(find runtime-download/extracted -type f -name uv | head -n 1)" runtime-download/uv
-          chmod +x runtime-download/uv
       - name: Build portable archive (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
           $version = "${{ github.ref_name }}".TrimStart("v")
           python scripts/package_portable.py --source . --output dist --platform-tag "${{ matrix.platform_tag }}" --version $version --runtime runtime-download/uv.exe --release-url "https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
-      - name: Build portable archive (Unix)
-        if: runner.os != 'Windows'
-        shell: bash
-        run: |
-          version="${GITHUB_REF_NAME#v}"
-          python scripts/package_portable.py --source . --output dist --platform-tag "${{ matrix.platform_tag }}" --version "$version" --runtime runtime-download/uv --release-url "https://github.com/${GITHUB_REPOSITORY}/releases/tag/${GITHUB_REF_NAME}"
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
