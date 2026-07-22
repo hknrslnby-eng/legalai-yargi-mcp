@@ -1,16 +1,13 @@
-# legalai/
+# LegalAI paket alanı
 
-Yargı-MCP fork'unun üzerine inşa edilen ürün katmanı. Upstream kodu
-(fork kökündeki `*_mcp_module/`, `mcp_server_main.py` vb.) buraya
-taşınmaz; bu klasör sadece bizim eklediğimiz kodu barındırır.
+Bu klasör, SocratLegal fork'unda eklenen hukuk katmanlarını içerir. Son kullanıcı kurulumu, yeteneklerin sade açıklaması, API anahtarı kullanımı ve desteklenen IDE'ler için [kök README](../README.md) dosyasına bakın.
 
-Ayrıntılı mimari için bkz. `../FORK-KAPSAMLI-PLAN.md`.
+Kaynak kodla çalışanlar için temel komutlar:
 
-## Klasörler
+```powershell
+uv sync --frozen --dev
+uv run socratlegal-mcp
+uv run socratlegal qa "Hukuki soruyu kaynaklı ve ihtimalli analiz et"
+```
 
-- `packages/` — paylaşılan kütüphane kodu (katmanlar, jurisdiction profilleri, PII, AİHM, LLM router, storage, shared)
-- `apps/` — çalıştırılabilir uygulamalar (CLI, API, MCP)
-- `infra/` — docker ve migration dosyaları
-- `configs/` — YAML tabanlı yargı türü profilleri
-- `docs/` — proje dokümantasyonu
-- `tests/` — testler
+Tüm çıktılar analysis-only ve non-binding araştırma taslağıdır. Upstream MIT lisansı ve fork atıfları [LICENSE](../LICENSE) ile [NOTICE.md](../NOTICE.md) içinde açıklanır.
