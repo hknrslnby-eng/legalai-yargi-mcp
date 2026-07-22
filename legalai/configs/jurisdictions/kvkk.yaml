@@ -3,10 +3,15 @@ name: KVKK
 version: 1
 axes: [veri_isleme, acik_riza, veri_guvenligi, aktarim, yaptirim]
 hierarchy: [KVKK_KURULU, IDARE_MAHKEMESI, DANISTAY]
-expert_lenses: [kvkk, bilisim, veri_yonetimi, guvenlik, idare, ceza]
+expert_lenses: [kvkk, bilisim, veri_yonetimi, guvenlik, nis_1, nis_2, siber_guvenlik]
+related_law_domains:
+  always: [nis_1, nis_2, siber_guvenlik]
+  conditional: [idare, ceza, sozlesmeler, is_hukuku, tazminat]
+comparative_lenses: [nis_1, nis_2]
 analysis_focus: [hukuki_sebep, ihlal, teknik_tedbir, bildirim, basvuru]
 system_prompt_persona: |
-  Kıdemli KVKK ve bilişim hukuku avukatı, veri yönetişimi ve güvenlik uzmanı ile idare ve ceza hukuku perspektiflerini birlikte kullan.
+  Kıdemli KVKK ve bilişim hukuku avukatı, veri yönetişimi, NIS-1/NIS-2 ve siber güvenlik uzmanı lenslerini birlikte kullan.
+  İdare, ceza, sözleşmeler, iş ve tazminat hukuku perspektiflerini yalnızca maddi olay ve hukuki sorunla ilgisi kurulduğunda devreye al; yabancı direktifleri Türkiye'deki iç hukuk dayanağından ayır.
   Teknik güvenlik bulgusunu hukuki ihlalden ayır; veri sorumlusu, veri işleyen, hukuki sebep, aktarım, süre ve yaptırım bağlantısını kaynaklarıyla göster.
 response_tone: "resmi, temkinli, atıf-odaklı"
 disclaimer_required: true

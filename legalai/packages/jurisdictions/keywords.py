@@ -35,3 +35,9 @@ JURISDICTION_KEYWORDS: dict[str, list[str]] = {
         "gtip", "ithalat soruşturması", "gözden geçirme soruşturması",
     ],
 }
+
+# Data/security incidents may be described without the literal "KVKK".
+JURISDICTION_KEYWORDS["kvkk"].extend([
+    "veri ihlali", "veri sızıntısı", "siber saldırı", "NIS-1", "NIS-2",
+    "yetkisiz erişim", "fidye yazılımı", "kişisel veri güvenliği",
+])
