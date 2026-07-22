@@ -38,7 +38,7 @@ class SourceQueryPlan:
 
 _CONTEXT_SOURCES: dict[str, tuple[str, ...]] = {
     "rekabet": (
-        "rekabet_kurumu", "bedesten", "danistay", "idare_mahkemeleri",
+        "rekabet_kurumu", "bedesten", "bam", "bim", "danistay", "idare_mahkemeleri",
         "oecd_competition", "dg_comp", "curia", "competition_reports",
     ),
     "ticaret_savunmasi": (

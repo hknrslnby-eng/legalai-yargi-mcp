@@ -12,4 +12,5 @@ def test_competition_context_uses_non_literal_question_and_official_source_famil
 
     selected = {item.source_id for item in plan.subqueries}
     assert selection.primary == "rekabet"
-    assert {"rekabet_kurumu", "danistay", "oecd_competition", "dg_comp", "curia", "competition_reports"} <= selected
+    assert {"rekabet_kurumu", "bam", "danistay", "oecd_competition", "dg_comp", "curia", "competition_reports"} <= selected
+    assert "bim" in {item.source_id for item in plan.skipped}
