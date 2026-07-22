@@ -11,6 +11,8 @@ def capability_catalog() -> dict[str, Any]:
         "legacy_brand": "LegalAI",
         "active_public_tools": {
             "socratlegal_katmanli_analiz": "katmanli_analiz",
+            "socratlegal_kaynak_ara": "kaynak_ara",
+            "legalai_kaynak_ara": "kaynak_ara",
             "socratlegal_agresif_karsi_taraf": "agresif_karsi_taraf",
             "socratlegal_derin_arastirma": "derin_arastirma",
             "socratlegal_hukuki_mutalaa": "hukuki_mutalaa",
@@ -37,6 +39,15 @@ def capability_catalog() -> dict[str, Any]:
             "legalai_komut_sozlugu": "komut_sozlugu",
         },
         "capabilities": [
+            {
+                "id": "kaynak_ara",
+                "label": "Bağlamsal resmi kaynak arama",
+                "use_when": "Bir soruyu yerel corpus, canlı resmi kurum/mahkeme adapter'ları ve uygun uluslararası kaynaklarda birlikte aramak istediğinde.",
+                "levels": ["targeted", "açıkça seçilen kaynaklar", "all kapsamı"],
+                "inputs": ["soru", "isteğe bağlı hukuk alanı", "isteğe bağlı kaynak kimlikleri", "sonuç üst sınırı"],
+                "output": "Kaynak planı ve gerekçeleri, belgeler, provenance, erişilebilirlik/hata durumu ve corpus-only veya pending kaynak ayrımı.",
+                "example_prompt": "Bu fiyatlama ve dağıtım sorusunu kelimeye bağlı kalmadan Rekabet Kurumu, Danıştay, OECD ve uygun resmi raporlarda ara; her kaynağın durumunu göster.",
+            },
             {
                 "id": "katmanli_analiz",
                 "label": "Katmanlı hukuki analiz",

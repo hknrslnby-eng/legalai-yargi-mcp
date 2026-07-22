@@ -51,6 +51,9 @@ from legalai.packages.installer.update import UpdateError, archive_download_url,
 from legalai.packages.corpus.store import CorpusStore
 from legalai.packages.corpus.sync import CorpusSyncService
 from legalai.packages.corpus.sources.official import build_default_priority_adapters
+from legalai.packages.jurisdictions.selection import guess_jurisdictions
+from legalai.packages.layers.retrieve_documents import FederatedDocumentSearchBackend
+from legalai.packages.layers.source_routing import build_source_query_plan
 
 # Süreç başlarken tenant bağlamı kurulur — bkz. FORK-KAPSAMLI-PLAN.md §2.2.
 # Bugün her zaman "local"; sunucuya taşındığında bu satır middleware'e taşınır.
@@ -620,6 +623,67 @@ async def socratlegal_corpus_durum() -> dict:
 @app.tool(name="legalai_corpus_durum", description="Geçiş uyumluluğu: SocratLegal corpus durumunu gösterir.")
 async def _legacy_legalai_corpus_durum() -> dict:
     return await socratlegal_corpus_durum()
+
+
+@app.tool(
+    name="socratlegal_kaynak_ara",
+    description=(
+        "Soruyu hukuk alanı ve uzmanlık bağlamına göre yerel corpus, canlı resmi kaynak ve "
+        "uluslararası kaynaklarda çapraz arar. Kaynak planını, gerekçesini, erişilebilirlik "
+        "durumunu, provenance bilgisini ve BIM gibi doğrulaması bekleyen kaynakları ayrı gösterir. "
+        "Sonuç analysis-only ve non-binding'dir."
+    ),
+    annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
+)
+async def socratlegal_kaynak_ara(
+    question: LegalQuestion,
+    source_scope: Annotated[str, Field(description="Kaynak kapsamı: targeted veya all.")] = "targeted",
+    selected_source_ids: Annotated[list[str] | None, Field(description="İsteğe bağlı açık kaynak kimlikleri; verildiğinde otomatik seçim yerine bunlar kullanılır.")] = None,
+    jurisdiction_hint: JurisdictionHint = None,
+    limit: Annotated[int, Field(description="Kaynak başına değil, birleştirilmiş sonuçlar için üst sınır.")] = 20,
+) -> dict:
+    selection = guess_jurisdictions(question)
+    jurisdiction_ids = [jurisdiction_hint] if jurisdiction_hint else [selection.primary, *selection.supporting]
+    plan = build_source_query_plan(
+        question=question,
+        jurisdiction_ids=jurisdiction_ids,
+        expert_lenses=selection.expert_lenses,
+        source_scope=source_scope,
+        selected_source_ids=selected_source_ids or (),
+    )
+    documents, availability, errors = await FederatedDocumentSearchBackend().search_plan(plan, max(0, limit))
+    return {
+        "question": question,
+        "jurisdiction_ids": jurisdiction_ids,
+        "expert_lenses": selection.expert_lenses,
+        "source_query_plan": plan.to_dict(),
+        "source_availability": availability,
+        "source_errors": errors,
+        "documents": [
+            {
+                "id": document.id,
+                "body": document.body,
+                "source_id": document.source,
+                "citation": document.citation,
+                "source_url": document.source_url,
+                "metadata": document.metadata or {},
+            }
+            for document in documents
+        ],
+        "analysis_only": True,
+        "non_binding": True,
+    }
+
+
+@app.tool(name="legalai_kaynak_ara", description="Geçiş uyumluluğu: SocratLegal bağlamsal kaynak arama.")
+async def _legacy_legalai_source_search(
+    question: str,
+    source_scope: str = "targeted",
+    selected_source_ids: list[str] | None = None,
+    jurisdiction_hint: str | None = None,
+    limit: int = 20,
+) -> dict:
+    return await socratlegal_kaynak_ara.fn(question, source_scope, selected_source_ids, jurisdiction_hint, limit)
 
 
 @app.tool(name="socratlegal_corpus_belge_ekle", description="Maskelenmiş veya kamuya açık bir corpus belgesini yerel SocratLegal veritabanına ekler.")
