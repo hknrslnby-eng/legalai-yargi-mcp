@@ -57,6 +57,7 @@ def test_prepare_tree_places_application_and_runtime_in_stable_locations(tmp_pat
     (source / "scripts").mkdir()
     (source / "legalai" / "__init__.py").write_text("", encoding="utf-8")
     (source / "scripts" / "start.cmd").write_text("start", encoding="utf-8")
+    (source / "scripts" / "update.cmd").write_text("update", encoding="utf-8")
     runtime = tmp_path / "uv.exe"
     runtime.write_bytes(b"uv")
 
@@ -65,6 +66,7 @@ def test_prepare_tree_places_application_and_runtime_in_stable_locations(tmp_pat
     assert (destination / "app" / "legalai" / "__init__.py").exists()
     assert (destination / "runtime" / "uv.exe").exists()
     assert (destination / "start.cmd").exists()
+    assert (destination / "update.cmd").exists()
 
 
 def test_release_manifest_contains_archive_checksum(tmp_path: Path) -> None:

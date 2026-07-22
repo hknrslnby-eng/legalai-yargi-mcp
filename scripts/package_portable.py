@@ -17,7 +17,7 @@ EXCLUDED_NAMES = {
     ".git", ".cursor", ".codex", ".superpowers", "__pycache__",
 }
 EXCLUDED_PATTERNS = ("*.sqlite", "*.db", "*.jsonl", "*.pyc")
-ROOT_ASSETS = {"install.ps1", "install.sh", "start.cmd", "start.sh", "portable-manifest.json"}
+ROOT_ASSETS = {"install.ps1", "install.sh", "start.cmd", "start.sh", "update.cmd", "portable-manifest.json"}
 
 
 def _excluded(relative: Path) -> bool:
