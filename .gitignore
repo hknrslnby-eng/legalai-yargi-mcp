@@ -220,6 +220,7 @@ CLAUDE.md
 
 # Local LegalAI runtime data
 .data/
+tmp/
 _env_dir_backup_mistake/
 
 # Local subagent worktrees
