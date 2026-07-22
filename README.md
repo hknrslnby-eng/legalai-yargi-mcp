@@ -6,11 +6,13 @@ SocratLegal, hukuk araştırması ve hukuki metin hazırlığı için yerel çal
 
 1. GitHub Releases sayfasından `windows-x64` ZIP paketini indirin (https://github.com/hknrslnby-eng/legalai-yargi-mcp/releases/tag/v0.2.5)
 2. ZIP'i yazma izniniz olan bir klasöre açın.
-3. `install.ps1` dosyasını çalıştırın.
+3. Terminal kullanmak istemiyorsanız ana klasördeki `install.ps1` dosyasına sağ tıklayıp **PowerShell ile çalıştır** seçeneğini kullanın.
 4. Kurulacak istemciyi seçin. Örneğin `.install.ps1 -Ide cursor` yalnızca Cursor'a ekleme yapar. `-Ide all -OnlyInstalled` bilgisayarda zaten bulunan destekli istemcileri seçer.
 5. IDE'yi yeniden başlatın ve sohbete `SocratLegal yardım` yazın.
 
 Bu sürümde hazır portable paket yalnızca 64 bit Windows içindir. macOS/Linux için portable paket sözü verilmez. Bu sistemlerde kaynak kod kurulumu kullanılabilir.
+
+Yeni portable sürümleri tarayıcıdan elle aramak yerine, portable klasöründeki `update.cmd` dosyasına çift tıklayarak kullanıcı onaylı, HTTPS ve SHA-256 kontrollü güncelleme yapabilirsiniz. `config`, `data`, API anahtarları ve yerel corpus korunur.
 
 ## Kaynak kodla kurulum
 

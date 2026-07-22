@@ -8,11 +8,12 @@ from __future__ import annotations
 
 from fastapi import FastAPI
 
+from legalai import __version__
 from legalai.apps.api.routes import router
 from legalai.packages.shared.settings import settings
 from legalai.packages.shared.tenant import TenantContext, set_tenant
 
 set_tenant(TenantContext(tenant_id=settings.tenant_id, tenant_name=settings.tenant_name))
 
-app = FastAPI(title="LegalAI API", version="0.2.3")
+app = FastAPI(title="LegalAI API", version=__version__)
 app.include_router(router)

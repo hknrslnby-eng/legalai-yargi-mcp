@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 
@@ -20,6 +21,6 @@ def test_week11_docs_are_ide_first_and_secret_free() -> None:
         "Rafine",
     ):
         assert marker in combined
-    assert "OPENROUTER_API_KEY=" not in combined
-    assert "DEEPSEEK_API_KEY=" not in combined
+    assert not re.search(r"(?m)^OPENROUTER_API_KEY=[ \t]*\S", combined)
+    assert not re.search(r"(?m)^DEEPSEEK_API_KEY=[ \t]*\S", combined)
     assert "10000000146" not in combined

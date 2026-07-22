@@ -12,8 +12,12 @@ def test_user_install_doc_is_portable_first_and_describes_updates() -> None:
     assert "app.previous" in text
     assert "bilirkişi raporu" in text.lower()
     assert "GitHub Releases" in text
-    assert "otomatik olarak indirilmez" in text
+    assert "otomatik indirmez" in text
     assert "socratlegal_sozlesme_incele" in text
+    assert "update.cmd" in text
+    assert "onaylayın" in text
+    assert "SHA-256" in text
+    assert "sessiz" in text.lower()
 
 
 def test_docs_do_not_call_expert_report_flow_planned() -> None:

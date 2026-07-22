@@ -24,6 +24,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Verify release version
+        shell: pwsh
+        run: python scripts/check_release_version.py "${{ github.ref_name }}"
       - name: Download bundled uv (Windows)
         if: runner.os == 'Windows'
         shell: pwsh
@@ -35,6 +38,11 @@ jobs:
           Expand-Archive runtime-download/uv.zip -DestinationPath runtime-download/extracted -Force
           $uv = Get-ChildItem runtime-download/extracted -Recurse -Filter uv.exe | Select-Object -First 1
           Copy-Item $uv.FullName runtime-download/uv.exe
+      - name: Run installer preflight tests
+        shell: pwsh
+        run: |
+          & ".\runtime-download\uv.exe" sync --frozen --dev
+          & ".\runtime-download\uv.exe" run pytest legalai/tests/installer legalai/tests/apps -q
       - name: Build portable archive (Windows)
         if: runner.os == 'Windows'
         shell: pwsh

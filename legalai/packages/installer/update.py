@@ -50,6 +50,7 @@ _REQUIRED_FIELDS = {
 }
 RELEASE_REPOSITORY = "hknrslnby-eng/legalai-yargi-mcp"
 SUPPORTED_PLATFORM_TAGS = frozenset({"windows-x64", "macos-arm64", "macos-x64", "linux-x64"})
+MAX_ARCHIVE_BYTES = 512 * 1024 * 1024
 
 
 def default_platform_tag() -> str:
@@ -121,6 +122,45 @@ def archive_download_url(manifest: ReleaseManifest) -> str | None:
     if not base or not tag:
         return None
     return f"{base}/releases/download/{tag}/{manifest.archive_name}"
+
+
+def download_release_archive(
+    manifest: ReleaseManifest,
+    destination: Path,
+    *,
+    get: Callable[[str], bytes] | None = None,
+) -> Path:
+    """Download a release asset to a temporary path after validating its URL."""
+    url = archive_download_url(manifest)
+    if not url or urlparse(url).scheme != "https":
+        raise UpdateError("Release arşiv adresi HTTPS olmalıdır.")
+
+    destination = Path(destination)
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        if get is not None:
+            payload = get(url)
+            if not isinstance(payload, bytes):
+                raise TypeError("Arşiv yanıtı bytes olmalıdır.")
+            if not payload:
+                raise ValueError("Arşiv yanıtı boş.")
+            if len(payload) > MAX_ARCHIVE_BYTES:
+                raise ValueError("Arşiv boyutu izin verilen sınırı aşıyor.")
+            destination.write_bytes(payload)
+        else:
+            with urlopen(url, timeout=60) as response, destination.open("wb") as handle:
+                total = 0
+                while chunk := response.read(1024 * 1024):
+                    total += len(chunk)
+                    if total > MAX_ARCHIVE_BYTES:
+                        raise ValueError("Arşiv boyutu izin verilen sınırı aşıyor.")
+                    handle.write(chunk)
+                if total == 0:
+                    raise ValueError("Arşiv yanıtı boş.")
+    except (OSError, URLError, TypeError, ValueError) as error:
+        destination.unlink(missing_ok=True)
+        raise UpdateError(f"Arşiv indirilemedi: {error}") from error
+    return destination
 
 
 def load_release_manifest(payload: dict[str, object]) -> ReleaseManifest:

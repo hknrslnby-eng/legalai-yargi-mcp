@@ -1,5 +1,10 @@
 #!/usr/bin/env sh
 set -eu
-ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+if [ -d "$SCRIPT_DIR/app" ]; then
+  ROOT="$SCRIPT_DIR"
+else
+  ROOT="$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)"
+fi
 exec "$ROOT/runtime/uv" run --directory "$ROOT/app" socratlegal install \
   --install-dir "$ROOT/app" --portable-root "$ROOT" --ide all "$@"
