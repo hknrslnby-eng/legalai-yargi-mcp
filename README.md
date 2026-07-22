@@ -4,7 +4,7 @@ SocratLegal, hukuk araştırması ve hukuki metin hazırlığı için yerel çal
 
 ## En kolay kurulum: Windows x64 portable paket
 
-1. GitHub Releases sayfasından `windows-x64` ZIP paketini indirin.
+1. GitHub Releases sayfasından `windows-x64` ZIP paketini indirin (https://github.com/hknrslnby-eng/legalai-yargi-mcp/releases/tag/v0.2.3)
 2. ZIP'i yazma izniniz olan bir klasöre açın.
 3. `install.ps1` dosyasını çalıştırın.
 4. Kurulacak istemciyi seçin. Örneğin `.install.ps1 -Ide cursor` yalnızca Cursor'a ekleme yapar. `-Ide all -OnlyInstalled` bilgisayarda zaten bulunan destekli istemcileri seçer.
@@ -15,6 +15,14 @@ Bu sürümde hazır portable paket yalnızca 64 bit Windows içindir. macOS/Linu
 ## Kaynak kodla kurulum
 
 Python 3.11 veya üstü ve `uv` gerekir:
+
+Python resmi indirme sayfası: https://www.python.org/downloads/
+`uv` resmi kurulum rehberi: https://docs.astral.sh/uv/getting-started/installation/
+
+`uv` için Windows PowerShell kurulumu:
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+Python ve `uv` kurulumu mevcut veya tamamlanmışsa, kaynak kodu yerel cihazınıza terminalden kurabilirsiniz:
 
 ```powershell
 uv sync --frozen --dev
@@ -86,7 +94,7 @@ Kullanıcı araç adlarını ezberlemek zorunda değildir. İsteğini normal cü
 - Rekabet: Hukuk yanında iktisat ve işletme bakışı kullanılır. Ürün/coğrafi pazar, pazar payı ve yıllara göre değişim, satış hacmi/ciro, rakipler, tedarikçiler, müşteriler, değer zinciri, giriş engelleri, fiyat/maliyet, sektör seyri ve resmi veya itibarlı sektör raporları istenir.
 - Ticaret savunması: Anti-damping, sübvansiyon ve korunma tedbirlerinde mevzuat, soruşturma akışı, zarar/nedensellik, hesaplama ve delil stratejisi birlikte ele alınır.
 - KVKK: KVKK ana çerçevesine, olayla ilgiliyse NIS-1, NIS-2, siber güvenlik, bilişim, veri yönetimi ve gerektiğinde idare/ceza veya başka hukuk alanları eklenir. İlgisiz alanlar otomatik olarak eklenmez.
-- Teknik ve maddi olay lensi: Maden ruhsatı, siber olay, IBAN/kripto akışı, üretim-dağıtım zinciri ve benzeri süreçler ilgili alanın kıdemli uzmanı gözüyle incelenir; bu katman hukuki değerlendirmeyi destekler, onun yerine geçmez.
+- Teknik ve maddi olay lensi: Kullanıcının sağladığı girdiye göre maddi olay ve teknik ayrıntılara ilişkin iş-süreç akışı, operasyonlar, teamüller ve benzeri süreçler ilgili alanın kıdemli uzmanı gözüyle incelenir; bu katman hukuki değerlendirmeyi destekler, onun yerine geçmez.
 
 ## Çok dilli hukuk çıktısı
 
