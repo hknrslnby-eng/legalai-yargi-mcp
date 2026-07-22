@@ -34,6 +34,31 @@ Portable yöntemde kurulumdan sonra `config\.env` dosyasını açın. Örneğin 
 
 `legalai.env.example` boş bir örnektir. Anthropic, OpenAI, OpenRouter, DeepSeek, Kimi, GLM, Gemini, Grok/xAI, Composer, Hugging Face, GitHub Copilot ve başka önde gelen sağlayıcılar için alanlar bulunur. Bir alanın bulunması o sağlayıcının kurulu sürümde etkin olduğu anlamına gelmez; yalnızca gerçekten desteklenen ve seçilen sağlayıcı çalışır.
 
+Portable paket kullanmayan ve repoyu kaynak kod olarak kuran kullanıcılar API anahtarlarını repo kökündeki `.env` dosyasına yazar.
+
+Önce örnek dosyayı kopyalayın:
+
+```powershell
+Copy-Item .\legalai.env.example .\.env
+
+Sonra dosyayı açın:
+
+```powershell
+notepad .env
+
+Örnek:
+LEGALAI_LLM_PROVIDER=gemini
+GEMINI_API_KEY=buraya_kendi_api_anahtariniz
+
+Otomatik sağlayıcı seçimi için:
+LEGALAI_LLM_PROVIDER=auto
+GEMINI_API_KEY=
+GROQ_API_KEY=
+OPENROUTER_API_KEY=
+DEEPSEEK_API_KEY=
+
+auto seçeneğinde sistem, anahtarı bulunan ve görev için desteklenen sağlayıcıyı seçer.
+
 ## Yetenekler
 
 Kullanıcı araç adlarını ezberlemek zorunda değildir. İsteğini normal cümleyle yazabilir veya `socratlegal_yardim` aracını kullanabilir.
@@ -42,7 +67,7 @@ Kullanıcı araç adlarını ezberlemek zorunda değildir. İsteğini normal cü
 |---|---|---|
 | Kaynak arama ve çapraz sorgu | Soruyu yerel corpus, canlı resmi adapter'lar ve uygun uluslararası kaynaklarda arar. | Kurum/mahkeme seçimi, keyword dışı bağlam algısı, kaynak durumu, provenance, atıf ve hata ayrımı |
 | Katmanlı analiz | Hukuki normları, içtihatları ve maddi olayı birlikte inceler. | Tarih ve yürürlük, görev-yetki, süre, karşı görüş, belirsizlik, teknik lens, davranış/iş akışı lensi |
-| Ön bilgi | Tebligat, ihtar, dava dilekçesi veya iddianame gibi belgeyi ilk kez düzenler. | Eksik bilgi-belge-delil listesi, öncelik, süre/merci riski, kullanıcıya soru sorma |
+| Ön bilgi | | Ön bilgi | Müvekkile gelen tebligat, ihtar, dava dilekçesi, mahkeme kararı veya benzeri belgeyi; yapılabilecek hukuki yollar, süre ve merci riskleri, ilgili hukuk katmanları, gerekli bilgi-belge-deliller, eksik olgular ve alternatif stratejiler yönünden ayrıntılı ve katmanlı biçimde inceler. | Eksik bilgi-belge-delil listesi, öncelik, süre/merci riski, kullanıcıya soru sorma |
 | Strateji | Dava içi ve dava dışı seçenekleri karşılaştırır. | Dava, icra, arabuluculuk, idari başvuru, sulh, 35/A, ceza yolu sinyali, geri dönüş/risk karşılaştırması |
 | Hukuki mütalaa | 13 bölümlü, kaynaklı ve ihtimalli mütalaa taslağı üretir. | Yönetici özeti, hukuki çerçeve, olay uygulaması, karşı argüman, birleştirici değerlendirme, sonuç, kaynakça |
 | Dilekçe işlemleri | Dilekçe hazırlar, inceler, kısaltır veya uzatır. | Usul başlıklarını koruma, kaynak/alıntı politikası, teknik ve operasyonel olgular, çok dilli çıktı |
@@ -76,7 +101,34 @@ Due diligence bu sürümde aktif bir üretim yeteneği olarak sunulmaz.
 
 Bazı IDE'ler `/` menüsü gösterebilir; görünüm IDE'ye bağlıdır. Aynı ifadeleri doğal dille de yazabilirsiniz:
 
-`/yardim` · `/kaynak_ara` · `/katmanli_analiz` · `/onbilgi` · `/strateji` · `/mutalaa` · `/dilekce` · `/bilirkişi` · `/teknik_lens` · `/capraz_sorgu` · `/rekabet` · `/anti_damping` · `/kvkk_nis`
+## Slash sözlüğü
+
+Aşağıdaki ifadeler, doğrudan MCP aracı veya mevcut araçlara eklenen uzmanlık yönlendirmesi olarak çalışır. Host uygulaması slash menüsünü desteklemiyorsa aynı ifadeler doğal dilde yazılabilir.
+
+| Slash ifadesi | Gerçek yetenek veya bağlantılı araç | Ne yapar? | Durum |
+|---|---|---|---|
+| `/yardim` | `socratlegal_yardim` | Tüm yetenekleri, kullanım alanlarını ve örnek talepleri gösterir. | Aktif MCP aracı |
+| `/kaynak_ara` | `socratlegal_kaynak_ara` | Yerel corpus, canlı resmi adapter'lar, mahkemeler ve uluslararası kaynaklarda arama yapar. | Aktif MCP aracı |
+| `/katmanli_analiz` | `socratlegal_katmanli_analiz` | Hukuki normları, içtihatları, olayları, tarihleri, süreleri, görev-yetkiyi ve belirsizlikleri birlikte inceler. | Aktif MCP aracı |
+| `/onbilgi` | `socratlegal_onbilgi_ve_strateji` | Müvekkile gelen belge üzerinden yapılabilecek hukuki yolları, riskleri, eksik bilgi-belgeleri ve gerekli delilleri çıkarır. | Aktif MCP aracı |
+| `/strateji` | Ön bilgi ve strateji akışı | Dava, itiraz, icra, arabuluculuk, idari başvuru, sulh ve gerektiğinde ceza yollarını karşılaştırır. | Aktif akış |
+| `/mutalaa` | `socratlegal_hukuki_mutalaa` | 13 bölümlü, kaynaklı ve ihtimalli hukuki mütalaa taslağı üretir. | Aktif MCP aracı |
+| `/dilekce` | `socratlegal_dilekce_*` | Dilekçe hazırlar, inceler, kısaltır veya uzatır. | Aktif MCP araç grubu |
+| `/bilirkişi` | `socratlegal_bilirkisi_raporu_*` | Bilirkişi raporunu teknik ve hukuki açıdan inceler veya itiraz dilekçesi hazırlar. | Aktif MCP araç grubu |
+| `/karsi_taraf` | `socratlegal_agresif_karsi_taraf` | Karşı tarafın güçlü argümanlarını, karşıt içtihatları ve alternatif çözüm yollarını çıkarır. | Aktif MCP aracı |
+| `/derin_arastirma` | `socratlegal_derin_arastirma` | Karmaşık soruyu alt sorulara bölerek çok kaynaklı araştırma yapar. | Aktif MCP aracı |
+| `/sozlesme` | `socratlegal_sozlesme_incele` | Sözleşmeyi madde, risk, eksiklik ve operasyonel etkileriyle inceler. | Aktif MCP aracı |
+| `/alinti_dogrula` | `alinti_dogrula` | Taslakta kullanılan kaynak ve belge atıflarını kontrol eder. | Aktif yetenek |
+| `/pii_maskele` | `pii_maskele` | Dış çağrıdan önce kişisel verilerin yerelde maskelenmesini sağlar. | Aktif yetenek |
+| `/corpus` | Corpus durum, belge ekleme ve sync araçları | Yerel corpus durumunu gösterir, belge ekler ve izinli kaynakları corpus'a alır. | Aktif MCP araç grubu |
+| `/guncelleme` | `socratlegal_guncelleme_kontrol` | Yeni portable sürüm metadata’sını kontrol eder; otomatik kurulum yapmaz. | Aktif MCP aracı |
+| `/teknik_lens` | Teknik ve operasyonel katman | Maden, siber olay, üretim, dağıtım, IBAN/kripto ve benzeri maddi süreçleri ilgili teknik uzman bakışıyla inceler. | Aktif yönlendirme lensi |
+| `/capraz_sorgu` | Kaynak yönlendirme ve `socratlegal_kaynak_ara` | Keyword beklemeden, bağlamla ilgili kurum, mahkeme, corpus ve uluslararası kaynakları birlikte değerlendirir. | Aktif yönlendirme lensi |
+| `/rekabet` | Rekabet persona ve competition intake | Hukukun yanında iktisat, işletme, pazar payı, rakipler, tedarikçiler, müşteriler, zincir, giriş engelleri ve sektör raporlarını inceler. | Aktif yönlendirme lensi |
+| `/anti_damping` | Ticaret savunması persona ve kaynak yönlendirme | Anti-damping, sübvansiyon ve korunma tedbirlerinde soruşturma, damping marjı, zarar, nedensellik ve delil stratejisini inceler. | Aktif yönlendirme lensi |
+| `/kvkk_nis` | KVKK related-law selection | KVKK’ya olayla ilgili olduğu ölçüde NIS-1, NIS-2, siber güvenlik, idare ve ceza perspektiflerini ekler. | Aktif yönlendirme lensi |
+
+`/teknik_lens`, `/capraz_sorgu`, `/rekabet`, `/anti_damping` ve `/kvkk_nis` bağımsız MCP araçları değildir. Bunlar mevcut analiz, mütalaa, strateji, dilekçe ve kaynak arama akışlarına teknik, çapraz kaynak, rekabet, ticaret savunması veya KVKK-NIS-siber güvenlik perspektifi ekleyen aktif yönlendirme lensleridir. Host uygulaması slash menüsünü destekliyorsa menüden, desteklemiyorsa doğal dille kullanılabilir.
 
 ## Sistem gereksinimleri ve güvenlik
 
