@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import tempfile
 from pathlib import Path
 from datetime import timedelta
 
@@ -23,9 +24,13 @@ from legalai.packages.installer.update import (
     archive_download_url,
     check_for_update,
     check_remote_update,
+    default_manifest_url,
+    download_release_archive,
+    fetch_release_manifest,
     load_release_manifest,
     rollback_update,
 )
+from legalai.packages.installer.versioning import compare_versions
 
 
 app = typer.Typer(help="LegalAI yerel yönetim araçları.", no_args_is_help=True)
@@ -76,6 +81,41 @@ def update_check(
         "archive_downloaded": False,
         "auto_apply": False,
     }, ensure_ascii=False, indent=2))
+
+
+@update_app.command("install")
+def update_install(
+    manifest_file: Path | None = typer.Option(None, "--manifest-file", help="Yerel release manifest JSON dosyası"),
+    manifest_url: str | None = typer.Option(None, "--manifest-url", help="Release manifest metadata URL'si"),
+    platform_tag: str | None = typer.Option(None, "--platform-tag", help="windows-x64, macos-arm64 veya linux-x64"),
+    active_app: Path = typer.Option(Path.cwd() / "app", "--active-app"),
+    current_version: str = typer.Option(__version__, "--current-version"),
+    yes: bool = typer.Option(False, "--yes", help="Kullanıcı onayını atla; otomasyon testleri için kullanılabilir."),
+) -> None:
+    """Yeni portable sürümü kullanıcı onayıyla indirir ve checksum doğrulayarak kurar."""
+    if manifest_file and manifest_url:
+        raise typer.BadParameter("--manifest-file ile --manifest-url birlikte kullanılamaz.")
+    try:
+        if manifest_file:
+            manifest = load_release_manifest(json.loads(manifest_file.read_text(encoding="utf-8")))
+        else:
+            url = manifest_url or default_manifest_url(platform_tag or "windows-x64")
+            manifest = load_release_manifest(fetch_release_manifest(url))
+        if compare_versions(current_version, manifest.version) >= 0:
+            typer.echo(f"SocratLegal güncel: {current_version}")
+            return
+        typer.echo(f"Yeni sürüm bulundu: {current_version} -> {manifest.version}")
+        if not yes and not typer.confirm("Güncelleme indirilsin ve uygulansın mı?"):
+            typer.echo("Güncelleme iptal edildi; dosyalara dokunulmadı.")
+            return
+        active_app = active_app.resolve()
+        active_app.parent.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix=".socratlegal-download-", dir=active_app.parent) as temporary:
+            archive = download_release_archive(manifest, Path(temporary) / manifest.archive_name)
+            apply_update(archive, active_app, manifest)
+    except (OSError, json.JSONDecodeError, UpdateError) as error:
+        raise typer.BadParameter(str(error)) from error
+    typer.echo(f"Güncelleme uygulandı: {manifest.version}")
 
 
 @update_app.command("apply")
