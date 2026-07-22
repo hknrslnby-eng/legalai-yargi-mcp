@@ -40,24 +40,27 @@ Portable paket kullanmayan ve repoyu kaynak kod olarak kuran kullanıcılar API 
 
 ```powershell
 Copy-Item .\legalai.env.example .\.env
-
-Sonra dosyayı açın:
-
-```powershell
 notepad .env
+```
 
 Örnek:
+
+```dotenv
 LEGALAI_LLM_PROVIDER=gemini
 GEMINI_API_KEY=buraya_kendi_api_anahtariniz
+```
 
 Otomatik sağlayıcı seçimi için:
+
+```dotenv
 LEGALAI_LLM_PROVIDER=auto
 GEMINI_API_KEY=
 GROQ_API_KEY=
 OPENROUTER_API_KEY=
 DEEPSEEK_API_KEY=
+```
 
-auto seçeneğinde sistem, anahtarı bulunan ve görev için desteklenen sağlayıcıyı seçer.
+`auto` seçeneğinde sistem, anahtarı bulunan ve görev için desteklenen sağlayıcıyı seçer.
 
 ## Yetenekler
 
@@ -67,7 +70,7 @@ Kullanıcı araç adlarını ezberlemek zorunda değildir. İsteğini normal cü
 |---|---|---|
 | Kaynak arama ve çapraz sorgu | Soruyu yerel corpus, canlı resmi adapter'lar ve uygun uluslararası kaynaklarda arar. | Kurum/mahkeme seçimi, keyword dışı bağlam algısı, kaynak durumu, provenance, atıf ve hata ayrımı |
 | Katmanlı analiz | Hukuki normları, içtihatları ve maddi olayı birlikte inceler. | Tarih ve yürürlük, görev-yetki, süre, karşı görüş, belirsizlik, teknik lens, davranış/iş akışı lensi |
-| Ön bilgi | | Ön bilgi | Müvekkile gelen tebligat, ihtar, dava dilekçesi, mahkeme kararı veya benzeri belgeyi; yapılabilecek hukuki yollar, süre ve merci riskleri, ilgili hukuk katmanları, gerekli bilgi-belge-deliller, eksik olgular ve alternatif stratejiler yönünden ayrıntılı ve katmanlı biçimde inceler. | Eksik bilgi-belge-delil listesi, öncelik, süre/merci riski, kullanıcıya soru sorma |
+| Ön bilgi | Müvekkile gelen tebligat, ihtar, dava dilekçesi, iddianame veya mahkeme kararı gibi belgeyi; yapılabilecek hukuki yolları, süre ve merci risklerini, ilgili hukuk alanlarını, eksik bilgi-belgeleri, gerekli delilleri ve alternatif stratejileri çıkararak katmanlı biçimde inceler. | Belge türü ve usul aşaması, hukuki yollar, süre ve merci, karşı argümanlar, eksik bilgi-belge-deliller, kullanıcıya sorulacak sorular |
 | Strateji | Dava içi ve dava dışı seçenekleri karşılaştırır. | Dava, icra, arabuluculuk, idari başvuru, sulh, 35/A, ceza yolu sinyali, geri dönüş/risk karşılaştırması |
 | Hukuki mütalaa | 13 bölümlü, kaynaklı ve ihtimalli mütalaa taslağı üretir. | Yönetici özeti, hukuki çerçeve, olay uygulaması, karşı argüman, birleştirici değerlendirme, sonuç, kaynakça |
 | Dilekçe işlemleri | Dilekçe hazırlar, inceler, kısaltır veya uzatır. | Usul başlıklarını koruma, kaynak/alıntı politikası, teknik ve operasyonel olgular, çok dilli çıktı |
@@ -99,11 +102,7 @@ Due diligence bu sürümde aktif bir üretim yeteneği olarak sunulmaz.
 
 ## Slash sözlüğü
 
-Bazı IDE'ler `/` menüsü gösterebilir; görünüm IDE'ye bağlıdır. Aynı ifadeleri doğal dille de yazabilirsiniz:
-
-## Slash sözlüğü
-
-Aşağıdaki ifadeler, doğrudan MCP aracı veya mevcut araçlara eklenen uzmanlık yönlendirmesi olarak çalışır. Host uygulaması slash menüsünü desteklemiyorsa aynı ifadeler doğal dilde yazılabilir.
+Slash ifadeleri kullanıcının hangi yetenek veya uzmanlık bakışını istediğini kısa yoldan belirtir. Bir IDE'nin slash menüsü göstermesi host uygulamasına bağlıdır. Menü görünmese de aynı ifadeyi doğal cümle içinde yazabilirsiniz.
 
 | Slash ifadesi | Gerçek yetenek veya bağlantılı araç | Ne yapar? | Durum |
 |---|---|---|---|
