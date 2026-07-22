@@ -13,7 +13,7 @@ def test_competition_context_cross_queries_without_literal_keyword():
     assert "danistay" in selected
     assert "oecd_competition" in selected
     assert "curia" in selected
-    assert "competition_reports" in {item.source_id for item in plan.skipped}
+    assert "competition_reports" in selected
 
 
 def test_explicit_sources_are_authoritative_and_pending_sources_are_skipped():

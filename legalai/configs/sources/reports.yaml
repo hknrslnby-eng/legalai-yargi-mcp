@@ -1,6 +1,6 @@
 sources:
   - source_id: competition_reports
-    status: corpus_only
+    status: live_ready
     label: "Rekabet, piyasa ve sektör raporları"
     source_kind: economic_report
     authority_level: non_binding_economic_reference
