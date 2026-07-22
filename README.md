@@ -4,7 +4,7 @@ SocratLegal, hukuk araştırması ve hukuki metin hazırlığı için yerel çal
 
 ## En kolay kurulum: Windows x64 portable paket
 
-1. GitHub Releases sayfasından `windows-x64` ZIP paketini indirin (https://github.com/hknrslnby-eng/legalai-yargi-mcp/releases/tag/v0.2.3)
+1. GitHub Releases sayfasından `windows-x64` ZIP paketini indirin (https://github.com/hknrslnby-eng/legalai-yargi-mcp/releases/tag/v0.2.5)
 2. ZIP'i yazma izniniz olan bir klasöre açın.
 3. `install.ps1` dosyasını çalıştırın.
 4. Kurulacak istemciyi seçin. Örneğin `.install.ps1 -Ide cursor` yalnızca Cursor'a ekleme yapar. `-Ide all -OnlyInstalled` bilgisayarda zaten bulunan destekli istemcileri seçer.

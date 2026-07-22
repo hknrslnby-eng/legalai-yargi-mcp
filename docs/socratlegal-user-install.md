@@ -59,6 +59,8 @@ Bu yol Python ve uv gerektirir; normal kullanıcı için portable paket tercih e
 
 ## Güncellemeler
 
+Upstream depoda veya bu fork'ta yeni adapter, kurum/kurul bağlantısı ya da backend kodu eklenirse bu değişiklik portable kullanıcılara kendiliğinden gelmez; kullanıcı yeni fork release'ini indirip checksum kontrolünden sonra uygulamalıdır. Yeni bir corpus veritabanı dosyası release paketine otomatik olarak eklenmez ve mevcut kullanıcı verisinin üzerine yazılmaz. Yeni sürümde yeni canlı adapter veya corpus kaynağı kodu varsa, kullanıcı güncellemeden sonra ilgili corpus sync işlemini açıkça çalıştırarak yeni kaynakları yerel corpus'a alır.
+
 Yeni özellikler yayınlandığında aynı portable paketin yeni sürümü indirilir. Uygulama güncellemesi `data` klasörünü, yerel corpus'u, belgeleri ve API anahtarlarını paketten silmez. Yeni sürüm önce geçici alanda açılır, SHA-256 doğrulanır, sonra `app.previous` yedeği bırakılarak devreye alınır. Başlangıç kontrolü başarısız olursa önceki sürüme dönülür.
 
 Güncelleme kontrolü yalnızca sürüm metadata'sını okur ve varsayılan olarak 24 saatte bir yapılır; kullanıcı belgelerinin metni gönderilmez.
