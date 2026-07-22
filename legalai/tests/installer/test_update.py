@@ -1,4 +1,5 @@
 import hashlib
+import importlib
 import json
 import zipfile
 from datetime import datetime, timedelta, timezone
@@ -12,6 +13,7 @@ from legalai.packages.installer.update import (
     check_for_update,
     check_remote_update,
     default_manifest_url,
+    download_release_archive,
     fetch_release_manifest,
     load_release_manifest,
     rollback_update,
@@ -185,6 +187,105 @@ def test_fetch_release_manifest_requires_https_and_limits_metadata_size() -> Non
         fetch_release_manifest("http://example.test/manifest.json", get=lambda _url: b"{}")
     with pytest.raises(UpdateError):
         fetch_release_manifest("https://example.test/manifest.json", get=lambda _url: b"x" * (1024 * 1024 + 1))
+
+
+def test_download_release_archive_writes_manifest_named_file(tmp_path: Path) -> None:
+    archive = tmp_path / "socratlegal-1.2.0-windows-x64.zip"
+    archive.write_bytes(b"archive")
+    manifest = load_release_manifest(_manifest(archive, "1.2.0") | {
+        "release_url": "https://github.com/hknrslnby-eng/legalai-yargi-mcp/releases/tag/v1.2.0",
+    })
+    destination = tmp_path / "downloaded.zip"
+
+    result = download_release_archive(
+        manifest,
+        destination,
+        get=lambda _url: archive.read_bytes(),
+    )
+
+    assert result == destination
+    assert destination.read_bytes() == b"archive"
+
+
+def test_download_release_archive_wraps_network_errors(tmp_path: Path) -> None:
+    archive = tmp_path / "socratlegal-1.2.0-windows-x64.zip"
+    archive.write_bytes(b"archive")
+    manifest = load_release_manifest(_manifest(archive, "1.2.0") | {
+        "release_url": "https://github.com/hknrslnby-eng/legalai-yargi-mcp/releases/tag/v1.2.0",
+    })
+
+    with pytest.raises(UpdateError, match="Ar.*iv indirilemedi"):
+        download_release_archive(
+            manifest,
+            tmp_path / "downloaded.zip",
+            get=lambda _url: (_ for _ in ()).throw(OSError("offline")),
+        )
+
+
+def test_cli_update_install_applies_downloaded_archive_with_consent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    cli_module = importlib.import_module("legalai.apps.cli.main")
+    bundle = tmp_path / "portable"
+    active_app = bundle / "app"
+    active_app.mkdir(parents=True)
+    (active_app / "old.txt").write_text("old", encoding="utf-8")
+    archive = tmp_path / "socratlegal-1.2.0-windows-x64.zip"
+    with zipfile.ZipFile(archive, "w") as handle:
+        handle.writestr("app/new.txt", "new")
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(_manifest(archive, "1.2.0")), encoding="utf-8")
+
+    def fake_download(_manifest, destination: Path):
+        destination.write_bytes(archive.read_bytes())
+        return destination
+
+    monkeypatch.setattr(cli_module, "download_release_archive", fake_download)
+    result = runner.invoke(
+        app,
+        [
+            "update", "install",
+            "--manifest-file", str(manifest_path),
+            "--active-app", str(active_app),
+            "--current-version", "1.0.0",
+            "--yes",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert (active_app / "new.txt").read_text(encoding="utf-8") == "new"
+    assert (bundle / "app.previous" / "old.txt").exists()
+    assert "1.2.0" in result.stdout
+
+
+def test_cli_update_install_cancellation_does_not_change_active_app(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    cli_module = importlib.import_module("legalai.apps.cli.main")
+    active_app = tmp_path / "app"
+    active_app.mkdir()
+    (active_app / "old.txt").write_text("old", encoding="utf-8")
+    archive = tmp_path / "socratlegal-1.2.0-windows-x64.zip"
+    archive.write_bytes(b"archive")
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps(_manifest(archive, "1.2.0")), encoding="utf-8")
+    called = []
+
+    def fake_download(*_args, **_kwargs):
+        called.append(True)
+        raise AssertionError("download should not start before consent")
+
+    monkeypatch.setattr(cli_module, "download_release_archive", fake_download)
+    result = runner.invoke(
+        app,
+        [
+            "update", "install",
+            "--manifest-file", str(manifest_path),
+            "--active-app", str(active_app),
+            "--current-version", "1.0.0",
+        ],
+        input="n\n",
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert not called
+    assert (active_app / "old.txt").read_text(encoding="utf-8") == "old"
 
 
 def test_remote_update_check_uses_cache_and_never_downloads_archive(tmp_path: Path) -> None:

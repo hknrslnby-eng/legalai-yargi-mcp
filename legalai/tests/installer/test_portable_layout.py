@@ -7,7 +7,7 @@ ROOT = Path(__file__).parents[3]
 
 
 def test_portable_layout_has_cross_platform_launchers() -> None:
-    for name in ("scripts/install.ps1", "scripts/install.sh", "scripts/start.cmd", "scripts/start.sh"):
+    for name in ("scripts/install.ps1", "scripts/install.sh", "scripts/start.cmd", "scripts/start.sh", "scripts/update.cmd"):
         assert (ROOT / name).exists(), name
 
 
@@ -56,3 +56,12 @@ def test_direct_portable_launchers_use_external_config_file() -> None:
     assert "SOCRATLEGAL_ENV_FILE" in unix_launcher
     assert "config/.env" in unix_launcher
     assert 'if [ -d "$SCRIPT_DIR/app" ]' in unix_launcher
+
+
+def test_update_launcher_uses_bundled_runtime_and_windows_platform() -> None:
+    launcher = (ROOT / "scripts" / "update.cmd").read_text(encoding="utf-8")
+
+    assert "runtime\\uv.exe" in launcher
+    assert "update install" in launcher
+    assert "--active-app" in launcher
+    assert "windows-x64" in launcher
