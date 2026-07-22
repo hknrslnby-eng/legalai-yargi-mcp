@@ -92,3 +92,4 @@ dev = [
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["legalai/tests"]
+addopts = ["--import-mode=importlib"]
