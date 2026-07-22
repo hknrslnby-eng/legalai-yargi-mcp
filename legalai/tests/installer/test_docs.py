@@ -4,20 +4,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[3]
 
 
-def test_user_install_doc_is_portable_first_and_describes_updates() -> None:
+def test_user_install_doc_is_source_first_and_describes_supported_setup() -> None:
     text = (ROOT / "docs" / "socratlegal-user-install.md").read_text(encoding="utf-8")
 
-    assert "portable paket" in text.lower()
-    assert "Python, uv veya GitHub CLI" in text
-    assert "app.previous" in text
+    assert "kaynak kod" in text.lower()
+    assert "portable kurulum bu sürümde kullanıcıya sunulmuyor" in text.lower()
+    assert "Python 3.11" in text
     assert "bilirkişi raporu" in text.lower()
-    assert "GitHub Releases" in text
-    assert "otomatik indirmez" in text
+    assert "uv sync --frozen --dev" in text
     assert "socratlegal_sozlesme_incele" in text
-    assert "update.cmd" in text
-    assert "onaylayın" in text
-    assert "SHA-256" in text
-    assert "sessiz" in text.lower()
 
 
 def test_docs_do_not_call_expert_report_flow_planned() -> None:
@@ -26,13 +21,14 @@ def test_docs_do_not_call_expert_report_flow_planned() -> None:
     assert "henuz uretim modulu degildir" not in text
 
 
-def test_portable_docs_explain_windows_only_and_env_file() -> None:
+def test_source_docs_explain_python_uv_and_env_file() -> None:
     text = (ROOT / "docs" / "socratlegal-user-install.md").read_text(encoding="utf-8")
 
-    assert "windows-x64" in text
-    assert "config\\.env" in text
+    assert "Python 3.11" in text
+    assert "uv" in text
+    assert "repo kökündeki `.env`" in text.lower()
     assert "URL girilmez" in text
-    assert "macOS/Linux portable paketi vaat edilmez" in text
+    assert "Cursor" in text and "Codex" in text
 
 
 def test_env_example_has_blank_provider_template() -> None:

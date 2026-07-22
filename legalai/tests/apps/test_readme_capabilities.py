@@ -32,8 +32,10 @@ def test_readme_describes_active_capabilities_and_subskills() -> None:
 def test_readme_explains_setup_and_corpus_limits_without_deep_architecture() -> None:
     text = (ROOT / "README.md").read_text(encoding="utf-8").lower()
 
-    assert "windows x64" in text
-    assert "config\\.env" in text
+    assert "kaynak kodla kurulum" in text
+    assert "python 3.11" in text
+    assert "repo kökündeki `.env`" in text
     assert "corpus" in text and "canlı" in text
     assert "upstream" in text and "otomatik" in text
     assert "analysis_only" in text and "non_binding" in text
+    assert "said sürücü" in text
