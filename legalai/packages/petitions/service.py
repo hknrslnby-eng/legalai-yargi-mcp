@@ -5,7 +5,7 @@ import re
 import unicodedata
 from typing import Any
 
-from .models import PetitionRequest, PetitionResult
+from .models import CitationChange, PetitionRequest, PetitionResult
 from .quality import build_petition_quality
 from legalai.packages.shared.evidence import EvidenceRecord
 
@@ -28,6 +28,10 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
         raise PermissionError("Bir üslup profili uygulanmadan önce açık kullanıcı onayı gerekir.")
 
     text = request.petition_text or ""
+    if request.citation_policy not in {"retain", "remove"}:
+        raise ValueError("citation_policy retain veya remove olmalıdır.")
+    if request.citation_policy == "remove" and not request.citation_removal_approved:
+        raise PermissionError("İçtihat/kaynak alıntılarının kaldırılması için açık kullanıcı onayı gerekir.")
     quality = build_petition_quality(
         request.question,
         request.jurisdiction_hint,
@@ -49,6 +53,7 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
     paragraphs = _classify_paragraphs(text)
     sections = _draft_sections(request)
     changes: list[dict[str, Any]] = []
+    citation_report = _citation_change_report(text, request)
 
     if request.operation == "review":
         changes = [item for item in paragraphs if item["classification"] in {"duplicative", "risky_or_procedural"}]
@@ -110,13 +115,23 @@ def process_petition(request: PetitionRequest) -> PetitionResult:
                 for branch in quality["cross_domain_inquiry"].branches
             ],
         },
-        operational_context=operational.to_dict(),
         temporal_context={
             "event_dates": list(request.event_dates or []),
             "instruction": "Olay, tebliğ, dava ve yürürlük tarihleri doğrulanmadan süre veya uygulanacak hukuk sonucu kesinleştirilmemeli.",
         },
-        missing_facts=_missing_facts(request, text),
+        missing_facts=[*request.missing_facts, *_missing_facts(request, text)],
+        citation_change_report=citation_report,
+        operational_context=request.operational_context or operational.to_dict(),
     )
+
+
+def _citation_change_report(text: str, request: PetitionRequest) -> list[CitationChange]:
+    citation_markers = re.findall(r"(?:Yargıtay|Danıştay|Anayasa Mahkemesi|ABAD|ECLI|\b\d{4}/\d+\s*[EK]\.)[^\n]*", text, re.IGNORECASE)
+    if not citation_markers:
+        return []
+    action = "removed" if request.citation_policy == "remove" else "retained"
+    reason = "Açık kullanıcı onayıyla kaldırıldı." if action == "removed" else "Kısaltmada içtihat/kaynak bağlantısı varsayılan olarak korundu."
+    return [CitationChange(marker[:160], action, reason, request.citation_removal_approved if action == "removed" else False) for marker in citation_markers]
 
 
 def _draft_sections(request: PetitionRequest) -> list[dict[str, Any]]:

@@ -884,6 +884,9 @@ async def _socratlegal_legal_opinion_tool(
         source_ids=tuple(document["doc_id"] for document in payload.get("sources", [])),
         quality_profile=quality_profile,
         model_hint=model_hint,
+        operational_context=payload.get("operational_context"),
+        missing_facts=payload.get("missing_facts", []),
+        citation_policy="retain",
     )
     payload["assistant_instructions"] = "\n\n".join(
         item for item in (payload.get("assistant_instructions"), memo_instructions) if item

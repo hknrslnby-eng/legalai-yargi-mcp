@@ -14,6 +14,7 @@ from typing import Any
 from legalai.packages.documents.intake import DocumentInput, extract_document
 from legalai.packages.layers.operational_cards import build_operational_cards
 from legalai.packages.layers.competition_intake import build_competition_intake
+from legalai.packages.layers.operational_context import OperationalContextBuilder
 
 
 @dataclass(frozen=True)
@@ -42,6 +43,7 @@ class PreActionResult:
     assumptions: list[str] = field(default_factory=list)
     missing_facts: list[str] = field(default_factory=list)
     operational_cards: list[dict[str, Any]] = field(default_factory=list)
+    operational_context: dict[str, Any] = field(default_factory=dict)
     evidence_ledger: list[dict[str, Any]] = field(default_factory=list)
     source_name: str = "inline"
     warnings: list[str] = field(default_factory=list)
@@ -87,6 +89,7 @@ def analyze_pre_action(request: PreActionRequest) -> PreActionResult:
         [item["domain"] for item in domains],
         (text,),
     )
+    operational_context = OperationalContextBuilder().build(request.question or text, [item["domain"] for item in domains])
     ledger = [
         {
             "claim_id": "document_text",
@@ -120,6 +123,7 @@ def analyze_pre_action(request: PreActionRequest) -> PreActionResult:
         assumptions=assumptions,
         missing_facts=missing,
         operational_cards=[asdict(card) for card in cards],
+        operational_context=operational_context.to_dict(),
         evidence_ledger=ledger,
         source_name=source_name,
         warnings=list(warnings),

@@ -4,6 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from legalai.packages.layers.quality_contract import build_quality_contract
+from legalai.packages.layers.competition_intake import IntakeQuestion
 
 
 MEMORANDUM_SECTIONS: tuple[str, ...] = (
@@ -43,6 +44,9 @@ def build_memorandum_instructions(
     source_ids: tuple[str, ...] = (),
     quality_profile: str = "auto",
     model_hint: str = "",
+    operational_context: dict[str, object] | None = None,
+    missing_facts: tuple[IntakeQuestion, ...] | list[object] = (),
+    citation_policy: str = "retain",
 ) -> str:
     """Return a model-neutral, non-chain-of-thought output contract."""
     profile = profile or MemorandumProfile()
@@ -58,6 +62,15 @@ def build_memorandum_instructions(
         if profile.include_research_gaps
         else "Yalnızca kullanıcı tarafından verilen ve kaynaklarla doğrulanan vakıaları kullan."
     )
+    operational = (
+        "Operasyonel/teknik bulguları ayrı bir katman olarak göster; yalnızca hukuki unsurlara, delile, nedenselliğe, kusura, usule veya ekonomik etkiye maddi katkısı ölçüsünde kullan; kesin olgu gibi yazma. "
+        f"Mevcut operasyonel bağlam: {operational_context}."
+        if operational_context
+        else "Teknik/operasyonel bağlamı yalnızca somut olayla ilgisi ve hukuki etkisi gösterilebildiğinde kullan."
+    )
+    missing = "Eksik veri taleplerini açıkça göster: " + "; ".join(
+        item.question if hasattr(item, "question") else str(item) for item in missing_facts
+    ) if missing_facts else "Eksik veri yoksa bunu varsayım olarak belirt."
     return (
         "HUKUKİ MÜTALAA ÇIKTI SÖZLEŞMESİ\n"
         f"Ayrıntı seviyesi: {profile.detail_level}. Ham düşünce zincirini gösterme; bunun yerine "
@@ -69,6 +82,9 @@ def build_memorandum_instructions(
         f"13. bölümde tam künye, belge kimliği ve en fazla {profile.max_source_quotes} kısa ilgili alıntı göster.\n"
         f"{strategy}\n"
         f"{gaps}\n"
+        f"{operational}\n"
+        f"{missing}\n"
+        f"Atıf politikası: {citation_policy}; içtihat/kaynak alıntılarını açık kullanıcı onayı olmadan kaldırma.\n"
         "Doğrudan içtihat bulunamazsa bunu açıkça söyle; benzer norm/unsur/amaç taşıyan kaynakları "
         "doğrudan kaynakla karıştırmadan kıyas adımları, benzerlikler, farklar ve kıyas sınırlarıyla sun. "
         "Ceza ve vergi hukukunda kanunilik ve kıyas sınırlamalarını; temel haklarda kanunilik, meşru amaç, "
