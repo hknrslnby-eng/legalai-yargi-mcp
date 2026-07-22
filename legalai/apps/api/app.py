@@ -14,5 +14,5 @@ from legalai.packages.shared.tenant import TenantContext, set_tenant
 
 set_tenant(TenantContext(tenant_id=settings.tenant_id, tenant_name=settings.tenant_name))
 
-app = FastAPI(title="LegalAI API", version="0.1.0")
+app = FastAPI(title="LegalAI API", version="0.2.3")
 app.include_router(router)

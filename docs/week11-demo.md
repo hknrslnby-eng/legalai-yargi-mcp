@@ -24,7 +24,7 @@ Beklenen sonuç:
 ```json
 {
   "status": "ok",
-  "version": "0.1.0",
+  "version": "0.2.3",
   "external_calls": false
 }
 ```

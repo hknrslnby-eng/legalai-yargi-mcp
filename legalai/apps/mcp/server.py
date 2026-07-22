@@ -59,7 +59,7 @@ from legalai.packages.layers.source_routing import build_source_query_plan
 # Bugün her zaman "local"; sunucuya taşındığında bu satır middleware'e taşınır.
 set_tenant(TenantContext(tenant_id=settings.tenant_id, tenant_name=settings.tenant_name))
 
-app = FastMCP(name="SocratLegal MCP Server", version="0.1.0")
+app = FastMCP(name="SocratLegal MCP Server", version="0.2.3")
 _pii_gateway = PiiGateway()
 
 ApplicationNo = Annotated[str, Field(description="AİHM başvuru numarası; örn. 47533/99.")]
@@ -1066,7 +1066,7 @@ async def _legacy_legalai_contract_review_tool(
     annotations={"readOnlyHint": True, "openWorldHint": True, "idempotentHint": True},
 )
 async def _socratlegal_update_check_tool(
-    current_version: str = "0.2.2",
+    current_version: str = "0.2.3",
     platform_tag: str | None = None,
     manifest_url: str | None = None,
 ) -> dict:
@@ -1104,7 +1104,7 @@ async def _socratlegal_update_check_tool(
 
 
 async def socratlegal_guncelleme_kontrol(
-    current_version: str = "0.2.2",
+    current_version: str = "0.2.3",
     platform_tag: str | None = None,
     manifest_url: str | None = None,
 ) -> dict:
@@ -1117,7 +1117,7 @@ async def socratlegal_guncelleme_kontrol(
     description="Geçiş uyumluluğu: SocratLegal sürüm metadata kontrolü.",
 )
 async def _legacy_legalai_update_check(
-    current_version: str = "0.2.2",
+    current_version: str = "0.2.3",
     platform_tag: str | None = None,
     manifest_url: str | None = None,
 ) -> dict:
