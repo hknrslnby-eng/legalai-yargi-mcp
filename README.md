@@ -9,20 +9,57 @@ Portable/ZIP kurulum bu sürümde son kullanıcıya sunulmuyor. Desteklenen kuru
 Python 3.11 veya üstü ve `uv` gerekir:
 
 Python resmi indirme sayfası: https://www.python.org/downloads/
+
 `uv` resmi kurulum rehberi: https://docs.astral.sh/uv/getting-started/installation/
 
 `uv` için Windows PowerShell kurulumu:
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```powershell 
+-ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
 
 Python ve `uv` kurulumu mevcut veya tamamlanmışsa, kaynak kodu yerel cihazınıza terminalden kurabilirsiniz:
 
+# Cursor
 ```powershell
 uv sync --frozen --dev
 uv run socratlegal install --install-dir . --ide cursor
 uv run socratlegal-mcp
 ```
 
-Desteklenen IDE/istemciler: Codex, Cursor, Claude Desktop, Antigravity ve VS Code. Hepsi otomatik olarak seçilmez; kurulumu yapan kişi istediği istemciyi seçer. `--ide all` adayların hepsini gösterir, `--only-installed` yalnızca bilgisayarda bulunanları ekler.
+# Antigravity
+```powershell
+uv sync --frozen --dev
+uv run socratlegal install --install-dir . --ide antigravity
+uv run socratlegal-mcp
+```
+
+# VS Code
+```powershell
+uv sync --frozen --dev
+uv run socratlegal install --install-dir . --ide vscode
+uv run socratlegal-mcp
+```
+
+# Claude Desktop
+```powershell
+uv sync --frozen --dev
+uv run socratlegal install --install-dir . --ide claude
+uv run socratlegal-mcp
+```
+
+# Codex
+```powershell
+uv sync --frozen --dev
+uv run socratlegal install --install-dir . --ide codex
+uv run socratlegal-mcp
+```
+
+Hepsini tek seferde, yalnızca bilgisayarınızda kurulu olanlara eklemek için:
+```powershell
+uv sync --frozen --dev
+uv run socratlegal install --install-dir . --ide all --only-installed
+uv run socratlegal-mcp
+```
 
 IDE ayarında URL girilmez. Yerel sunucunun komutu, argümanları ve klasörü kullanılır. CLI, hızlı kontrol ve otomasyon içindir; günlük kullanım IDE sohbetinden yapılabilir.
 
